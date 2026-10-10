@@ -1,0 +1,236 @@
+[gd_scene load_steps=4 format=3 uid="uid://b4u0cxj2slvsg"]
+
+[ext_resource type="Script" path="res://scripts/menus/MainMenu.gd" id="1_q8n5f"]
+[ext_resource type="Texture2D" path="res://assets/sprites/Background.png" id="2_placeholder"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.35, 0.25, 0.15, 0.9)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.6, 0.4, 0.2, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
+bg_color = Color(0.4, 0.3, 0.2, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.7, 0.5, 0.3, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
+bg_color = Color(0.5, 0.4, 0.25, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.8, 0.6, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
+bg_color = Color(0.3, 0.2, 0.15, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.6, 0.4, 0.2, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_q8n5f")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_placeholder")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BackgroundOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.3)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainPanel" type="Panel" parent="CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(800, 600)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40
+offset_top = 40
+offset_right = -40
+offset_bottom = -40
+
+[node name="TitleContainer" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GameTitle" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/TitleContainer"]
+layout_mode = 2
+text = "EMBERS OF EDEN"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.9, 0.7, 0.4, 1)
+theme_override_font_sizes/font_size = 52
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/TitleContainer"]
+layout_mode = 2
+text = "~ A FANTASY ADVENTURE ~"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 24
+
+[node name="Spacer1" type="Control" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+
+[node name="MenuButtons" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayButton" type="Button" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 60)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 28
+text = "⚔️  START ADVENTURE  ⚔️"
+
+[node name="Spacer2" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 20)
+
+[node name="OptionsButton" type="Button" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 50)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 22
+text = "🔧  OPTIONS  🔧"
+
+[node name="Spacer3" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 15)
+
+[node name="CreditsButton" type="Button" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 50)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 22
+text = "📜  CREDITS  📜"
+
+[node name="Spacer4" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 15)
+
+[node name="QuitButton" type="Button" parent="CenterContainer/MainPanel/VBoxContainer/MenuButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 50)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 22
+text = "🚪  EXIT GAME  🚪"
+
+[node name="Spacer5" type="Control" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+
+[node name="FooterContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="VersionLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/FooterContainer"]
+layout_mode = 2
+text = "Version 1.0"
+theme_override_colors/font_color = Color(0.6, 0.5, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+
+[node name="Spacer" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/FooterContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StudioLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/FooterContainer"]
+layout_mode = 2
+text = "Eden Studios"
+theme_override_colors/font_color = Color(0.6, 0.5, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+
+[node name="DecorativeElements" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="TopLeftOrnament" type="Label" parent="DecorativeElements"]
+layout_mode = 0
+anchor_left = 0.05
+anchor_top = 0.05
+text = "🌿"
+theme_override_font_sizes/font_size = 48
+
+[node name="TopRightOrnament" type="Label" parent="DecorativeElements"]
+layout_mode = 0
+anchor_left = 0.95
+anchor_top = 0.05
+text = "🌿"
+theme_override_font_sizes/font_size = 48
+
+[node name="BottomLeftOrnament" type="Label" parent="DecorativeElements"]
+layout_mode = 0
+anchor_left = 0.05
+anchor_top = 0.95
+text = "🔥"
+theme_override_font_sizes/font_size = 48
+
+[node name="BottomRightOrnament" type="Label" parent="DecorativeElements"]
+layout_mode = 0
+anchor_left = 0.95
+anchor_top = 0.95
+text = "🔥"
+theme_override_font_sizes/font_size = 48
+
+[connection signal="pressed" from="CenterContainer/MainPanel/VBoxContainer/MenuButtons/PlayButton" to="." method="_on_play_button_pressed"]
+[connection signal="pressed" from="CenterContainer/MainPanel/VBoxContainer/MenuButtons/OptionsButton" to="." method="_on_options_button_pressed"]
+[connection signal="pressed" from="CenterContainer/MainPanel/VBoxContainer/MenuButtons/CreditsButton" to="." method="_on_credits_button_pressed"]
+[connection signal="pressed" from="CenterContainer/MainPanel/VBoxContainer/MenuButtons/QuitButton" to="." method="_on_quit_button_pressed"] 

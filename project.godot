@@ -1,0 +1,17 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Embers of Eden"
+config/description="A 2D isometric fantasy adventure game"
+run/main_scene="uid://da0rc0k6c3ki2"
+config/features=PackedStringArray("4.4", "Forward Plus")
+config/icon="res://icon.svg"

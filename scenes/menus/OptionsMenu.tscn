@@ -1,0 +1,334 @@
+[gd_scene load_steps=4 format=3 uid="uid://b41nuvxje7bf"]
+
+[ext_resource type="Script" uid="uid://dxlhgjv61e60k" path="res://scripts/menus/OptionsMenu.gd" id="1_5n7p2"]
+[ext_resource type="Texture2D" uid="uid://b1nt6i8cdfr6q" path="res://assets/sprites/backgrounds/forest_bg.png" id="2_bg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.35, 0.25, 0.15, 0.9)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.6, 0.4, 0.2, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.4, 0.3, 0.2, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.7, 0.5, 0.3, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="OptionsMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_5n7p2")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BackgroundOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.3)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainPanel" type="Panel" parent="CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(900, 700)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40
+offset_top = 40
+offset_right = -40
+offset_bottom = -40
+
+[node name="TitleContainer" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="OptionsTitle" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/TitleContainer"]
+layout_mode = 2
+text = "GAME OPTIONS"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.9, 0.7, 0.4, 1)
+theme_override_font_sizes/font_size = 42
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/TitleContainer"]
+layout_mode = 2
+text = "~ Customize Your Adventure ~"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="Spacer1" type="Control" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+
+[node name="OptionsScrollContainer" type="ScrollContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="OptionsContainer" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AudioSection" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer"]
+layout_mode = 2
+
+[node name="AudioLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection"]
+layout_mode = 2
+text = "🔊 AUDIO SETTINGS"
+theme_override_colors/font_color = Color(0.9, 0.7, 0.4, 1)
+theme_override_font_sizes/font_size = 24
+
+[node name="Spacer" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 10)
+
+[node name="MasterVolumeContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection"]
+layout_mode = 2
+
+[node name="MasterVolumeText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/MasterVolumeContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "Master Volume:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="MasterVolumeSlider" type="HSlider" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/MasterVolumeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 30)
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="MasterVolumeLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/MasterVolumeContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+text = "100%"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="SFXVolumeContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection"]
+layout_mode = 2
+
+[node name="SFXVolumeText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/SFXVolumeContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "Sound Effects:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="SFXVolumeSlider" type="HSlider" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/SFXVolumeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 30)
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="SFXVolumeLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/SFXVolumeContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+text = "100%"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="MusicVolumeContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection"]
+layout_mode = 2
+
+[node name="MusicVolumeText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/MusicVolumeContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "Music Volume:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="MusicVolumeSlider" type="HSlider" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/MusicVolumeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 30)
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="MusicVolumeLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/AudioSection/MusicVolumeContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+text = "100%"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.6, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="Divider1" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+
+[node name="DisplaySection" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer"]
+layout_mode = 2
+
+[node name="DisplayLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection"]
+layout_mode = 2
+text = "🖥️ DISPLAY SETTINGS"
+theme_override_colors/font_color = Color(0.9, 0.7, 0.4, 1)
+theme_override_font_sizes/font_size = 24
+
+[node name="Spacer" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 10)
+
+[node name="FullscreenContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection"]
+layout_mode = 2
+
+[node name="FullscreenText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection/FullscreenContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "Fullscreen Mode:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="FullscreenCheckBox" type="CheckBox" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection/FullscreenContainer"]
+layout_mode = 2
+
+[node name="VSyncContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection"]
+layout_mode = 2
+
+[node name="VSyncText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection/VSyncContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "VSync:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="VSyncCheckBox" type="CheckBox" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/DisplaySection/VSyncContainer"]
+layout_mode = 2
+
+[node name="Divider2" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+
+[node name="GameplaySection" type="VBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer"]
+layout_mode = 2
+
+[node name="GameplayLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection"]
+layout_mode = 2
+text = "🎮 GAMEPLAY SETTINGS"
+theme_override_colors/font_color = Color(0.9, 0.7, 0.4, 1)
+theme_override_font_sizes/font_size = 24
+
+[node name="Spacer" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 10)
+
+[node name="AutoSaveContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection"]
+layout_mode = 2
+
+[node name="AutoSaveText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection/AutoSaveContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "Auto-Save:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="AutoSaveCheckBox" type="CheckBox" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection/AutoSaveContainer"]
+layout_mode = 2
+button_pressed = true
+
+[node name="DifficultyContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection"]
+layout_mode = 2
+
+[node name="DifficultyText" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection/DifficultyContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "Difficulty:"
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="DifficultyOptionButton" type="OptionButton" parent="CenterContainer/MainPanel/VBoxContainer/OptionsScrollContainer/OptionsContainer/GameplaySection/DifficultyContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(150, 35)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+item_count = 3
+popup/item_0/text = "Easy"
+popup/item_1/text = "Normal"
+popup/item_1/id = 1
+popup/item_2/text = "Hard"
+popup/item_2/id = 2
+selected = 1
+
+[node name="Spacer2" type="Control" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+
+[node name="ButtonContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="CenterContainer/MainPanel/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 24
+text = "⬅️  BACK TO MENU"
+
+[node name="Spacer" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResetButton" type="Button" parent="CenterContainer/MainPanel/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_colors/font_color = Color(1, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 24
+text = "🔄  RESET DEFAULTS"
+
+[node name="FooterContainer" type="HBoxContainer" parent="CenterContainer/MainPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="SaveLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/FooterContainer"]
+layout_mode = 2
+text = "Settings auto-saved"
+theme_override_colors/font_color = Color(0.6, 0.5, 0.4, 1)
+theme_override_font_sizes/font_size = 14
+
+[node name="Spacer" type="Control" parent="CenterContainer/MainPanel/VBoxContainer/FooterContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VersionLabel" type="Label" parent="CenterContainer/MainPanel/VBoxContainer/FooterContainer"]
+layout_mode = 2
+text = "Embers of Eden v1.0"
+theme_override_colors/font_color = Color(0.6, 0.5, 0.4, 1)
+theme_override_font_sizes/font_size = 14

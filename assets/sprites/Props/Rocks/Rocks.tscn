@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://de141rttgcvwy"]
+
+[ext_resource type="Texture2D" uid="uid://c5d2inir747qg" path="res://Assets/Sprites/Props/Rocks/RockPack128x128.png" id="1_5fmso"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5fmso"]
+radius = 16.0
+height = 32.0
+
+[node name="Sprite2D" type="Sprite2D"]
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(40, 56)
+shape = SubResource("CapsuleShape2D_5fmso")
+
+[node name="RockPack128x128" type="Sprite2D" parent="."]
+position = Vector2(40, 52.7031)
+scale = Vector2(0.914286, 1.25473)
+texture = ExtResource("1_5fmso")
+region_enabled = true
+region_rect = Rect2(60.7698, -1.03883, 35.4742, 33.7749)
