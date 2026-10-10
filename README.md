@@ -4,22 +4,25 @@
 
 ## Open the project
 
-1. Install [Godot 4.4](https://godotengine.org/) or newer.
-2. In Godot: **Import** → select `project.godot` in this folder.
-3. Press **F5** to run (main scene: `scenes/World.tscn`).
+1. Install [Godot 4.4+](https://godotengine.org/).
+2. **Import** → select `project.godot` in this folder.
+3. **F5** to run (default main scene: `scenes/World.tscn`).
 
 ## Layout
 
 | Path | Purpose |
 |------|---------|
-| `scenes/` | World, player, props, menus |
-| `scripts/` | Game logic (`PlayerController`, menus, `GameManager`) |
-| `assets/` | Sprites, audio, UI art |
+| `scenes/` | World, player variants, props, menus |
+| `scripts/` | `PlayerController`, menus, `GameManager`, `TestLevel` |
+| `assets/` | Sprites, tilesets, audio |
+| `docs/` | Design notes, guides, archived dev session logs |
 
-Menu scenes live under `scenes/menus/`; wire `run/main_scene` to `MainMenu.tscn` when you want a menu-first flow.
+See [docs/README.md](docs/README.md) for guides and planned features.
 
-## Version control
+## Version control (GitHub Desktop)
 
-Remote: [Everdream-Labs/Embers-of-Eden](https://github.com/Everdream-Labs/Embers-of-Eden)
+- Remote: [Everdream-Labs/Embers-of-Eden](https://github.com/Everdream-Labs/Embers-of-Eden)
+- **Add** → **Add Existing Repository** → this folder (`X:\Storage\Current Projects\Embers of Eden`).
+- Commits use GitHub noreply: `251558361+Everdream-Labs@users.noreply.github.com` (set in this repo’s local git config).
 
-Use **GitHub Desktop** → **Add** → **Add Existing Repository** → this folder, then **Push origin** if needed.
+Typical flow: edit in Godot → commit in GitHub Desktop → **Push origin**.
