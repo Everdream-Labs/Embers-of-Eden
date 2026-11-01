@@ -27,7 +27,8 @@ const BOOKS = {
   "Visions of Eden.html": ["Visions", "Flags", "Logos"],
   "Warlords of Eden.html": ["Warlords", "Buildings", "Troops", "Tech", "Flags", "Logos"],
   "Arms of Eden.html": ["Troops", "Weapons", "Armour", "Buildings", "Warlords"],
-  "Resources of Eden.html": ["Resources", "Produce", "Tools", "Warlords"]
+  "Resources of Eden.html": ["Resources", "Produce", "Tools", "Warlords"],
+  "Maps of Eden.html": ["Maps"]
 };
 const MIME = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };
 const BAKED = '<script type="application/json" id="codex-baked">';

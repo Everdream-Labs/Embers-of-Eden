@@ -9,7 +9,7 @@ Post-apocalyptic **colony-builder RTS** by Everdream Labs — Age of Empires–s
 | Path | What lives there |
 |------|------------------|
 | `game/` | The Godot project — open `game/project.godot` |
-| `design/Pages of Eden/` | The design codex: four linked HTML books (Visions, Warlords, Arms, Resources), shared stylesheet, and `Images/` |
+| `design/Pages of Eden/` | The design codex: five linked HTML books (Visions, Warlords, Arms, Resources, Maps), shared stylesheet, and `Images/` |
 | `design/Pages of Eden/Data/` | **Source of truth** for design decisions — one markdown file per book, plus `design-source.json` (shared rules) |
 | `design/Scope Questionnaire.md` | Open decisions still needed for a full game scope |
 | `docs/` | Guides and archived notes (the early fantasy-adventure concept lives in `docs/archive/`) |
@@ -30,6 +30,7 @@ Open any HTML in `design/Pages of Eden/` in a browser:
 - **Warlords of Eden** — Duos, Warlords, palettes, flags & banners, skills, tech, buildings
 - **Arms of Eden** — troops, weapons, armour, status effects (two-Warlord filter)
 - **Resources of Eden** — resource, produce and tool trees (two-Warlord filter)
+- **Maps of Eden** — twelve home-turf maps with isometric previews, an Age of Empires–style game setup, and world info (terrain, neutrals, relics)
 
 **Editing:** press **Edit**, click any dashed text, then **Save into HTML** to write changes into the file. Copy decisions back into the matching `Data/*.md` file — the markdown is the source of truth.
 

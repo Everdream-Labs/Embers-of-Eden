@@ -15,7 +15,8 @@
     "visions": { "html": "Visions of Eden.html", "source": "Data/Visions_of_Eden.md", "filter": false, "tabs": ["Overview", "Modes", "Warlords", "World", "Combat", "Economy", "Retired"] },
     "warlords": { "html": "Warlords of Eden.html", "source": "Data/Warlords_of_Eden.md", "filter": "warlord picker", "tabs": ["Team", "Skills", "Tech", "Buildings"] },
     "arms": { "html": "Arms of Eden.html", "source": "Data/Arms_of_Eden.md", "filter": "two-Warlord pair", "tabs": ["Troops", "Weapons", "Armour", "Status Effects"] },
-    "resources": { "html": "Resources of Eden.html", "source": "Data/Resources_of_Eden.md", "filter": "two-Warlord pair", "tabs": ["Resources", "Produce", "Tools & Equipment"] }
+    "resources": { "html": "Resources of Eden.html", "source": "Data/Resources_of_Eden.md", "filter": "two-Warlord pair", "tabs": ["Resources", "Produce", "Tools & Equipment"] },
+    "maps": { "html": "Maps of Eden.html", "source": "Data/Maps_of_Eden.md", "filter": false, "tabs": ["Maps", "Game Modes", "Extras"] }
   },
   "sharedStyle": "eden-codex.css",
   "images": "Images/<Category>/<Exact Name>.jpg — e.g. Images/Warlords/Viktor.jpg, Images/Resources/Steel.jpg, Images/Weapons/Arc Gun.jpg. Any missing image shows a labelled placeholder.",

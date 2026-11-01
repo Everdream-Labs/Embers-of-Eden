@@ -303,7 +303,7 @@ const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a :
 function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
 const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
 const isSugg = s => /\(suggestion\)/i.test(s || "");
-const BOOKS = [["visions", "Visions", "Visions of Eden.html", false], ["warlords", "Warlords", "Warlords of Eden.html", false], ["arms", "Arms", "Arms of Eden.html", true], ["resources", "Resources", "Resources of Eden.html", true]];
+const BOOKS = [["visions", "Visions", "Visions of Eden.html", false], ["warlords", "Warlords", "Warlords of Eden.html", false], ["arms", "Arms", "Arms of Eden.html", true], ["resources", "Resources", "Resources of Eden.html", true], ["maps", "Maps", "Maps of Eden.html", false]];
 const ACC = {
   rank: { no: 0, tbd: 1, import: 2, yes: 3, boost: 4, early: 4 },
   label: { no: "No access", tbd: "Undecided", import: "Import only", yes: "Can produce", boost: "Stronger", early: "Early access" },

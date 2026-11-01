@@ -481,7 +481,17 @@ Answer:
 ## 12. Map, world & biomes
 
 **12.1 — Biome list** `P1`
-Which biomes exist? (Ash wastes, dead forest, swamp, desert, ruined city, toxic zone, coast, mountains …)
+**Proposed (Maps of Eden):** 12 terrain types, one home per Duo — Ash Plains, Dead Forest, Tech Ruins, Industrial Basin, Toxic Crater, Ruined City, Mire, Highlands, Badlands Savannah, Cinderlands, Dustline Desert, Dead Grid. Confirm, merge or cut?
+
+Answer:
+
+**12.1a — Home-turf strength** `P1`
+Each Duo gets a small home bonus and at most one hostile penalty; each Warlord one terrain trait (±5–15%). Too strong, too weak, or right?
+
+Answer:
+
+**12.1b — Twelve maps** `P2`
+Approve the twelve home-turf maps in Maps of Eden (names, layouts, resource profiles, hazards, tribes, relics)?
 
 Answer:
 

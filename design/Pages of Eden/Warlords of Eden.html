@@ -638,9 +638,38 @@ Object.entries({
   nomad2: ["#3fbfae", "Desert Turquoise", "Mojave jewellery and open sky."],
   hive: ["#bfeaff", "Core White", "One mind, many shells."]
 }).forEach(([id, [color, colorName, colorNote]]) => Object.assign(DEFAULT_DATA.warlords[id], { color, colorName, colorNote }));
+/* Terrain — home turf per Duo and one subtle terrain trait per Warlord. Kept in step with Maps of Eden. */
+Object.entries({
+  survivors: ["Ash Plains", "+10% trade-cart speed on roads", "None — forgiving anywhere", "Ashfall Crossroads", "ashfall"],
+  hunters: ["Dead Forest", "+10% wood and hunting yield", "Dead Grid: −5% gathering", "Timberhold", "timberhold"],
+  scientists: ["Tech Ruins", "+10% rare-component salvage", "Badlands Savannah: −5% research speed", "The Sublevel", "sublevel"],
+  mutants: ["Industrial Basin", "Immune to toxic runoff, +10% food from mutated growth", "Dustline Desert: +10% water upkeep", "The Spillway", "spillway"],
+  afflicted: ["Toxic Crater", "Immune to radiation-zone damage, +10% gathering in hazard zones", "Highlands: −5% movement", "Blight Crater", "crater"],
+  militia: ["Ruined City", "+10% wall and bunker HP", "Mire: heavy armour −10% movement", "Fort Hollow", "forthollow"],
+  bloodveil: ["Mire", "No swamp slowdown, +10% herbs", "Dustline Desert: −5% healing", "Mirewood", "mirewood"],
+  templars: ["Highlands", "Relics +10% value, +5% morale", "Toxic Crater: −5% morale", "Reliquary Peaks", "reliquary"],
+  pack: ["Badlands Savannah", "+15% taming / breeding range", "Dead Grid: −5% morale", "Bonefields", "bonefields"],
+  ashen: ["Cinderlands", "Burning zones don't hurt Ashen units, +10% scrap from burned ruins", "Mire: −10% burn damage", "Cinder City", "cinder"],
+  nomads: ["Dustline Desert", "+5% movement, oases +10% water", "Dead Forest: vehicles −10% speed", "The Dustline", "dustline"],
+  droids: ["Dead Grid", "+10% electronics; storms recharge chassis (suggestion)", "Mire: −10% movement", "Grid Zero", "gridzero"]
+}).forEach(([id, [home, homeBonus, hostile, map, mapId]]) => { DEFAULT_DATA.duos[id].terrain = { home, homeBonus, hostile, map, mapId }; });
+Object.entries({
+  viktor: ["Road Warrior", "+5% movement for his army on roads."], ayla: ["Hold the Walls", "+5% defence for units standing near your own walls."],
+  brick: ["Stone Sense", "+10% stone and ore gathering in Highlands."], twig: ["Woodland Eyes", "+2 line of sight in Dead Forest."],
+  drsomething: ["Live Wire", "During electrical storms his Arc Troopers deal +5% damage."], mixy: ["Field Botanist", "+10% herbs gathered in Mire and Dead Forest."],
+  smash: ["Runoff Rage", "+5% attack in the Industrial Basin."], bash: ["Thick Hide", "−10% damage from hazard zones."],
+  afflicted1: ["Hot-Zone Forager", "+10% gathering inside radiation zones."], afflicted2: ["Carrier", "Disease spreads 10% further in Mire and Industrial Basin."],
+  militia1: ["Trench Line", "+5% ranged defence in Ruined City."], militia2: ["Quartermaster", "−5% unit upkeep inside your own territory."],
+  bloodveil1: ["Ambush", "+5% damage when attacking from forest or swamp cover."], bloodveil2: ["Blood Rites", "Conversions +5% faster near relics and ritual sites."],
+  templar1: ["High Ground", "+5% melee defence on elevated ground."], templar2: ["Pilgrim's March", "+5% movement in Highlands."],
+  pack1: ["Hunt Drive", "+5% attack speed against wild animals."], pack2: ["Beast Call", "+15% taming range in Badlands Savannah."],
+  blowtorch: ["Firestarter", "Fires spread 10% faster in Cinderlands and Ruined City."], vesper: ["Ruin Broker", "+10% value from neutral-tribe trades in Ruined City and Cinderlands."],
+  nomad1: ["Old Roads", "Oases and wells give +10% water."], nomad2: ["Dust Rider", "Vehicles +5% speed in Dustline Desert."],
+  hive: ["Grid Link", "+10% vision around relay pylons and Data Centres."]
+}).forEach(([id, [name, desc]]) => { DEFAULT_DATA.warlords[id].terrain = { name, desc }; });
 DEFAULT_DATA.buildings.forEach(b => { if (b.image === "Scrapyard.jpg") b.image = "Images/Buildings/Scrapyard.jpg"; });
 DEFAULT_DATA.warlords.hive.portrait = "Images/Warlords/Droid 0001.jpg";
-DEFAULT_DATA.meta.dataRev = "factory-2026-11-01c";
+DEFAULT_DATA.meta.dataRev = "factory-2026-11-01d";
 DEFAULT_DATA.meta.mixRuleNote = "Mixed pairs use a union rule (current default, tweakable item by item): if either Warlord's Duo can use a weapon, status, troop line, tool or resource, the pair can. Import-only stays import-only unless the other side can produce it. Buildings the pair cannot construct stay locked. Preview it in Arms of Eden and Resources of Eden.";
 /* ==========================================================================
    APP
@@ -895,7 +924,7 @@ function renderAll() {
   const TAB_COLORS = { profile: "#c9a24a", skills: "#b07ad6", tech: "#4fb0ff", buildings: "#93b85c" };
   document.documentElement.style.setProperty("--tab", TAB_COLORS[state.tab] || "#c9a24a");
   const pairLink = state.w1 === "hive" ? "hive+hive" : `${state.w1}+${state.w2}`;
-  $("#codex-nav").innerHTML = [["Visions", "Visions of Eden.html", ""], ["Warlords", "", ""], ["Arms", "Arms of Eden.html", "#" + pairLink + "/troops"], ["Resources", "Resources of Eden.html", "#" + pairLink + "/resources"]]
+  $("#codex-nav").innerHTML = [["Visions", "Visions of Eden.html", ""], ["Warlords", "", ""], ["Arms", "Arms of Eden.html", "#" + pairLink + "/troops"], ["Resources", "Resources of Eden.html", "#" + pairLink + "/resources"], ["Maps", "Maps of Eden.html", "#maps/" + ((D(W(state.w1).duo).terrain || {}).mapId || "ashfall")]]
     .map(([l, f, h]) => f ? `<a href="${encodeURI(f)}${h}">${l}</a>` : `<a class="cur" href="#">${l}</a>`).join("");
   renderWarlord(1);
   renderWarlord(2);
@@ -983,6 +1012,7 @@ function renderWarlord(slot) {
           <div class="sec-title">Profile</div>
           <p class="personality">${ed(`warlords.${w.id}.personality`, w.personality, true)}</p>
           <div class="tags">${w.tags.map((t, i) => `<span class="chip">${ed(`warlords.${w.id}.tags.${i}`, t)}</span>`).join("")}</div>
+          ${w.terrain ? `<div class="trait ph" style="margin-top:10px"><div class="t-ico">&#9968;</div><div><div class="t-top"><b>${ed(`warlords.${w.id}.terrain.name`, w.terrain.name)}</b><span class="t-type">Terrain</span></div><div class="t-desc">${ed(`warlords.${w.id}.terrain.desc`, w.terrain.desc, true)}</div></div></div>` : ""}
         </div>
         <div class="sec">
           <div class="sec-title">${warlordSignature(w).kind === "building" ? "Unique Building" : "Unique Troop"}</div>
@@ -1135,6 +1165,10 @@ function duoLoreHTML(d) {
       <p class="foot">${esc((DATA.meta && DATA.meta.gatingNote) || "Buildings, troops, tech, weapons, and status effects follow per-Duo gating. Not every group inflicts every status.")}</p>
     </div>
     <div class="sec"><div class="sec-title">Damage Affinities</div>${affinityHTML(d)}</div>
+    ${d.terrain ? `<div class="sec"><div class="sec-title">Home turf</div><div class="kv">
+      <div><span>Home terrain · ${esc(d.terrain.home)}</span><b>${ed(`duos.${d.id}.terrain.homeBonus`, d.terrain.homeBonus)}</b></div>
+      <div><span>Hostile terrain</span><b>${ed(`duos.${d.id}.terrain.hostile`, d.terrain.hostile)}</b></div></div>
+      <div class="center-row"><a class="xlink out" href="${encodeURI("Maps of Eden.html")}#maps/${d.terrain.mapId}">Home map · ${esc(d.terrain.map)}</a></div></div>` : ""}
     <div class="sec"><div class="sec-title">Signatures</div>${signaturesHTML(d)}</div>
     ${bannerPaletteHTML(d)}
     ${d.open.length ? `<div class="sec"><div class="sec-title">Open Questions</div><ul class="openq">${d.open.map((q, i) => `<li>${ed(`duos.${d.id}.open.${i}`, q)}</li>`).join("")}</ul>

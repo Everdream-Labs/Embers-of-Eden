@@ -118,7 +118,7 @@ const IMG = (() => {
    from the markdown into here; edit in the page for quick tweaks.
    ========================================================================== */
 const DEFAULT_DATA = {
-  meta: { dataRev: "factory-2026-11-01", updated: "2026-11-01", source: "Data/Visions_of_Eden.md" },
+  meta: { dataRev: "factory-2026-11-01b", updated: "2026-11-01", source: "Data/Visions_of_Eden.md" },
   tabs: [
     { id: "overview", label: "Overview", color: "#d0702f", kicker: "What the game is", title: "Colony-builder RTS",
       intro: "Embers of Eden is a post-apocalyptic colony-builder RTS. Players expand a survivor colony across large, themed maps, manage population and resources, and ultimately eliminate rival warlords.",
@@ -131,8 +131,8 @@ const DEFAULT_DATA = {
         { h: "What it is not", list: ["Not a Stardew Valley-style farming sim", "Not cozy survival craft", "Not a narrative adventure — those early concepts are fully superseded"], links: [["See retired ideas", "#retired"]] },
         { h: "Known open points", list: ["Exact challenge list for unlocking duos", "Full resource list, production chains, and per-duo unique troops / buildings", "Light happiness / population-growth modifier details (if kept)", "Remaining questionnaire sections — maps, resources, combat depth, victory variants", "Final names and trait details for several warlords"] },
         { h: "The Pages of Eden", p: "Four linked books document every design decision. This one stays broad; the others hold the gameplay detail.",
-          list: ["Warlords of Eden — duos, warlords, skills, tech, buildings", "Arms of Eden — troops, weapons, armour, status effects (filterable by team)", "Resources of Eden — resources, produce, tools & equipment (filterable by team)"],
-          links: [["Warlords of Eden", "Warlords of Eden.html"], ["Arms of Eden", "Arms of Eden.html"], ["Resources of Eden", "Resources of Eden.html"]] }
+          list: ["Warlords of Eden — duos, warlords, skills, tech, buildings", "Arms of Eden — troops, weapons, armour, status effects (filterable by team)", "Resources of Eden — resources, produce, tools & equipment (filterable by team)", "Maps of Eden — twelve home-turf maps with previews, game setup, terrain, neutrals and relics"],
+          links: [["Warlords of Eden", "Warlords of Eden.html"], ["Arms of Eden", "Arms of Eden.html"], ["Resources of Eden", "Resources of Eden.html"], ["Maps of Eden", "Maps of Eden.html"]] }
       ] },
     { id: "modes", label: "Modes", color: "#c9a24a", kicker: "Victory & game modes", title: "Regicide first",
       intro: "Kill the opponent's warlord(s) to win. Every other mode branches from this default.",
@@ -167,7 +167,8 @@ const DEFAULT_DATA = {
         { h: "Building & territory", list: ["Build nearly anywhere, with soft constraints (some buildings may need foundations)", "Outposts and resource camps are allowed", "Territory = line of sight + land claim around buildings (AoE style)", "Map-control percentage is a possible future victory condition"] },
         { h: "Terrain", list: ["Swamp / marsh movement penalties for some civs", "Roads and tracks boost movement", "Impassable cliffs", "Fishable water"] },
         { h: "Neutral tribes", list: ["Range from a campfire and a couple of people up to a small walled outpost", "They do not expand over time", "Trade with, ignore, enslave or destroy them — options and reactions depend on your warlords"] },
-        { h: "Fog & relics", list: ["Standard fog options: fog / discovery / line of sight / see-all", "Relics (religious and historical artifacts) are freshly placed each game — mechanics still open"] }
+        { h: "Fog & relics", list: ["Standard fog options: fog / discovery / line of sight / see-all", "Relics (religious and historical artifacts) are freshly placed each game — mechanics still open"] },
+        { h: "Home turfs", p: "Twelve themed maps — one home turf per Duo — each with a terrain temperament, resource profile, hazards, tribes and relics.", links: [["Open Maps of Eden", "Maps of Eden.html"]] }
       ] },
     { id: "combat", label: "Combat", color: "#d6573b", kicker: "Combat & military", title: "AoE combat, higher unit value",
       intro: "Age of Empires-style fighting, but every soldier costs more to equip and to keep fed.",
@@ -213,7 +214,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a : a[k]), o);
 function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
 const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
-const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["arms", "Arms", "Arms of Eden.html"], ["resources", "Resources", "Resources of Eden.html"]];
+const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["arms", "Arms", "Arms of Eden.html"], ["resources", "Resources", "Resources of Eden.html"], ["maps", "Maps", "Maps of Eden.html"]];
 
 const STORE_KEY = "visionsOfEden.v1";
 const state = { tab: "overview", editing: false };

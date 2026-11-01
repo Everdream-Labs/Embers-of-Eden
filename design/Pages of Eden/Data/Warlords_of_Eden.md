@@ -48,6 +48,12 @@ All three always use **the Duo primary colour + both Warlord accents**. A Duo **
 | Droids | `#4fb0ff` Signal Blue — status LEDs, cold data | Droid 0001 `#bfeaff` Core White — one mind, many shells | — (never mixes) |
 
 ---
+
+## Terrain & home turf
+
+Every Duo has a home terrain, a hostile terrain and a home map; every Warlord has one subtle terrain trait. Shown on each Warlord column (Terrain) and each Duo's Team tab (Home turf). The full tables — terrain types, effects, the 12 maps and all 23 Warlord terrain traits — live in **`Maps_of_Eden.md`**, which is the source of truth for them.
+
+---
 ## Duos
 
 ### 1. Survivors — Core identity

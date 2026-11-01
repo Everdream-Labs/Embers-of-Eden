@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maps of Eden — Embers of Eden Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eden-codex.css">
+<style>
+.map-pick{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 16px}
+.map-pick select,.lobby select,.lobby input{background:#14110e;color:var(--ink);border:1px solid var(--line-2);padding:7px 10px;font-family:var(--font-body);font-size:.88rem;text-align:center;text-align-last:center}
+.feature{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;border:1px solid var(--line-2);border-top:3px solid var(--mc);background:rgba(0,0,0,.26);padding:16px;margin-bottom:22px}
+.feature h3{margin:0;font-family:var(--font-head);font-size:1.7rem;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--mc) 75%,#fff);text-align:center}
+.feature .tag{text-align:center;font-family:var(--font-type);color:var(--ink-dim);margin:2px 0 10px}
+.thumb-big{position:relative;border:1px solid var(--line-2);background:#0d0b09;min-height:230px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.thumb-big img.prev{width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.res-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
+.res-bar{text-align:center;font-family:var(--font-head);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
+.res-bar .pips4{display:flex;gap:2px;justify-content:center;margin-top:3px}
+.res-bar .pips4 i{width:9px;height:9px;border:1px solid var(--line-2);background:rgba(255,255,255,.04)}
+.res-bar .pips4 i.on{background:var(--rc);border-color:transparent}
+.map-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.mcard{border:1px solid var(--line-2);border-top:3px solid var(--mc);background:rgba(0,0,0,.28);display:flex;flex-direction:column;cursor:pointer;transition:transform .15s,border-color .15s}
+.mcard:hover{transform:translateY(-2px);border-color:var(--mc)}
+.mcard.cur{box-shadow:0 0 0 1px var(--mc),0 0 22px -6px var(--mc)}
+.mcard .mthumb{height:130px;background:#0d0b09;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mcard .mthumb img{width:100%;height:100%;object-fit:cover}
+.mcard .mbody{padding:10px 12px;text-align:center}
+.mcard h4{margin:4px 0 2px;font-family:var(--font-head);letter-spacing:.14em;text-transform:uppercase;font-size:1rem;color:color-mix(in srgb,var(--mc) 72%,#fff)}
+.mcard .who{display:flex;justify-content:center;align-items:center;gap:6px;font-size:.74rem;color:var(--ink-dim);font-family:var(--font-head);letter-spacing:.12em;text-transform:uppercase}
+.mcard .who .sig{width:14px;height:14px}
+.mcard .chips{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;margin:6px 0}
+.mcard .btn{margin:4px auto 10px}
+.viewer{position:relative;height:min(74vh,760px);background:#070605;border:1px solid var(--line-2);overflow:hidden;cursor:grab}
+.viewer.grab{cursor:grabbing}
+.viewer canvas{position:absolute;inset:0;width:100%;height:100%}
+.viewer-bar{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0}
+.viewer-bar label{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-head);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--line-2);padding:4px 9px;cursor:pointer;background:rgba(0,0,0,.3)}
+.viewer-bar input{accent-color:var(--tab)}
+.map-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 14px;font-size:.74rem;color:var(--ink-dim)}
+.map-legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.lobby{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px}
+.slots{border:1px solid var(--line-2);background:rgba(0,0,0,.26)}
+.slot-row{display:grid;grid-template-columns:28px 1.2fr 1.3fr 1.3fr .6fr .8fr;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line)}
+.slot-row.head{font-family:var(--font-head);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);background:rgba(0,0,0,.3)}
+.slot-row.off{opacity:.4}
+.slot-row .num{font-family:var(--font-head);text-align:center;color:var(--ink-dim)}
+.slot-row select{width:100%;padding:5px 4px;font-size:.8rem}
+.slot-row .dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px;flex-shrink:0}
+.slot-row > span:last-child{display:flex;align-items:center}
+.settings{border:1px solid var(--line-2);background:rgba(0,0,0,.26);padding:12px}
+.set-row{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;align-items:center;margin-bottom:7px}
+.set-row span{font-family:var(--font-head);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);text-align:right}
+.set-row select{width:100%}
+.match-card{border:1px solid var(--tab);background:color-mix(in srgb,var(--tab) 8%,rgba(0,0,0,.4));padding:14px;margin-top:16px;text-align:center}
+.match-card h4{margin:0 0 6px;font-family:var(--font-head);letter-spacing:.2em;text-transform:uppercase}
+.mode-desc{border-left:3px solid var(--tab);background:rgba(0,0,0,.26);padding:10px 14px;margin-top:12px;font-size:.9rem}
+.mode-desc ul{margin:6px 0 0;padding-left:18px}
+.matrix td.home{color:var(--good);font-weight:600} .matrix td.hostile{color:var(--bad)}
+.bio-strip{display:flex;height:16px;margin:-14px -16px 10px}
+.bio-strip i{flex:1}
+@media (max-width:1100px){.feature,.lobby{grid-template-columns:1fr}.slot-row{grid-template-columns:24px 1fr 1fr 1fr .6fr .7fr}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+<div class="app book">
+  <main class="plate center" style="--acc:var(--tab)">
+    <header class="duo-head">
+      <div class="motif a" id="motif-a"></div><div class="motif b" id="motif-b"></div>
+      <div class="brandrow"><span class="brand"><b>Maps</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
+      <div class="head-sigils" id="head-sigils"></div>
+      <div class="kicker">Home turfs · game setup · world info</div>
+      <h1 class="duo-title">Maps</h1>
+      <div class="motto" id="book-motto">Build to the land's strengths — or die on someone else's.</div>
+    </header>
+    <nav class="navbar">
+      <div class="side"><button class="btn" id="btn-sound" onclick="SFX.toggleMute()">&#9836; Sound</button></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="side"><button class="btn" id="btn-edit" onclick="toggleEdit()" title="Toggle edit mode">&#9998; Edit</button></div>
+    </nav>
+    <div class="editbar" id="editbar"></div>
+    <div class="views"><section class="view active" id="view"></section></div>
+    <footer class="legend" id="legend"></footer>
+  </main>
+</div>
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal plate" id="modal-box"><button class="x" onclick="closeModal()" title="Close">&#10005;</button><div class="modal-body" id="modal-body"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="application/json" id="codex-baked">null</script>
+<script>
+const PRISTINE_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+/* ---------- Pictures: Name.jpg, Name1.jpg, Name2.jpg … — click a picture to cycle the shortlist ---------- */
+const IMG = (() => {
+  const EXT = ["jpg", "png", "webp", "jpeg"];
+  const EMB = window.EDEN_IMAGES || null;
+  const KEY = "edenCodex.pictures";
+  const cache = {};
+  let pick = {};
+  try { pick = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  const stemOf = p => String(p || "").replace(/\.(jpe?g|png|webp)$/i, "");
+  const src = p => (EMB && EMB[p]) || encodeURI(p).replace(/#/g, "%23");
+  const probe = p => new Promise(res => {
+    if (EMB) return res(!!EMB[p]);
+    const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = src(p);
+  });
+  async function at(stem, n) { for (const e of EXT) { const p = `${stem}${n || ""}.${e}`; if (await probe(p)) return p; } return null; }
+  function list(stem) {
+    if (!cache[stem]) cache[stem] = (async () => {
+      const out = [], first = await at(stem, 0);
+      if (first) out.push(first);
+      for (let n = 1; n < 40; n++) { const p = await at(stem, n); if (!p) break; out.push(p); }
+      return out;
+    })();
+    return cache[stem];
+  }
+  function badge(img, i, n) {
+    const host = img.parentNode; if (!host) return;
+    let b = host.querySelector(":scope > .pic-count");
+    if (n < 2) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("span"); b.className = "pic-count"; host.appendChild(b); }
+    b.textContent = `${i + 1} / ${n} · click to cycle`;
+  }
+  async function hydrate(img) {
+    if (img.dataset.ready) return;
+    img.dataset.ready = "1";
+    const stem = img.dataset.stem, paths = await list(stem);
+    if (!paths.length) { img.remove(); return; }
+    const i = (pick[stem] || 0) % paths.length;
+    img.onload = () => { if (img.parentNode) img.parentNode.classList.add("has-img"); };
+    img.src = src(paths[i]);
+    if (img.hasAttribute("data-cycle")) badge(img, i, paths.length);
+  }
+  async function cycle(img) {
+    const stem = img.dataset.stem, paths = await list(stem);
+    const file = stem.split("/").pop();
+    if (paths.length < 2) { toast(`Only one picture — add ${file}1.jpg, ${file}2.jpg… to shortlist more`); return; }
+    const i = ((pick[stem] || 0) + 1) % paths.length;
+    pick[stem] = i;
+    try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch (e) {}
+    document.querySelectorAll(`img[data-stem="${CSS.escape(stem)}"]`).forEach(x => { x.src = src(paths[i]); if (x.hasAttribute("data-cycle")) badge(x, i, paths.length); });
+    SFX.play("shutter");
+    toast(`Picture ${i + 1} of ${paths.length} — ${paths[i].split("/").pop()}`);
+  }
+  document.addEventListener("click", e => {
+    const img = e.target.closest && e.target.closest("img[data-cycle]");
+    if (!img) return;
+    e.stopPropagation(); e.preventDefault();
+    cycle(img);
+  }, true);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches("img[data-stem]")) hydrate(n);
+    n.querySelectorAll("img[data-stem]").forEach(hydrate);
+  }))).observe(document.documentElement, { childList: true, subtree: true });
+  return {
+    tag: (path, cycleIt, alt) => `<img data-stem="${esc(stemOf(path))}"${cycleIt ? " data-cycle" : ""} alt="${esc(alt || "")}">`,
+    hint: path => `add “${path}” — or ${stemOf(path).split("/").pop()}1, 2, 3… to shortlist`,
+    snapshot: () => Object.assign({}, pick),
+    seed: obj => { if (obj) Object.entries(obj).forEach(([k, v]) => { if (!(k in pick)) pick[k] = v; }); }
+  };
+})();
+/* ==========================================================================
+   DATA — mirrors Data/Maps_of_Eden.md. Levels: 0 scarce · 1 low · 2 normal · 3 rich.
+   "(suggestion)" = idea, not agreed.
+   ========================================================================== */
+const DEFAULT_DATA = {
+  meta: { dataRev: "factory-2026-11-01", updated: "2026-11-01", source: "Data/Maps_of_Eden.md" },
+  tabs: [
+    { id: "maps", label: "Maps", color: "#93b85c" },
+    { id: "modes", label: "Game Modes", color: "#c9a24a" },
+    { id: "extras", label: "Extras", color: "#7fa6c9" }
+  ],
+  resources: [
+    { id: "food", code: "Fd", name: "Food", color: "#b0446a" }, { id: "water", code: "Wa", name: "Water", color: "#5fb3c4" },
+    { id: "wood", code: "Wd", name: "Wood", color: "#a07a45" }, { id: "stone", code: "St", name: "Stone", color: "#9a9488" },
+    { id: "metal", code: "Fe", name: "Ore", color: "#8a97a3" }, { id: "scrap", code: "Sc", name: "Scrap", color: "#a8996e" },
+    { id: "rare", code: "RC", name: "Rare", color: "#57c2b0" }
+  ],
+  biomes: [
+    { id: "ash", name: "Ash Plains", pal: ["#6d6459", "#5c554c", "#857c70", "#3f4a52", "#8a7f6d"], duo: "survivors", hostile: [], desc: "Grey open country under a permanent ash haze. Old highways, scattered ruins, a little of everything.", rules: ["Balanced resources", "Roads everywhere — fast trade carts", "Few chokepoints"] },
+    { id: "forest", name: "Dead Forest", pal: ["#4a4a33", "#3d3f2a", "#6b6553", "#2f4448", "#6e6448"], duo: "hunters", hostile: ["nomads"], desc: "Grey-barked forest that never quite died. Timber everywhere, sight-lines broken.", rules: ["Huge wood", "Line of sight reduced in deep forest (suggestion)", "Vehicles slowed between trees"] },
+    { id: "tech", name: "Tech Ruins", pal: ["#4c5257", "#3e444a", "#6a7076", "#2b3c46", "#6f7378"], duo: "scientists", hostile: [], desc: "Collapsed research campuses and labs. Concrete, cables and things still humming underground.", rules: ["Rare components and scrap", "Electrical arc zones near old reactors", "Little food"] },
+    { id: "industrial", name: "Industrial Basin", pal: ["#57503f", "#4a4636", "#6e6550", "#4e6b2a", "#6d6550"], duo: "mutants", hostile: [], desc: "Pumps, vats and toxic runoff — and strange, fertile growth along the spill channels.", rules: ["Rich (mutated) food", "Toxic water", "Ore and scrap from factories"] },
+    { id: "crater", name: "Toxic Crater", pal: ["#6b6a3e", "#55552f", "#7e7a55", "#6f8a1f", "#7a7350"], duo: "afflicted", hostile: ["templars"], desc: "A blast crater ringed with radiation. The richest ore lies in the hottest ground.", rules: ["Radiation rings — damage over time", "Ore and rare deposits in the centre", "No timber"] },
+    { id: "city", name: "Ruined City", pal: ["#5b5753", "#4a4744", "#75706a", "#364750", "#6a6560"], duo: "militia", hostile: [], desc: "Fortified city blocks, trenches and checkpoints from the last war.", rules: ["Scrap-rich", "Tight streets and chokepoints", "Old minefields (suggestion)"] },
+    { id: "mire", name: "Mire", pal: ["#3c4535", "#323a2d", "#545c48", "#2c3b33", "#4f5440"], duo: "bloodveil", hostile: ["militia", "ashen", "droids"], desc: "Drowned forest and black water. Slow going for anyone who doesn't belong here.", rules: ["Movement penalty off paths", "Herbs and fish", "Almost no stone or metal"] },
+    { id: "highlands", name: "Highlands", pal: ["#6a6458", "#5a5446", "#9a9285", "#3d5563", "#7a7262"], duo: "templars", hostile: ["afflicted"], desc: "Cold peaks, mountain passes and the monasteries that kept the old relics.", rules: ["Stone-rich", "Passes and cliffs — natural fortresses", "Relic sites"] },
+    { id: "savannah", name: "Badlands Savannah", pal: ["#8a7448", "#76633d", "#9b8a62", "#46606a", "#9a8458"], duo: "pack", hostile: ["scientists"], desc: "Endless dry grass, bones and herds. Everything here hunts something.", rules: ["Abundant wildlife", "Wide open — no cover", "Little metal"] },
+    { id: "cinder", name: "Cinderlands", pal: ["#3d3330", "#2f2725", "#574a44", "#3a3a3a", "#4e423c"], duo: "ashen", hostile: [], desc: "A megacity that burned and kept smouldering. Coal seams, scrap and slave camps.", rules: ["Burning blocks spread fire (suggestion)", "Coal and scrap", "Almost no food"] },
+    { id: "desert", name: "Dustline Desert", pal: ["#b08e5c", "#9b7a4c", "#c4a473", "#4c7a82", "#a8875a"], duo: "nomads", hostile: ["mutants", "bloodveil"], desc: "Mojave-style dunes and salt flats. Long roads, rare oases, sandstorms.", rules: ["Water only at oases", "Fast movement on roads", "Sandstorms reduce vision (suggestion)"] },
+    { id: "grid", name: "Dead Grid", pal: ["#3b4048", "#30353c", "#565c66", "#22303c", "#4a5058"], duo: "droids", hostile: ["hunters", "pack"], desc: "Server farms and relay pylons in a lattice that never powered down.", rules: ["Electronics and rare components", "Electrical storms", "No food"] }
+  ],
+  maps: [
+    { id: "ashfall", name: "Ashfall Crossroads", duo: "survivors", biome: "ash", alt: "city", shape: "crossroads", size: "Medium", players: 4, seed: 1101, roads: true,
+      tagline: "Where every road meets and every trade begins.", res: { food: 2, water: 2, wood: 2, stone: 2, metal: 2, scrap: 2, rare: 1 },
+      hazards: [{ type: "ash", where: "random", r: 6 }], tribes: [["Traders' Rest", "Trader post"], ["Ash Walkers", "Campfire band"]], relics: 2, relicCenter: true,
+      features: ["A ruined highway hub at the centre — a market site worth fighting over", "Roads link every spawn — trade carts fly", "The fair-fight starter map"], struggles: [] },
+    { id: "timberhold", name: "Timberhold", duo: "hunters", biome: "forest", alt: "highlands", shape: "forestLanes", size: "Large", players: 4, seed: 2207,
+      tagline: "A forest that remembers every axe.", res: { food: 2, water: 2, wood: 3, stone: 3, metal: 1, scrap: 0, rare: 0 },
+      hazards: [{ type: "predators", where: "random", r: 5 }], tribes: [["Hollow Mill", "Walled hamlet"], ["Snare Camp", "Campfire band"]], relics: 1,
+      features: ["Dense timber with narrow lanes between spawns — ambush country", "Quarry hills along the edges", "Wild game for hunting"], struggles: ["nomads", "droids"] },
+    { id: "sublevel", name: "The Sublevel", duo: "scientists", biome: "tech", alt: "ash", shape: "plateau", size: "Medium", players: 4, seed: 3313,
+      tagline: "The lights are still on down there.", res: { food: 1, water: 1, wood: 1, stone: 1, metal: 2, scrap: 2, rare: 3 },
+      hazards: [{ type: "electric", where: "center", r: 6 }, { type: "electric", where: "random", r: 4 }], tribes: [["Bunker Rats", "Scavenger outpost"], ["The Faculty", "Walled hamlet"]], relics: 2, relicCenter: true,
+      features: ["A raised research campus in the middle — rare components, arcing reactors", "Scrap-rich lowlands, poor farmland", "Black-box relics in the labs"], struggles: ["pack", "hunters"] },
+    { id: "spillway", name: "The Spillway", duo: "mutants", biome: "industrial", alt: "mire", shape: "basin", size: "Medium", players: 4, seed: 4421,
+      tagline: "The failed experiment, still flowing.", res: { food: 3, water: 1, wood: 1, stone: 1, metal: 2, scrap: 2, rare: 1 },
+      hazards: [{ type: "toxic", where: "center", r: 7 }], tribes: [["Vat Strays", "Raider den"], ["Pump Station 9", "Scavenger outpost"]], relics: 1,
+      features: ["A toxic basin fed by old vats — where the first Mutants were born", "Fertile mutated growth around the runoff — huge food, risky water", "Factory ruins for ore and scrap"], struggles: ["nomads", "bloodveil"] },
+    { id: "crater", name: "Blight Crater", duo: "afflicted", biome: "crater", alt: "ash", shape: "crater", size: "Large", players: 6, seed: 5527,
+      tagline: "The closer you get, the richer it is.", res: { food: 1, water: 1, wood: 0, stone: 2, metal: 3, scrap: 1, rare: 2 },
+      hazards: [{ type: "radiation", where: "center", r: 9 }, { type: "radiation", where: "ring", r: 4 }], tribes: [["Masked Pilgrims", "Cult shrine"], ["Rim Scavengers", "Scavenger outpost"]], relics: 1, relicCenter: true,
+      features: ["Radiation rings around a blast crater", "The richest ore sits in the hot centre", "Spawns on the safe outer rim"], struggles: ["templars"] },
+    { id: "forthollow", name: "Fort Hollow", duo: "militia", biome: "city", alt: "highlands", shape: "fortress", size: "Medium", players: 4, seed: 6631, roads: true,
+      tagline: "The war ended. The trenches didn't.", res: { food: 1, water: 2, wood: 1, stone: 2, metal: 2, scrap: 3, rare: 1 },
+      hazards: [{ type: "mines", where: "random", r: 4 }, { type: "mines", where: "random", r: 4 }], tribes: [["Deserters' Bunker", "Raider den"], ["Checkpoint 4", "Trader post"]], relics: 1, relicCenter: true,
+      features: ["Ridgelines split the map into quadrants with chokepoints at the centre", "Bunkers and old fortifications", "Siege-heavy, defender-friendly"], struggles: ["pack", "bloodveil"] },
+    { id: "reliquary", name: "Reliquary Peaks", duo: "templars", biome: "highlands", alt: "forest", shape: "peaks", size: "Large", players: 4, seed: 7741,
+      tagline: "Every summit hides a saint.", res: { food: 1, water: 2, wood: 2, stone: 3, metal: 2, scrap: 0, rare: 1 },
+      hazards: [{ type: "rockslide", where: "random", r: 4 }], tribes: [["Brothers of the Bell", "Walled hamlet"], ["High Herders", "Campfire band"]], relics: 4,
+      features: ["Mountain passes and high monasteries", "Four relic sites — more than any other map", "Stone everywhere, scrap nowhere"], struggles: ["nomads", "droids"] },
+    { id: "mirewood", name: "Mirewood", duo: "bloodveil", biome: "mire", alt: "forest", shape: "mire", size: "Medium", players: 4, seed: 8849,
+      tagline: "The water keeps what it takes.", res: { food: 2, water: 3, wood: 2, stone: 0, metal: 0, scrap: 1, rare: 1 },
+      hazards: [{ type: "mud", where: "random", r: 6 }, { type: "mud", where: "random", r: 5 }], tribes: [["Stilt Village", "Walled hamlet"], ["The Hermit", "Cult shrine"]], relics: 2,
+      features: ["Black water channels and drowned trees", "Herbs and fish, almost no stone or metal", "Hidden ritual stones"], struggles: ["militia", "ashen", "droids"] },
+    { id: "bonefields", name: "Bonefields", duo: "pack", biome: "savannah", alt: "desert", shape: "open", size: "Large", players: 6, seed: 9953,
+      tagline: "Everything here hunts something.", res: { food: 3, water: 1, wood: 1, stone: 1, metal: 1, scrap: 1, rare: 0 },
+      hazards: [{ type: "predators", where: "random", r: 7 }, { type: "predators", where: "random", r: 6 }], tribes: [["Bone Pickers", "Campfire band"], ["Long Horn Clan", "Campfire band"]], relics: 1,
+      features: ["Wide open grassland — no cover, no chokepoints", "Huge herds of wild animals (free troops for the Pack)", "Water is the bottleneck"], struggles: ["scientists", "droids"] },
+    { id: "cinder", name: "Cinder City", duo: "ashen", biome: "cinder", alt: "city", shape: "citygrid", size: "Medium", players: 4, seed: 10061, roads: true,
+      tagline: "Everything burns beautifully.", res: { food: 0, water: 1, wood: 1, stone: 2, metal: 2, scrap: 3, rare: 1 },
+      hazards: [{ type: "fire", where: "random", r: 5 }, { type: "fire", where: "random", r: 4 }], tribes: [["The Pens", "Raider den"], ["Ash Market", "NPC town"]], relics: 1,
+      features: ["A smouldering street grid — fire spreads block to block", "Coal seams and endless scrap", "Slave camps to raid or trade with"], struggles: ["hunters", "pack"] },
+    { id: "dustline", name: "The Dustline", duo: "nomads", biome: "desert", alt: "ash", shape: "dunes", size: "Giant", players: 8, seed: 11171, roads: true,
+      tagline: "The road is the kingdom.", res: { food: 1, water: 0, wood: 0, stone: 1, metal: 2, scrap: 2, rare: 1 },
+      hazards: [{ type: "sandstorm", where: "random", r: 9 }], tribes: [["Oasis Keepers", "NPC town"], ["Road Jackals", "Raider den"]], relics: 1,
+      features: ["Vast dunes, salt flats and long roads", "Water only at a few oases — expand or relocate", "Best map for multiple Town Centres"], struggles: ["mutants", "bloodveil"] },
+    { id: "gridzero", name: "Grid Zero", duo: "droids", biome: "grid", alt: "desert", shape: "grid", size: "Medium", players: 4, seed: 12281,
+      tagline: "WE REMEMBER THIS PLACE.", res: { food: 0, water: 1, wood: 0, stone: 1, metal: 2, scrap: 2, rare: 3 },
+      hazards: [{ type: "electric", where: "random", r: 6 }, { type: "electric", where: "random", r: 5 }], tribes: [["Children of the Hum", "Cult shrine"], ["Copper Strippers", "Scavenger outpost"]], relics: 2,
+      features: ["A lattice of dead server farms and relay pylons", "Electronics and rare components everywhere, no food", "Electrical storms"], struggles: ["pack", "hunters", "mutants"] }
+  ],
+  terrain: {
+    survivors: { home: "Ash Plains: +10% trade-cart speed on roads", hostile: "None — forgiving anywhere" },
+    hunters: { home: "Dead Forest: +10% wood and hunting yield", hostile: "Dead Grid: −5% gathering (no natural resources)" },
+    scientists: { home: "Tech Ruins: +10% rare-component salvage", hostile: "Badlands Savannah: −5% research speed (no infrastructure)" },
+    mutants: { home: "Industrial Basin: immune to toxic runoff, +10% food from mutated growth", hostile: "Dustline Desert: +10% water upkeep" },
+    afflicted: { home: "Toxic Crater: immune to radiation-zone damage, +10% gathering in hazard zones", hostile: "Highlands: −5% movement (thin air, clogged filters)" },
+    militia: { home: "Ruined City: +10% wall and bunker HP", hostile: "Mire: heavy armour −10% movement" },
+    bloodveil: { home: "Mire: no swamp slowdown, +10% herbs", hostile: "Dustline Desert: −5% healing" },
+    templars: { home: "Highlands: relics +10% value, +5% morale", hostile: "Toxic Crater: −5% morale" },
+    pack: { home: "Badlands Savannah: +15% taming / breeding range", hostile: "Dead Grid: −5% morale (the hum unnerves the beasts)" },
+    ashen: { home: "Cinderlands: burning zones don't hurt Ashen units, +10% scrap from burned ruins", hostile: "Mire: −10% burn damage (wet ground)" },
+    nomads: { home: "Dustline Desert: +5% movement, oases +10% water", hostile: "Dead Forest: vehicles −10% speed between trees" },
+    droids: { home: "Dead Grid: +10% electronics, storms recharge chassis (suggestion)", hostile: "Mire: −10% movement (water and corrosion)" }
+  },
+  warlordTerrain: {
+    viktor: ["Road Warrior", "+5% movement for his army on roads."], ayla: ["Hold the Walls", "+5% defence for units standing near your own walls."],
+    brick: ["Stone Sense", "+10% stone and ore gathering in Highlands."], twig: ["Woodland Eyes", "+2 line of sight in Dead Forest."],
+    drsomething: ["Live Wire", "During electrical storms his Arc Troopers deal +5% damage."], mixy: ["Field Botanist", "+10% herbs gathered in Mire and Dead Forest."],
+    smash: ["Runoff Rage", "+5% attack in the Industrial Basin."], bash: ["Thick Hide", "−10% damage from hazard zones."],
+    afflicted1: ["Hot-Zone Forager", "+10% gathering inside radiation zones."], afflicted2: ["Carrier", "Disease spreads 10% further in Mire and Industrial Basin."],
+    militia1: ["Trench Line", "+5% ranged defence in Ruined City."], militia2: ["Quartermaster", "−5% unit upkeep inside your own territory."],
+    bloodveil1: ["Ambush", "+5% damage when attacking from forest or swamp cover."], bloodveil2: ["Blood Rites", "Conversions +5% faster near relics and ritual sites."],
+    templar1: ["High Ground", "+5% melee defence on elevated ground."], templar2: ["Pilgrim's March", "+5% movement in Highlands."],
+    pack1: ["Hunt Drive", "+5% attack speed against wild animals."], pack2: ["Beast Call", "+15% taming range in Badlands Savannah."],
+    blowtorch: ["Firestarter", "Fires spread 10% faster in Cinderlands and Ruined City."], vesper: ["Ruin Broker", "+10% value from neutral-tribe trades in Ruined City and Cinderlands."],
+    nomad1: ["Old Roads", "Oases and wells give +10% water."], nomad2: ["Dust Rider", "Vehicles +5% speed in Dustline Desert."],
+    hive: ["Grid Link", "+10% vision around relay pylons and Data Centres."]
+  },
+  formats: [
+    { id: "solo", name: "Solo", desc: "Control both Warlords of your duo as independent units. Offline capable.", rules: ["Pause / ×2 / ×3 / unlockable ×4", "AI opponents fill the other slots", "Save anywhere (suggestion)"] },
+    { id: "multiplayer", name: "Multiplayer", desc: "Individual colonies, one player each.", rules: ["Up to about 8–10 players", "No drop-in", "Disconnect → colony goes rogue (defensive NPC) after 30 minutes"] },
+    { id: "duos", name: "Duos", desc: "Two players share one colony. Each player is locked to one specific Warlord for the whole match.", rules: ["Shared stockpile and population (suggestion)", "Each player trains only their own Warlord's signature (suggestion)", "Pairs count as one slot"] }
+  ],
+  victories: [
+    { id: "regicide", name: "Regicide", desc: "Kill the opponent's Warlords to win — the default mode.", rules: ["A colony falls when both its Warlords die (suggestion)", "Droids fall when their Data Centres are destroyed"] },
+    { id: "control", name: "Map Control", desc: "Hold a percentage of the map's territory for a set time.", rules: ["Territory = line of sight + land claim", "Default target 60% for 10 minutes (suggestion)"] },
+    { id: "wonder", name: "Wonder / Economic", desc: "Build and defend a colony Wonder, or hit an economic target.", rules: ["Wonder needs late-age goods", "Defend it for 15 minutes (suggestion)"] },
+    { id: "relic", name: "Relic", desc: "Hold every relic on the map for a set time.", rules: ["Relics garrisoned in a shrine building (suggestion)", "Templars get double relic value"] },
+    { id: "survival", name: "Survival", desc: "Last as long as possible against escalating waves (suggestion: raiders, beasts, storms).", rules: ["Score by time survived", "Great for Solo and Duos"] },
+    { id: "conquest", name: "Last Colony Standing", desc: "Destroy every enemy colony entirely.", rules: ["Every building must fall", "Longest mode"] }
+  ],
+  lobby: {
+    size: ["Map default", "Small (2)", "Medium (4)", "Large (6)", "Giant (8)", "Huge — 4× Giant (10)"],
+    resources: ["Low", "Standard", "High", "Deathmatch"],
+    age: ["Scavenger", "Settler", "Industrial", "Reclaimer"],
+    speed: ["Normal", "×2", "×3", "×4 (unlocked)"],
+    pop: ["100", "200", "300", "400", "500"],
+    treaty: ["None", "15 min", "30 min", "60 min"],
+    fog: ["Fog of war", "Explored", "Line of sight only", "All visible"],
+    ai: ["Scavenger (easy)", "Survivor (moderate)", "Warlord (hard)", "Eden-Born (brutal)"],
+    mixing: ["Allowed", "Natural Duos only"],
+    colours: ["Blue", "Red", "Green", "Yellow", "Cyan", "Purple", "Grey", "Orange"],
+    colourHex: { Blue: "#4f8fd8", Red: "#d0463a", Green: "#5fae4a", Yellow: "#e0c041", Cyan: "#3fc5c9", Purple: "#9b62c4", Grey: "#a0a0a0", Orange: "#e2853a" }
+  },
+  settlements: [
+    { name: "Campfire band", size: "2–5 people", desc: "A fire, a lean-to and a few wanderers. Easy to trade with — or to take.", options: "Trade · ignore · recruit · enslave · destroy" },
+    { name: "Scavenger outpost", size: "6–12 people, scrap walls", desc: "Salvagers camped on a ruin. They sell scrap and rare finds.", options: "Trade scrap · hire guides (suggestion) · raid" },
+    { name: "Walled hamlet", size: "12–25 people, palisade", desc: "A small farming or milling settlement that defends itself.", options: "Treaty · trade food · tribute · siege" },
+    { name: "Trader post", size: "Merchants + guards", desc: "Links to the off-map market. Prices follow supply and demand.", options: "Trade · escort caravans · tax (suggestion)" },
+    { name: "Cult shrine", size: "8–15 zealots", desc: "Worshippers of something — the hum, the crater, the old saints. Often guards a relic.", options: "Convert (Bloodveil) · bargain · purge" },
+    { name: "Raider den", size: "10–20 fighters", desc: "Hostile by default. Raids weak colonies; can be bought off or wiped out.", options: "Pay off · hire as mercenaries (suggestion) · destroy" },
+    { name: "NPC town", size: "30+ people, walls, market", desc: "The largest neutral — a proper town with a market and militia. Never expands, but matters a lot.", options: "Ally · trade hub · conquer (hard) · Ashen: slave market" }
+  ],
+  reactions: [
+    "Survivors — trade bonus with every neutral (suggestion)",
+    "Ashen — can enslave whole camps; Ash Market towns welcome them",
+    "Bloodveil — can convert cult shrines and hamlets",
+    "The Pack — neutrals fear them: no trade, but raids pay double food (suggestion)",
+    "Templars — cult shrines either join them or turn hostile",
+    "Droids — neutrals refuse to trade unless a Signal Cult is present (suggestion)"
+  ],
+  relics: [
+    { name: "Saint's Bones", effect: "+10% morale and healing in your territory (Templars ×2)." },
+    { name: "Black Box", effect: "+10% research speed." },
+    { name: "Seed Vault Key", effect: "+10% farm yield." },
+    { name: "Reactor Heart", effect: "+10% electronics and energy-weapon damage." },
+    { name: "War Banner", effect: "+5% attack for units near your Warlords." },
+    { name: "Eden Map Fragment", effect: "Reveals part of the map; collecting several hints at Eden (lore hook)." }
+  ],
+  wildlife: [
+    "Ash Plains — feral dogs, crows",
+    "Dead Forest — wolves, boar, deer",
+    "Highlands — goats, mountain cats",
+    "Badlands Savannah — lions, hyenas, elephants, vultures",
+    "Mire — hippos, crocodiles, leeches",
+    "Dustline Desert — scorpions, coyotes",
+    "Industrial Basin / Toxic Crater — mutated rats and beasts",
+    "Cinderlands / Dead Grid / Tech Ruins — scavengers only"
+  ]
+};
+
+/* ==========================================================================
+   ROSTER — Duo colours + Warlord accents (from Warlords of Eden)
+   ========================================================================== */
+const EDEN_DUOS = [
+  { id: "survivors", name: "Survivors", color: "#8b9096", fx: "embers", warlords: [["viktor", "Viktor", "#5b8fd1"], ["ayla", "Ayla", "#9a6bb8"]] },
+  { id: "hunters", name: "The Hunters", color: "#a3a84e", fx: "ash", warlords: [["brick", "Brick", "#b8875a"], ["twig", "Twig", "#6faa45"]] },
+  { id: "scientists", name: "Scientists", color: "#3fd0c9", fx: "sparks", warlords: [["drsomething", "Dr. Something", "#4f9dff"], ["mixy", "Mixy", "#7fe3a4"]] },
+  { id: "mutants", name: "Mutants", color: "#9bc53d", fx: "spores", warlords: [["smash", "Smash", "#e2552f"], ["bash", "Bash", "#d9a23a"]] },
+  { id: "afflicted", name: "Afflicted", color: "#c2c43c", fx: "spores", warlords: [["afflicted1", "Afflicted I", "#a8e04a"], ["afflicted2", "Afflicted II", "#4fb39a"]] },
+  { id: "militia", name: "Militia", color: "#a4ae74", fx: "ash", warlords: [["militia1", "Militia Brother", "#7f94a6"], ["militia2", "Militia Sister", "#c9a24a"]] },
+  { id: "bloodveil", name: "Bloodveil", color: "#c42a42", fx: "drip", warlords: [["bloodveil1", "Brunette Sister", "#8e3a7c"], ["bloodveil2", "Redhead Sister", "#e8643a"]] },
+  { id: "templars", name: "Templars", color: "#d6b45e", fx: "ash", warlords: [["templar1", "Templar I", "#e2d9c3"], ["templar2", "Templar II", "#b8433a"]] },
+  { id: "pack", name: "The Pack", color: "#c58a45", fx: "dust", warlords: [["pack1", "Pack Cousin I", "#b0412e"], ["pack2", "Pack Cousin II", "#d8c08a"]] },
+  { id: "ashen", name: "Ashen", color: "#ff5a1f", fx: "embers", warlords: [["blowtorch", "Blowtorch", "#ffb02e"], ["vesper", "Vesper", "#9da3c2"]] },
+  { id: "nomads", name: "Nomads", color: "#d7a85e", fx: "dust", warlords: [["nomad1", "Nomad Mother", "#b8693a"], ["nomad2", "Nomad Son", "#3fbfae"]] },
+  { id: "droids", name: "Droids", color: "#4fb0ff", fx: "data", single: true, warlords: [["hive", "Droid 0001", "#bfeaff"]] }
+];
+const DUO = Object.fromEntries(EDEN_DUOS.map(d => [d.id, d]));
+const WARLORD = {};
+EDEN_DUOS.forEach(d => d.warlords.forEach(([id, name, accent]) => { WARLORD[id] = { id, name, accent, duo: d.id }; }));
+const SIGILS = {
+  survivors: '<circle cx="32" cy="32" r="27"/><path d="M32 13c6 9 12 14 12 23a12 12 0 0 1-24 0c0-6 3-10 6-15 2 4 3 6 6 8 0-6-2-10 0-16z"/>',
+  hunters: '<circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="4"/><path d="M32 4v16M32 44v16M4 32h16M44 32h16"/>',
+  scientists: '<ellipse cx="32" cy="32" rx="27" ry="10"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  mutants: '<circle cx="24" cy="32" r="16"/><circle cx="40" cy="32" r="16"/><path d="M32 19v26"/>',
+  afflicted: '<path d="M32 7c12 0 20 8 20 20 0 8-4 14-10 18v7H22v-7c-6-4-10-10-10-18C12 15 20 7 32 7z"/><circle cx="24" cy="27" r="5"/><circle cx="40" cy="27" r="5"/><circle cx="32" cy="45" r="4"/>',
+  militia: '<path d="M10 10h44"/><path d="M12 20l20 11 20-11M12 32l20 11 20-11M12 44l20 11 20-11"/>',
+  bloodveil: '<path d="M32 5C24 19 15 29 15 40a17 17 0 0 0 34 0C49 29 40 19 32 5z"/><path d="M24 41a8 8 0 0 0 8 8"/>',
+  templars: '<path d="M32 5v54M13 22h38"/><path d="M26 5h12M26 59h12M13 16v12M51 16v12"/>',
+  pack: '<path d="M13 9c10 14 12 30 8 47M30 5c8 16 8 34 2 54M47 9c6 14 6 30 0 47"/>',
+  ashen: '<path d="M32 4c10 14 18 20 18 34a18 18 0 0 1-36 0c0-10 6-14 8-22 4 6 6 8 8 10 2-8 0-14 2-22z"/><path d="M32 40c4 4 6 6 6 10a6 6 0 0 1-12 0c0-4 2-6 6-10z"/>',
+  nomads: '<circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="6"/><path d="M32 6v20M32 38v20M6 32h20M38 32h20M14 14l14 14M36 36l14 14M50 14L36 28M28 36L14 50"/>',
+  droids: '<path d="M32 4l24 14v28L32 60 8 46V18z"/><circle cx="32" cy="32" r="10"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  open: '<circle cx="32" cy="32" r="26" stroke-dasharray="6 6"/><path d="M24 25a8 8 0 1 1 12 7c-3 2-4 3-4 7"/><circle cx="32" cy="46" r="1.6" fill="currentColor"/>'
+};
+const sigil = id => `<svg class="sig" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${SIGILS[id] || SIGILS.open}</svg>`;
+const flag = (id, color) => `<svg class="flag" viewBox="0 0 38 44" aria-hidden="true" style="color:${color}"><path d="M8 5v37" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".22"/><path d="M11 8h16v5H11z" fill="currentColor" opacity=".7"/></svg>`;
+const crest = d => `<span class="crest" style="color:${d.color}">${sigil(d.id)}${flag(d.id, d.color)}</span>`;
+
+/* ==========================================================================
+   HELPERS + PERSISTENCE
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
+const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
+const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["arms", "Arms", "Arms of Eden.html"], ["resources", "Resources", "Resources of Eden.html"], ["maps", "Maps", "Maps of Eden.html"]];
+const LEVEL = ["Scarce", "Low", "Normal", "Rich"];
+const STORE_KEY = "mapsOfEden.v1";
+const state = { tab: "maps", editing: false, map: "ashfall" };
+let DATA = null, fileRev = "factory", reopen = null, quiet = false;
+const BIOME = id => DATA.biomes.find(b => b.id === id);
+const MAP = id => DATA.maps.find(m => m.id === id);
+function readBaked() { try { const t = $("#codex-baked").textContent.trim(); return t && t !== "null" ? JSON.parse(t) : null; } catch (e) { return null; } }
+function boot() {
+  const file = readBaked() || clone(DEFAULT_DATA);
+  fileRev = (file.meta && file.meta.dataRev) || "factory";
+  DATA = file;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.basedOn === fileRev && s.data) { DATA = s.data; return "Loaded your browser edits"; }
+      localStorage.setItem(STORE_KEY + ".archived", raw); localStorage.removeItem(STORE_KEY);
+      return "This file was updated — older browser edits archived";
+    }
+  } catch (e) {}
+  return "";
+}
+function persist(msg) { try { localStorage.setItem(STORE_KEY, JSON.stringify({ basedOn: fileRev, data: DATA })); } catch (e) {} if (msg) toast(msg); }
+async function saveHtml() {
+  const re = /(<script type="application\/json" id="codex-baked">)[\s\S]*?(<\/script>)/;
+  const now = new Date();
+  DATA.meta.dataRev = "save-" + now.toISOString(); DATA.meta.updated = now.toISOString().slice(0, 10); DATA.meta.pictures = IMG.snapshot();
+  const html = PRISTINE_HTML.replace(re, (m, a, b) => a + JSON.stringify(DATA).replace(/</g, "\\u003c") + b);
+  let done = false;
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({ suggestedName: "Maps of Eden.html", types: [{ description: "HTML page", accept: { "text/html": [".html"] } }] });
+      const w = await h.createWritable(); await w.write(html); await w.close(); done = true;
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (!done) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = "Maps of Eden.html"; a.click(); }
+  fileRev = DATA.meta.dataRev; persist(); SFX.play("save");
+  toast(done ? "Saved into the HTML file" : "Downloaded — replace the old HTML with it");
+}
+function exportData() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" })); a.download = "maps-of-eden-data.json"; a.click(); toast("Exported maps-of-eden-data.json"); }
+function importData(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d.maps || !d.biomes) throw 0; DATA = d; persist("Imported"); renderAll(); } catch (e) { toast("Import failed — not a Maps of Eden file"); } };
+  r.readAsText(file);
+}
+function resetData() {
+  if (!confirm("Discard this browser's edits and go back to the content saved in this HTML file?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  DATA = readBaked() || clone(DEFAULT_DATA); renderAll(); toast("Back to the file version");
+}
+function refresh() { quiet = true; renderAll(); if (reopen && $("#modal").classList.contains("open")) reopen(); quiet = false; }
+
+/* ==========================================================================
+   MAP GENERATOR — seeded, shape-driven, AoE-style spawns + resources
+   ========================================================================== */
+const SIZE_N = { Small: 40, Medium: 48, Large: 56, Giant: 64, Huge: 72 };
+function makeRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function valueNoise(R, N, cell) {
+  const g = Math.ceil(N / cell) + 3, pts = Array.from({ length: g * g }, () => R());
+  const sm = t => t * t * (3 - 2 * t);
+  return (x, y) => {
+    const fx = x / cell, fy = y / cell, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = sm(fx - x0), ty = sm(fy - y0);
+    const v = (i, j) => pts[j * g + i];
+    const a = v(x0, y0) + (v(x0 + 1, y0) - v(x0, y0)) * tx, b = v(x0, y0 + 1) + (v(x0 + 1, y0 + 1) - v(x0, y0 + 1)) * tx;
+    return a + (b - a) * ty;
+  };
+}
+function generateMap(m, seed) {
+  const N = SIZE_N[m.size] || 48, R = makeRng(seed), c = (N - 1) / 2;
+  const n1 = valueNoise(R, N, 10), n2 = valueNoise(R, N, 4), n3 = valueNoise(R, N, 7);
+  let wl = 0.27, hl = 0.74;
+  const S = m.shape, T = [];
+  if (S === "mire") wl = 0.33; if (S === "basin") wl = 0.2; if (S === "dunes") wl = 0.06; if (S === "peaks") hl = 0.64; if (S === "crater") wl = 0.17;
+  if (S === "citygrid" || S === "grid" || S === "open" || S === "crossroads") wl = 0.18;
+  for (let y = 0; y < N; y++) {
+    const row = [];
+    for (let x = 0; x < N; x++) {
+      const d = Math.hypot(x - c, y - c) / (N / 2);
+      let h = n1(x, y) * 0.68 + n2(x, y) * 0.32;
+      if (S === "crossroads") h = h * 0.55 + 0.24;
+      else if (S === "forestLanes") h = h * 0.75 + 0.14;
+      else if (S === "plateau") h = h * 0.5 + 0.22 + (d < 0.34 ? 0.3 : d < 0.42 ? 0.15 : 0);
+      else if (S === "basin") h = h * 0.5 + 0.12 + Math.min(0.45, d * 0.45);
+      else if (S === "crater") h = 0.3 + 0.36 * Math.exp(-((d - 0.52) ** 2) / 0.012) - Math.max(0, 0.42 - d) * 0.5 + n2(x, y) * 0.14;
+      else if (S === "fortress") { h = h * 0.45 + 0.28; const ridge = Math.min(Math.abs(x - y), Math.abs(x + y - (N - 1))); if (ridge < 1.7 && d > 0.2 && d < 1.05) h = 0.85; }
+      else if (S === "peaks") h = h * 1.25 - 0.06;
+      else if (S === "mire") h = h * 0.55 + 0.1;
+      else if (S === "open") h = h * 0.35 + 0.32;
+      else if (S === "citygrid" || S === "grid") h = h * 0.25 + 0.38;
+      else if (S === "dunes") h = 0.32 + 0.12 * Math.sin(x * 0.5 + y * 0.18 + n2(x, y) * 4) + n1(x, y) * 0.22;
+      const mix = n3(x, y);
+      let t = h < wl ? "water" : h > hl ? "high" : mix > 0.62 ? "alt" : "land";
+      row.push({ x, y, h: Math.max(0, Math.min(1, h)), t, deco: null, res: null, mark: null });
+    }
+    T.push(row);
+  }
+  const at = (x, y) => (x >= 0 && y >= 0 && x < N && y < N ? T[y][x] : null);
+  const near = (x, y, r, fn) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) { if (i * i + j * j > r * r) continue; const tl = at(Math.round(x) + i, Math.round(y) + j); if (tl) fn(tl); } };
+  /* spawns */
+  const P = Math.max(2, Math.min(10, m.players || 4)), spawns = [];
+  const start = S === "fortress" ? 0 : (P === 2 ? Math.PI / 4 : -Math.PI / 2 + Math.PI / P);
+  for (let i = 0; i < P; i++) {
+    const a = start + i * Math.PI * 2 / P, r = N * (S === "crater" ? 0.4 : 0.35);
+    const sx = Math.round(c + Math.cos(a) * r), sy = Math.round(c + Math.sin(a) * r);
+    spawns.push({ x: sx, y: sy, i });
+    const base = Math.max(wl + 0.06, Math.min(hl - 0.08, at(sx, sy).h));
+    near(sx, sy, 4, tl => { tl.h = base + (tl.h - base) * 0.15; tl.t = "land"; tl.deco = null; });
+  }
+  const farFromSpawns = (x, y, dmin) => spawns.every(s => Math.hypot(s.x - x, s.y - y) >= dmin);
+  /* roads */
+  const road = (x0, y0, x1, y1) => {
+    const steps = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
+    for (let k = 0; k <= steps; k++) { const tl = at(Math.round(x0 + (x1 - x0) * k / steps), Math.round(y0 + (y1 - y0) * k / steps)); if (tl && tl.t !== "high") { tl.t = "road"; tl.deco = null; } }
+  };
+  if (m.roads) spawns.forEach(s => road(s.x, s.y, c, c));
+  if (S === "crossroads") { road(0, c, N - 1, c); road(c, 0, c, N - 1); }
+  if (S === "citygrid" || S === "grid") for (let k = 3; k < N; k += 7) { road(k, 0, k, N - 1); road(0, k, N - 1, k); }
+  /* decorations */
+  const DECO = {
+    ash: [["ruin", 0.04], ["deadtree", 0.06], ["rock", 0.04]], forest: [["tree", 0.5], ["rock", 0.03]], tech: [["ruin", 0.12], ["pylon", 0.03], ["rock", 0.02]],
+    industrial: [["vat", 0.05], ["ruin", 0.06], ["growth", 0.08]], crater: [["rock", 0.08], ["sign", 0.01]], city: [["ruin", 0.18], ["rock", 0.02]],
+    mire: [["willow", 0.18], ["reed", 0.18]], highlands: [["pine", 0.12], ["rock", 0.12]], savannah: [["bones", 0.04], ["acacia", 0.04], ["grass", 0.1]],
+    cinder: [["burnt", 0.16], ["ember", 0.04]], desert: [["cactus", 0.03], ["rock", 0.04], ["wreck", 0.01]], grid: [["server", 0.16], ["pylon", 0.03]]
+  };
+  const lanes = (x, y) => spawns.some(s => { const vx = c - s.x, vy = c - s.y, L = Math.hypot(vx, vy) || 1, t = Math.max(0, Math.min(1, ((x - s.x) * vx + (y - s.y) * vy) / (L * L))); return Math.hypot(s.x + vx * t - x, s.y + vy * t - y) < 2.4; });
+  T.flat().forEach(tl => {
+    if (tl.t === "water" || tl.t === "road" || !farFromSpawns(tl.x, tl.y, 4)) return;
+    const b = tl.t === "alt" ? m.alt : m.biome;
+    let list = DECO[b] || [];
+    if (tl.t === "high") list = [["rock", 0.18], ["pine", b === "forest" || b === "highlands" ? 0.1 : 0]];
+    if (S === "forestLanes" && tl.t !== "high") list = lanes(tl.x, tl.y) ? [["rock", 0.03]] : [["tree", 0.78]];
+    if ((S === "citygrid" || S === "grid") && tl.t !== "high") list = list.map(([k, p]) => [k, p * 2.6]);
+    let r = R();
+    for (const [k, p] of list) { if (r < p) { tl.deco = k; break; } r -= p; }
+  });
+  /* resources */
+  const resList = DATA.resources;
+  const place = (id, cx, cy, n) => {
+    let placed = 0;
+    for (let tries = 0; tries < 40 && placed < n; tries++) {
+      const tl = at(Math.round(cx + (R() - 0.5) * 4), Math.round(cy + (R() - 0.5) * 4));
+      if (!tl || tl.res || tl.t === "high" || tl.t === "road" || tl.mark) continue;
+      if (id === "water") { tl.t = "water"; tl.h = wl - 0.02; } else if (tl.t === "water") continue;
+      tl.res = id; tl.deco = id === "wood" ? "tree" : null; placed++;
+    }
+  };
+  spawns.forEach(s => {
+    ["food", "wood", "stone", "scrap", "water"].forEach((id, k) => {
+      if (id === "wood" && m.res.wood === 0) return;
+      if (id === "water" && m.res.water > 1) return;
+      const a = (k / 5) * Math.PI * 2 + R(), r = 5.5 + R() * 1.5;
+      place(id, s.x + Math.cos(a) * r, s.y + Math.sin(a) * r, id === "water" ? 3 : 4);
+    });
+  });
+  resList.forEach(rs => {
+    const lvl = m.res[rs.id] || 0, count = Math.round((lvl + (lvl ? 0.5 : 0)) * N / 16);
+    for (let k = 0; k < count; k++) {
+      let x, y, tries = 0;
+      const central = (S === "crater" && (rs.id === "metal" || rs.id === "rare")) || ((S === "plateau" || S === "grid") && rs.id === "rare") || (S === "basin" && rs.id === "food");
+      do {
+        if (central) { const a = R() * 6.283, r = R() * N * (S === "basin" ? 0.32 : 0.2); x = c + Math.cos(a) * r; y = c + Math.sin(a) * r; }
+        else { x = R() * (N - 4) + 2; y = R() * (N - 4) + 2; }
+        tries++;
+      } while (tries < 30 && !farFromSpawns(x, y, 9));
+      place(rs.id, x, y, 3 + Math.floor(R() * 3));
+    }
+  });
+  /* neutrals + relics */
+  const spot = (minSpawn, minOthers, others, centre) => {
+    for (let tries = 0; tries < 200; tries++) {
+      const x = centre && tries < 20 ? c + (R() - 0.5) * 3 : R() * (N - 6) + 3, y = centre && tries < 20 ? c + (R() - 0.5) * 3 : R() * (N - 6) + 3;
+      const tl = at(Math.round(x), Math.round(y));
+      if (!tl || tl.t === "water" || tl.t === "high") continue;
+      if (!farFromSpawns(x, y, minSpawn) || others.some(o => Math.hypot(o.x - x, o.y - y) < minOthers)) continue;
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+    return { x: Math.round(c), y: Math.round(c) };
+  };
+  const tribes = [], relics = [];
+  (m.tribes || []).forEach(([name, type]) => { const p = spot(11, 9, tribes); near(p.x, p.y, 2, tl => { tl.deco = null; tl.res = null; if (tl.t === "water") tl.t = "land"; }); at(p.x, p.y).mark = "tribe"; tribes.push(Object.assign(p, { name, type })); });
+  for (let k = 0; k < (m.relics || 0); k++) { const p = spot(9, 6, relics.concat(tribes), m.relicCenter && k === 0); at(p.x, p.y).deco = null; at(p.x, p.y).mark = "relic"; relics.push(p); }
+  /* hazards */
+  const hazards = (m.hazards || []).map(hz => {
+    if (hz.where === "center") return { type: hz.type, x: c, y: c, r: hz.r };
+    if (hz.where === "ring") return { type: hz.type, x: c, y: c, r: N * 0.3, ring: hz.r };
+    const p = spot(9, 6, []); return { type: hz.type, x: p.x, y: p.y, r: hz.r };
+  });
+  return { N, T, wl, hl, spawns, tribes, relics, hazards, m, seed };
+}
+
+/* ==========================================================================
+   ISOMETRIC RENDERER — AoE readability, Diablo light, Endzone scrap
+   ========================================================================== */
+const HAZ = { radiation: "#a8e04a", toxic: "#9bc53d", fire: "#ff6a2a", electric: "#4fb0ff", mines: "#d4553f", sandstorm: "#e0c08a", mud: "#7a6440", predators: "#c58a45", rockslide: "#b0a898", ash: "#bdb5a6" };
+const HAZ_NAME = { radiation: "Radiation", toxic: "Toxic runoff", fire: "Burning blocks", electric: "Electrical storm", mines: "Old minefield", sandstorm: "Sandstorm", mud: "Sinking mud", predators: "Predator ground", rockslide: "Rockslides", ash: "Ash storms" };
+const hex2rgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const rgb = (c, k, j) => `rgb(${c.map(v => Math.max(0, Math.min(255, Math.round(v * k + j)))).join(",")})`;
+function renderMap(g, opts) {
+  const o = Object.assign({ tw: 28, deco: true, thumb: false }, opts || {});
+  const TW = o.tw, TH = TW / 2, EH = TW * 1.05, N = g.N;
+  const W = N * TW + TW * 2, H = N * TH + EH + TW * 2;
+  const ox = W / 2, oy = TW + EH * 0.9;
+  const pal = BIOME(g.m.biome).pal.map(hex2rgb), alt = BIOME(g.m.alt).pal.map(hex2rgb);
+  const toxicWater = ["industrial", "crater"].includes(g.m.biome);
+  const hp = tl => (Math.max(tl.h, g.wl) - g.wl) * EH * (tl.t === "high" ? 1.25 : 1);
+  const iso = (x, y, e) => [ox + (x - y) * TW / 2, oy + (x + y) * TH / 2 - e];
+  const layers = {};
+  const mk = () => { const cv = document.createElement("canvas"); cv.width = W; cv.height = H; return cv; };
+  const base = mk(), bx = base.getContext("2d");
+  const R = makeRng(g.seed * 7 + 3);
+  bx.fillStyle = "#0b0908"; bx.fillRect(0, 0, W, H);
+  for (let s = 0; s <= 2 * N - 2; s++) {
+    for (let x = Math.max(0, s - N + 1); x <= Math.min(s, N - 1); x++) {
+      const y = s - x, tl = g.T[y][x], e = hp(tl), [sx, sy] = iso(x, y, e);
+      const p = tl.t === "alt" ? alt : pal;
+      let col = tl.t === "water" ? (toxicWater ? hex2rgb(BIOME(g.m.biome).pal[3]) : p[3]) : tl.t === "road" ? p[4] : tl.t === "high" ? p[2] : p[tl.t === "alt" ? 0 : (R() < 0.5 ? 0 : 1)];
+      const light = 0.78 + tl.h * 0.42 + (R() - 0.5) * 0.06;
+      bx.beginPath(); bx.moveTo(sx, sy - TH / 2); bx.lineTo(sx + TW / 2, sy); bx.lineTo(sx, sy + TH / 2); bx.lineTo(sx - TW / 2, sy); bx.closePath();
+      bx.fillStyle = rgb(col, light, 0); bx.fill();
+      if (!o.thumb && TW > 10) { bx.strokeStyle = "rgba(0,0,0,.12)"; bx.lineWidth = 1; bx.stroke(); }
+      const right = x + 1 < N ? hp(g.T[y][x + 1]) : -8, left = y + 1 < N ? hp(g.T[y + 1][x]) : -8;
+      if (e > right) { const dh = e - right; bx.beginPath(); bx.moveTo(sx + TW / 2, sy); bx.lineTo(sx, sy + TH / 2); bx.lineTo(sx, sy + TH / 2 + dh); bx.lineTo(sx + TW / 2, sy + dh); bx.closePath(); bx.fillStyle = rgb(col, light * 0.55, 0); bx.fill(); }
+      if (e > left) { const dh = e - left; bx.beginPath(); bx.moveTo(sx - TW / 2, sy); bx.lineTo(sx, sy + TH / 2); bx.lineTo(sx, sy + TH / 2 + dh); bx.lineTo(sx - TW / 2, sy + dh); bx.closePath(); bx.fillStyle = rgb(col, light * 0.42, 0); bx.fill(); }
+      if (tl.t === "water" && !o.thumb && R() < 0.25) { bx.strokeStyle = toxicWater ? "rgba(190,240,90,.35)" : "rgba(200,230,240,.18)"; bx.beginPath(); bx.moveTo(sx - TW * 0.2, sy); bx.lineTo(sx + TW * 0.15, sy); bx.stroke(); }
+      if (o.deco && tl.deco) drawDeco(bx, tl.deco, sx, sy, TW, R, tl.t === "alt" ? alt : pal);
+    }
+  }
+  layers.base = base;
+  if (o.thumb) { drawSpawns(bx, g, iso, hp, TW, true); return base; }
+  /* resources */
+  const rl = mk(), rx = rl.getContext("2d");
+  g.T.flat().filter(t => t.res).forEach(tl => {
+    const rs = DATA.resources.find(r => r.id === tl.res), [sx, sy] = iso(tl.x, tl.y, hp(tl));
+    if (tl.res === "wood") return;
+    const grd = rx.createRadialGradient(sx, sy - 3, 1, sx, sy - 3, TW * 0.32);
+    grd.addColorStop(0, "#fff"); grd.addColorStop(0.35, rs.color); grd.addColorStop(1, "rgba(0,0,0,.6)");
+    rx.fillStyle = grd; rx.beginPath(); rx.ellipse(sx, sy - 3, TW * 0.26, TW * 0.18, 0, 0, 6.283); rx.fill();
+  });
+  layers.resources = rl;
+  /* labels for resource clusters */
+  const ll = mk(), lx = ll.getContext("2d"); lx.font = `600 ${Math.round(TW * 0.36)}px Oswald, sans-serif`; lx.textAlign = "center";
+  const seen = [];
+  g.T.flat().filter(t => t.res).forEach(tl => {
+    if (seen.some(s => s.res === tl.res && Math.hypot(s.x - tl.x, s.y - tl.y) < 4)) return;
+    seen.push(tl);
+    const rs = DATA.resources.find(r => r.id === tl.res), [sx, sy] = iso(tl.x, tl.y, hp(tl));
+    lx.fillStyle = "rgba(10,8,6,.75)"; lx.fillRect(sx - TW * 0.42, sy - TW * 0.95, TW * 0.84, TW * 0.46);
+    lx.strokeStyle = rs.color; lx.strokeRect(sx - TW * 0.42, sy - TW * 0.95, TW * 0.84, TW * 0.46);
+    lx.fillStyle = "#f3eee2"; lx.fillText(rs.code, sx, sy - TW * 0.6);
+  });
+  layers.labels = ll;
+  /* hazards */
+  const hl = mk(), hx = hl.getContext("2d");
+  g.hazards.forEach(z => {
+    const [sx, sy] = iso(z.x, z.y, EH * 0.2), col = HAZ[z.type] || "#fff";
+    const rr = z.r * TW * 0.72;
+    hx.save(); hx.translate(sx, sy); hx.scale(1, 0.5);
+    if (z.ring) { hx.strokeStyle = col; hx.globalAlpha = 0.5; hx.lineWidth = z.ring * TW * 0.5; hx.setLineDash([TW * 0.6, TW * 0.4]); hx.beginPath(); hx.arc(0, 0, rr, 0, 6.283); hx.stroke(); }
+    else { const grd = hx.createRadialGradient(0, 0, 0, 0, 0, rr); grd.addColorStop(0, col + "88"); grd.addColorStop(0.6, col + "33"); grd.addColorStop(1, col + "00"); hx.fillStyle = grd; hx.beginPath(); hx.arc(0, 0, rr, 0, 6.283); hx.fill(); }
+    hx.restore();
+    hx.font = `600 ${Math.round(TW * 0.4)}px Oswald, sans-serif`; hx.textAlign = "center"; hx.fillStyle = col; hx.globalAlpha = 0.95;
+    hx.fillText(`⚠ ${HAZ_NAME[z.type] || z.type}`, sx, sy - (z.ring ? rr * 0.5 : TW * 0.6)); hx.globalAlpha = 1;
+  });
+  layers.hazards = hl;
+  /* neutrals + relics */
+  const nl = mk(), nx = nl.getContext("2d");
+  g.tribes.forEach(t => {
+    const tl = g.T[t.y][t.x], [sx, sy] = iso(t.x, t.y, hp(tl));
+    nx.strokeStyle = "#c9b88f"; nx.lineWidth = 2; nx.setLineDash([3, 3]); nx.beginPath(); nx.ellipse(sx, sy, TW * 1.6, TW * 0.8, 0, 0, 6.283); nx.stroke(); nx.setLineDash([]);
+    [[-0.6, 0], [0.5, -0.2], [0, 0.35]].forEach(([dx, dy]) => { const px = sx + dx * TW, py = sy + dy * TW; nx.fillStyle = "#8a6a45"; nx.beginPath(); nx.moveTo(px, py - TW * 0.55); nx.lineTo(px + TW * 0.35, py); nx.lineTo(px - TW * 0.35, py); nx.closePath(); nx.fill(); nx.strokeStyle = "#2a2018"; nx.lineWidth = 1; nx.stroke(); });
+    nx.fillStyle = "rgba(255,150,60,.85)"; nx.beginPath(); nx.arc(sx, sy + 2, 2.5, 0, 6.283); nx.fill();
+    label(nx, `${t.name} · ${t.type}`, sx, sy - TW * 1.05, TW, "#e8d7aa");
+  });
+  g.relics.forEach(p => {
+    const tl = g.T[p.y][p.x], [sx, sy] = iso(p.x, p.y, hp(tl));
+    const grd = nx.createRadialGradient(sx, sy - 6, 1, sx, sy - 6, TW); grd.addColorStop(0, "rgba(255,225,140,.9)"); grd.addColorStop(1, "rgba(255,200,80,0)");
+    nx.fillStyle = grd; nx.beginPath(); nx.arc(sx, sy - 6, TW, 0, 6.283); nx.fill();
+    nx.fillStyle = "#ffe08a"; nx.beginPath(); nx.moveTo(sx, sy - TW * 0.75); nx.lineTo(sx + TW * 0.22, sy - TW * 0.35); nx.lineTo(sx, sy); nx.lineTo(sx - TW * 0.22, sy - TW * 0.35); nx.closePath(); nx.fill();
+    label(nx, "Relic", sx, sy - TW * 0.95, TW, "#ffe08a");
+  });
+  layers.neutrals = nl;
+  /* spawns */
+  const sl = mk(), sx2 = sl.getContext("2d"); drawSpawns(sx2, g, iso, hp, TW, false); layers.spawns = sl;
+  /* atmosphere */
+  const al = mk(), ax = al.getContext("2d");
+  const vg = ax.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.62);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(5,3,2,.78)"); ax.fillStyle = vg; ax.fillRect(0, 0, W, H);
+  const lg = ax.createLinearGradient(0, 0, 0, H); lg.addColorStop(0, "rgba(255,190,120,.07)"); lg.addColorStop(1, "rgba(0,0,0,.18)"); ax.fillStyle = lg; ax.fillRect(0, 0, W, H);
+  for (let k = 0; k < N * 6; k++) { ax.fillStyle = `rgba(220,210,190,${R() * 0.12})`; ax.fillRect(R() * W, R() * H, 1.5, 1.5); }
+  layers.atmos = al;
+  return Object.assign(layers, { W, H });
+}
+function label(cx, text, x, y, TW, color) {
+  cx.font = `500 ${Math.max(10, Math.round(TW * 0.4))}px Oswald, sans-serif`; cx.textAlign = "center";
+  const w = cx.measureText(text).width + 10;
+  cx.fillStyle = "rgba(10,8,6,.78)"; cx.fillRect(x - w / 2, y - TW * 0.42, w, TW * 0.52);
+  cx.fillStyle = color; cx.fillText(text, x, y);
+}
+function drawSpawns(cx, g, iso, hp, TW, thumb) {
+  const cols = DATA.lobby.colourHex, names = DATA.lobby.colours;
+  g.spawns.forEach((s, i) => {
+    const tl = g.T[s.y][s.x], [x, y] = iso(s.x, s.y, hp(tl)), col = cols[names[i % names.length]];
+    if (thumb) { cx.fillStyle = col; cx.beginPath(); cx.arc(x, y, Math.max(3, TW * 1.2), 0, 6.283); cx.fill(); cx.strokeStyle = "#fff"; cx.lineWidth = 1; cx.stroke(); return; }
+    cx.save(); cx.translate(x, y); cx.scale(1, 0.5); cx.strokeStyle = col; cx.globalAlpha = 0.6; cx.lineWidth = 3; cx.beginPath(); cx.arc(0, 0, TW * 3.2, 0, 6.283); cx.stroke(); cx.restore(); cx.globalAlpha = 1;
+    const s2 = TW * 0.9;
+    cx.fillStyle = "#4a4038"; cx.beginPath(); cx.moveTo(x - s2, y); cx.lineTo(x, y + s2 / 2); cx.lineTo(x, y + s2 / 2 - s2 * 0.9); cx.lineTo(x - s2, y - s2 * 0.9); cx.closePath(); cx.fill();
+    cx.fillStyle = "#3a322b"; cx.beginPath(); cx.moveTo(x + s2, y); cx.lineTo(x, y + s2 / 2); cx.lineTo(x, y + s2 / 2 - s2 * 0.9); cx.lineTo(x + s2, y - s2 * 0.9); cx.closePath(); cx.fill();
+    cx.fillStyle = "#6a5c4e"; cx.beginPath(); cx.moveTo(x, y - s2 * 0.9 - s2 / 2); cx.lineTo(x + s2, y - s2 * 0.9); cx.lineTo(x, y - s2 * 0.9 + s2 / 2); cx.lineTo(x - s2, y - s2 * 0.9); cx.closePath(); cx.fill();
+    cx.strokeStyle = "#ddd"; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(x, y - s2 * 0.9); cx.lineTo(x, y - s2 * 2.6); cx.stroke();
+    cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, y - s2 * 2.6); cx.lineTo(x + s2 * 0.9, y - s2 * 2.35); cx.lineTo(x, y - s2 * 2.1); cx.closePath(); cx.fill();
+    label(cx, `P${i + 1} · Town Centre`, x, y - s2 * 2.9, TW, col);
+  });
+}
+function drawDeco(cx, k, x, y, TW, R, pal) {
+  const s = TW * (0.75 + R() * 0.35), dark = "#1d1915";
+  cx.lineCap = "round";
+  if (k === "tree" || k === "pine") { cx.fillStyle = dark; cx.fillRect(x - 1, y - s * 0.35, 2, s * 0.35); cx.fillStyle = k === "pine" ? "#2f3d2b" : "#3a3f2a"; cx.beginPath(); cx.moveTo(x, y - s * 1.25); cx.lineTo(x + s * 0.34, y - s * 0.3); cx.lineTo(x - s * 0.34, y - s * 0.3); cx.closePath(); cx.fill(); cx.fillStyle = "rgba(255,255,255,.06)"; cx.beginPath(); cx.moveTo(x, y - s * 1.25); cx.lineTo(x + s * 0.34, y - s * 0.3); cx.lineTo(x, y - s * 0.4); cx.closePath(); cx.fill(); }
+  else if (k === "deadtree" || k === "acacia") { cx.strokeStyle = k === "acacia" ? "#4a3a26" : "#2a241e"; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - s); cx.moveTo(x, y - s * 0.6); cx.lineTo(x + s * 0.3, y - s * 0.9); cx.moveTo(x, y - s * 0.75); cx.lineTo(x - s * 0.28, y - s * 1.05); cx.stroke(); if (k === "acacia") { cx.fillStyle = "#4f5a2e"; cx.beginPath(); cx.ellipse(x, y - s, s * 0.5, s * 0.15, 0, 0, 6.283); cx.fill(); } }
+  else if (k === "willow") { cx.fillStyle = "#2e3828"; cx.beginPath(); cx.ellipse(x, y - s * 0.75, s * 0.42, s * 0.4, 0, 0, 6.283); cx.fill(); cx.strokeStyle = "#3d4a33"; cx.lineWidth = 1; for (let i = -2; i <= 2; i++) { cx.beginPath(); cx.moveTo(x + i * s * 0.15, y - s * 0.7); cx.lineTo(x + i * s * 0.17, y - s * 0.1); cx.stroke(); } }
+  else if (k === "reed" || k === "grass") { cx.strokeStyle = k === "reed" ? "#55603f" : "#a08c5a"; cx.lineWidth = 1; for (let i = -2; i <= 2; i++) { cx.beginPath(); cx.moveTo(x + i * 2, y); cx.lineTo(x + i * 2.6, y - s * (k === "reed" ? 0.5 : 0.25)); cx.stroke(); } }
+  else if (k === "rock") { cx.fillStyle = "#6e6a62"; cx.beginPath(); cx.ellipse(x, y - 2, s * 0.28, s * 0.17, 0, 0, 6.283); cx.fill(); cx.fillStyle = "rgba(255,255,255,.1)"; cx.beginPath(); cx.ellipse(x - 2, y - 4, s * 0.12, s * 0.07, 0, 0, 6.283); cx.fill(); }
+  else if (k === "ruin" || k === "burnt" || k === "server") {
+    const hgt = s * (0.6 + R() * (k === "server" ? 0.5 : 1.1)), w = TW * 0.42;
+    const top = k === "server" ? "#3a414b" : k === "burnt" ? "#2a2321" : "#6a655f", l = k === "server" ? "#262b32" : k === "burnt" ? "#1c1716" : "#4b4743", r = k === "server" ? "#1d2127" : k === "burnt" ? "#141110" : "#3b3835";
+    cx.fillStyle = l; cx.beginPath(); cx.moveTo(x - w, y); cx.lineTo(x, y + w / 2); cx.lineTo(x, y + w / 2 - hgt); cx.lineTo(x - w, y - hgt); cx.closePath(); cx.fill();
+    cx.fillStyle = r; cx.beginPath(); cx.moveTo(x + w, y); cx.lineTo(x, y + w / 2); cx.lineTo(x, y + w / 2 - hgt); cx.lineTo(x + w, y - hgt * (k === "ruin" ? 0.7 : 1)); cx.closePath(); cx.fill();
+    cx.fillStyle = top; cx.beginPath(); cx.moveTo(x, y - hgt - w / 2); cx.lineTo(x + w, y - hgt * (k === "ruin" ? 0.7 : 1)); cx.lineTo(x, y - hgt + w / 2); cx.lineTo(x - w, y - hgt); cx.closePath(); cx.fill();
+    if (k === "server") { cx.fillStyle = "#4fb0ff"; for (let i = 0; i < 3; i++) cx.fillRect(x - w * 0.6, y - hgt * (0.3 + i * 0.2), 2, 1.5); }
+    if (k === "burnt" && R() < 0.4) { cx.fillStyle = "rgba(255,110,40,.55)"; cx.beginPath(); cx.arc(x - w * 0.4, y - hgt * 0.3, 2.2, 0, 6.283); cx.fill(); }
+  }
+  else if (k === "ember") { const grd = cx.createRadialGradient(x, y - 3, 0, x, y - 3, s * 0.5); grd.addColorStop(0, "rgba(255,140,50,.8)"); grd.addColorStop(1, "rgba(255,80,20,0)"); cx.fillStyle = grd; cx.beginPath(); cx.arc(x, y - 3, s * 0.5, 0, 6.283); cx.fill(); }
+  else if (k === "vat") { cx.fillStyle = "#3e4a32"; cx.fillRect(x - s * 0.22, y - s * 0.8, s * 0.44, s * 0.8); cx.fillStyle = "#7fae3a"; cx.beginPath(); cx.ellipse(x, y - s * 0.8, s * 0.22, s * 0.1, 0, 0, 6.283); cx.fill(); }
+  else if (k === "growth") { cx.fillStyle = "#7a9a35"; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(x + (i - 1) * 3, y - 2 - (i % 2) * 2, 2.4, 0, 6.283); cx.fill(); } }
+  else if (k === "pylon") { cx.strokeStyle = "#5a6068"; cx.lineWidth = 1.4; cx.beginPath(); cx.moveTo(x - 3, y); cx.lineTo(x, y - s * 1.4); cx.lineTo(x + 3, y); cx.moveTo(x - 5, y - s * 1.1); cx.lineTo(x + 5, y - s * 1.1); cx.stroke(); cx.fillStyle = "#4fb0ff"; cx.fillRect(x - 1, y - s * 1.45, 2, 2); }
+  else if (k === "cactus") { cx.strokeStyle = "#4f6a3a"; cx.lineWidth = 2.4; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - s * 0.7); cx.moveTo(x, y - s * 0.4); cx.lineTo(x + 3, y - s * 0.5); cx.lineTo(x + 3, y - s * 0.7); cx.stroke(); }
+  else if (k === "bones") { cx.strokeStyle = "#ddd3bd"; cx.lineWidth = 1.2; cx.beginPath(); cx.arc(x, y - 1, s * 0.2, Math.PI, 0); cx.moveTo(x - s * 0.3, y); cx.lineTo(x + s * 0.3, y - 2); cx.stroke(); }
+  else if (k === "wreck") { cx.fillStyle = "#5a4a3a"; cx.fillRect(x - s * 0.4, y - s * 0.25, s * 0.8, s * 0.25); cx.fillStyle = "#3a3028"; cx.fillRect(x - s * 0.2, y - s * 0.42, s * 0.4, s * 0.17); }
+  else if (k === "sign") { cx.strokeStyle = "#888"; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - s * 0.7); cx.stroke(); cx.fillStyle = "#e0c041"; cx.beginPath(); cx.moveTo(x, y - s); cx.lineTo(x + 4, y - s * 0.65); cx.lineTo(x - 4, y - s * 0.65); cx.closePath(); cx.fill(); }
+}
+
+/* ---------- viewer: pan, zoom, layer toggles ---------- */
+const VIEW = { gen: null, layers: null, scale: 1, tx: 0, ty: 0, on: { resources: true, labels: true, spawns: true, neutrals: true, hazards: true, atmos: true }, seed: 0 };
+const THUMBS = {};
+function thumbFor(m) {
+  if (!THUMBS[m.id]) THUMBS[m.id] = renderMap(generateMap(m, m.seed), { tw: 6, deco: false, thumb: true }).toDataURL("image/jpeg", 0.85);
+  return THUMBS[m.id];
+}
+const PREVIEWS = {};
+function previewFor(m) {
+  if (!PREVIEWS[m.id]) {
+    const L = renderMap(generateMap(m, m.seed), { tw: 14 }), cv = document.createElement("canvas");
+    cv.width = L.W; cv.height = L.H;
+    const cx = cv.getContext("2d");
+    ["base", "hazards", "resources", "neutrals", "spawns", "atmos"].forEach(k => cx.drawImage(L[k], 0, 0));
+    PREVIEWS[m.id] = cv.toDataURL("image/jpeg", 0.88);
+  }
+  return PREVIEWS[m.id];
+}
+function openViewer(id, seed) {
+  const m = MAP(id); state.map = id;
+  SFX.play("modalOpen");
+  VIEW.seed = seed || m.seed;
+  VIEW.gen = generateMap(m, VIEW.seed);
+  VIEW.layers = renderMap(VIEW.gen, { tw: 28 });
+  const b = BIOME(m.biome), d = DUO[m.duo];
+  reopen = null;
+  openModal(`
+    <div class="m-kicker">${esc(b.name)} + ${esc(BIOME(m.alt).name)} · ${esc(m.size)} · ${m.players} players · seed ${VIEW.seed}</div>
+    <h3 class="m-title" style="--acc:${d.color}">${esc(m.name)}</h3>
+    <p class="m-hint">${esc(m.tagline)} — home turf of <b style="color:${d.color}">${esc(d.name)}</b>. Stylised preview: drag to pan, scroll to zoom.</p>
+    <div class="viewer" id="viewer"><canvas id="viewcv"></canvas></div>
+    <div class="viewer-bar">
+      ${[["resources", "Resources"], ["labels", "Resource codes"], ["spawns", "Spawns"], ["neutrals", "Tribes & relics"], ["hazards", "Hazards"], ["atmos", "Lighting"]].map(([k, l]) => `<label><input type="checkbox" ${VIEW.on[k] ? "checked" : ""} onchange="VIEW.on.${k}=this.checked;drawView()">${l}</label>`).join("")}
+      <button class="mini" onclick="zoomView(1.25)">＋</button><button class="mini" onclick="zoomView(0.8)">－</button><button class="mini" onclick="fitView()">Fit</button>
+      <button class="mini" onclick="openViewer('${id}', Math.floor(Math.random()*99999)+1)">⟳ Reroll layout</button>
+    </div>
+    <div class="map-legend">${DATA.resources.map(r => `<span><i style="background:${r.color}"></i>${r.code} ${esc(r.name)}</span>`).join("")}
+      <span><i style="background:#ffe08a"></i>Relic</span><span><i style="background:#8a6a45"></i>Neutral camp</span>${[...new Set(m.hazards.map(h => h.type))].map(t => `<span><i style="background:${HAZ[t]}"></i>${HAZ_NAME[t]}</span>`).join("")}</div>`, true);
+  requestAnimationFrame(() => { fitView(); wireViewer(); });
+}
+function drawView() {
+  const cv = $("#viewcv"); if (!cv || !VIEW.layers) return;
+  const box = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = box.width * dpr; cv.height = box.height * dpr;
+  const cx = cv.getContext("2d"); cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx.fillStyle = "#070605"; cx.fillRect(0, 0, box.width, box.height);
+  cx.imageSmoothingQuality = "high";
+  cx.translate(VIEW.tx, VIEW.ty); cx.scale(VIEW.scale, VIEW.scale);
+  cx.drawImage(VIEW.layers.base, 0, 0);
+  ["hazards", "resources", "labels", "neutrals", "spawns", "atmos"].forEach(k => { if (VIEW.on[k] && VIEW.layers[k]) cx.drawImage(VIEW.layers[k], 0, 0); });
+}
+function fitView() {
+  const cv = $("#viewcv"); if (!cv) return;
+  const box = cv.getBoundingClientRect(), L = VIEW.layers;
+  VIEW.scale = Math.min(box.width / L.W, box.height / L.H) * 1.02;
+  VIEW.tx = (box.width - L.W * VIEW.scale) / 2; VIEW.ty = (box.height - L.H * VIEW.scale) / 2;
+  drawView();
+}
+function zoomView(f, px, py) {
+  const cv = $("#viewcv"); if (!cv) return;
+  const box = cv.getBoundingClientRect(); px = px ?? box.width / 2; py = py ?? box.height / 2;
+  const ns = Math.max(0.2, Math.min(4, VIEW.scale * f));
+  VIEW.tx = px - (px - VIEW.tx) * (ns / VIEW.scale); VIEW.ty = py - (py - VIEW.ty) * (ns / VIEW.scale); VIEW.scale = ns;
+  drawView();
+}
+function wireViewer() {
+  const v = $("#viewer"); if (!v) return;
+  let drag = null;
+  v.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, tx: VIEW.tx, ty: VIEW.ty }; v.classList.add("grab"); v.setPointerCapture(e.pointerId); });
+  v.addEventListener("pointermove", e => { if (!drag) return; VIEW.tx = drag.tx + e.clientX - drag.x; VIEW.ty = drag.ty + e.clientY - drag.y; drawView(); });
+  v.addEventListener("pointerup", () => { drag = null; v.classList.remove("grab"); });
+  v.addEventListener("wheel", e => { e.preventDefault(); const b = v.getBoundingClientRect(); zoomView(e.deltaY < 0 ? 1.15 : 0.87, e.clientX - b.left, e.clientY - b.top); }, { passive: false });
+}
+addEventListener("resize", () => { if ($("#viewcv")) drawView(); });
+
+/* ==========================================================================
+   RENDER — tabs
+   ========================================================================== */
+const TAB = id => DATA.tabs.find(t => t.id === id);
+function go(tab) { if (tab === state.tab) return; SFX.play("tab", { pitch: 1 + DATA.tabs.findIndex(t => t.id === tab) * 0.06 }); state.tab = tab; renderAll(); $(".views").scrollTop = 0; }
+function renderAll() {
+  const t = TAB(state.tab), m = MAP(state.map), d = DUO[m.duo], r = document.documentElement.style;
+  r.setProperty("--tab", t.color); r.setProperty("--duo-a", t.color);
+  r.setProperty("--duo-b", d.color); r.setProperty("--w1", d.warlords[0][2]); r.setProperty("--w2", (d.warlords[1] || d.warlords[0])[2]);
+  $("#motif-a").dataset.m = d.id; $("#motif-b").dataset.m = d.id;
+  $("#head-sigils").innerHTML = crest(d);
+  $("#codex-nav").innerHTML = BOOKS.map(([id, l, f]) => `<a class="${id === "maps" ? "cur" : ""}" href="${encodeURI(f)}">${l}</a>`).join("");
+  $("#tabs").innerHTML = DATA.tabs.map((x, i) => `<button class="btn ${x.id === t.id ? "active" : ""}" style="--tc:${x.color}" onclick="go('${x.id}')" title="Key ${i + 1}">${esc(x.label)}</button>`).join("");
+  $("#editbar").innerHTML = `<span>Edit mode — click dashed text to rewrite it. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+    <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button><button class="mini" onclick="exportData()">Export JSON</button>
+    <button class="mini" onclick="$('#import-file').click()">Import JSON</button><button class="mini" onclick="resetData()">Discard browser edits</button>
+    <input type="file" id="import-file" accept=".json" hidden onchange="importData(this.files[0]);this.value=''">`;
+  $("#view").innerHTML = ({ maps: renderMaps, modes: renderModes, extras: renderExtras })[state.tab]();
+  $("#legend").innerHTML = `<span class="dim">Source of truth: ${esc(DATA.meta.source)} · Updated ${esc(DATA.meta.updated)} · Keys 1–3 tabs · Esc closes · Previews are stylised concepts, not final art</span>`;
+  FX.set([{ mode: d.fx, color: d.color }, { mode: "ash", color: "#bdb5a6" }]);
+  try { history.replaceState(null, "", `#${state.tab}/${state.map}`); } catch (e) {}
+  applyEditable();
+}
+const resBars = m => `<div class="res-bars">${DATA.resources.map(rs => `<div class="res-bar" style="--rc:${rs.color}" title="${rs.name}: ${LEVEL[m.res[rs.id] || 0]}">${rs.code}<div class="pips4">${[0, 1, 2].map(k => `<i class="${(m.res[rs.id] || 0) > k ? "on" : ""}"></i>`).join("")}</div></div>`).join("")}</div>`;
+const duoChip = id => `<span class="chip" style="color:${DUO[id].color};border-color:${DUO[id].color}">${sigil(id)}${esc(DUO[id].name)}</span>`;
+function selectMap(id) { if (id === state.map) return; SFX.play("select"); state.map = id; renderAll(); }
+function renderMaps() {
+  const m = MAP(state.map), mi = DATA.maps.indexOf(m), d = DUO[m.duo], b = BIOME(m.biome), a = BIOME(m.alt), base = `maps.${mi}`;
+  const art = `Images/Maps/${m.name.replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+  return `
+    <div class="tree-head"><div class="kicker">Twelve home turfs — one per Duo</div><h2>Maps</h2><p>Somewhere between Age of Empires, Diablo and Endzone. Pick a map, read its temperament, then <b>View map</b> for a stylised isometric preview with spawns, resources, tribes, relics and hazards.</p></div>
+    <div class="map-pick"><select onchange="selectMap(this.value)">${DATA.maps.map(x => `<option value="${x.id}" ${x.id === m.id ? "selected" : ""}>${esc(x.name)} — ${esc(DUO[x.duo].name)}</option>`).join("")}</select>
+      <button class="btn" style="--acc:${d.color}" onclick="openViewer('${m.id}')">&#128506; View map</button></div>
+    <div class="feature" style="--mc:${d.color}">
+      <div>
+        <div class="thumb-big" onclick="openViewer('${m.id}')" style="cursor:zoom-in" title="Open the full preview"><img class="prev" src="${previewFor(m)}" alt="Layout preview of ${esc(m.name)}"></div>
+        <div style="margin-top:10px">${artBox(art, d.color, "Concept art / in-game screenshot")}</div>
+      </div>
+      <div>
+        <h3>${ed(base + ".name", m.name)}</h3>
+        <div class="tag">${ed(base + ".tagline", m.tagline)}</div>
+        <div class="center-row" style="margin-bottom:8px">${duoChip(m.duo)}<span class="chip">${esc(b.name)}</span><span class="chip">+ ${esc(a.name)}</span><span class="chip">${esc(m.size)} · ${m.players} players</span></div>
+        ${resBars(m)}
+        <div class="sec-title">Features</div>
+        <ul class="pc">${m.features.map((f, i) => `<li class="pro">${ed(`${base}.features.${i}`, f)}</li>`).join("")}</ul>
+        <div class="kv">
+          <div><span>Hazards</span><b>${[...new Set(m.hazards.map(h => h.type))].map(t => `<span style="color:${HAZ[t]}">⚠ ${HAZ_NAME[t]}</span>`).join(" · ") || "None"}</b></div>
+          <div><span>Relics</span><b>${m.relics}${m.relicCenter ? " (one at the centre)" : ""}</b></div>
+          <div><span>Neutral tribes</span><b>${m.tribes.map(([n, t]) => `${esc(n)} <small class="dim">(${esc(t)})</small>`).join("<br>")}</b></div>
+          <div><span>Struggles here</span><b>${m.struggles.length ? m.struggles.map(duoChip).join(" ") : "Nobody in particular"}</b></div>
+        </div>
+        <div class="verdict" style="--vc:${d.color}"><b style="color:${d.color}">Home turf · ${esc(d.name)}</b><small>${esc(DATA.terrain[m.duo].home)}</small></div>
+        <div class="center-row"><button class="btn" style="--acc:${d.color}" onclick="openViewer('${m.id}')">&#128506; View map</button><button class="btn ghost" onclick="useInLobby('${m.id}')">Set up a game here</button></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-title">All maps</div><div class="map-cards">${DATA.maps.map(x => {
+      const dd = DUO[x.duo];
+      return `<div class="mcard ${x.id === m.id ? "cur" : ""}" style="--mc:${dd.color}" onclick="selectMap('${x.id}')">
+        <div class="mthumb"><img src="${thumbFor(x)}" alt=""></div>
+        <div class="mbody"><div class="who">${sigil(dd.id)}${esc(dd.name)}</div><h4>${esc(x.name)}</h4>
+          <div class="chips"><span class="chip">${esc(BIOME(x.biome).name)}</span><span class="chip">${esc(x.size)} · ${x.players}P</span></div>
+          ${resBars(x)}<button class="btn" style="--acc:${dd.color}" onclick="event.stopPropagation();openViewer('${x.id}')">View map</button></div></div>`;
+    }).join("")}</div></div>`;
+}
+function artBox(path, color, labelText) {
+  return `<div class="build-art short" style="--acc:${color};margin:0">${IMG.tag(path, true)}<div class="ph"><span class="ico">&#128506;</span><span>${esc(labelText)} — ${esc(IMG.hint(path))}</span></div></div>`;
+}
+
+/* ---------- Game Modes — AoE2-style lobby ---------- */
+const LOBBY_KEY = "mapsOfEden.lobby";
+function defaultLobby() {
+  return { format: "solo", victory: "regicide", map: "ashfall", size: "Map default", resources: "Standard", age: "Scavenger", speed: "Normal", pop: "200", treaty: "None", fog: "Explored", ai: "Survivor (moderate)", mixing: "Allowed",
+    slots: [{ who: "You", w1: "viktor", w2: "ayla", team: "1", colour: "Blue" }, { who: "AI", w1: "brick", w2: "twig", team: "2", colour: "Red" }, { who: "AI", w1: "blowtorch", w2: "vesper", team: "3", colour: "Green" }, { who: "AI", w1: "drsomething", w2: "mixy", team: "4", colour: "Yellow" },
+      { who: "Closed", w1: "smash", w2: "bash", team: "-", colour: "Cyan" }, { who: "Closed", w1: "pack1", w2: "pack2", team: "-", colour: "Purple" }, { who: "Closed", w1: "templar1", w2: "templar2", team: "-", colour: "Grey" }, { who: "Closed", w1: "hive", w2: "hive", team: "-", colour: "Orange" }] };
+}
+let LOBBY = (() => { try { return Object.assign(defaultLobby(), JSON.parse(localStorage.getItem(LOBBY_KEY) || "{}")); } catch (e) { return defaultLobby(); } })();
+function setLobby(key, val) { LOBBY[key] = val; saveLobby(); SFX.play("node"); renderAll(); }
+function setSlot(i, key, val) {
+  const s = LOBBY.slots[i];
+  const wasNatural = WARLORD[s.w1] && WARLORD[s.w2] && WARLORD[s.w1].duo === WARLORD[s.w2].duo;
+  s[key] = val;
+  if (key === "w1" && WARLORD[val]) {
+    const dd = DUO[WARLORD[val].duo];
+    if (dd.single) s.w2 = val;
+    else if (wasNatural || !WARLORD[s.w2] || DUO[WARLORD[s.w2].duo].single || s.w2 === val || LOBBY.mixing !== "Allowed") s.w2 = (dd.warlords.find(w => w[0] !== val) || dd.warlords[0])[0];
+  }
+  saveLobby(); SFX.play("node"); renderAll();
+}
+function saveLobby() { try { localStorage.setItem(LOBBY_KEY, JSON.stringify(LOBBY)); } catch (e) {} }
+function useInLobby(id) { LOBBY.map = id; saveLobby(); state.tab = "modes"; SFX.play("tab"); renderAll(); }
+const sel = (val, list, fn) => `<select onchange="${fn}">${list.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${v === val ? "selected" : ""}>${esc(l)}</option>`; }).join("")}</select>`;
+function warlordOptions() { return EDEN_DUOS.map(dd => [dd.warlords.map(([id, n]) => [id, `${n} (${dd.name})`])]).flat(2); }
+function renderModes() {
+  const L = DATA.lobby, m = MAP(LOBBY.map) || DATA.maps[0], maxP = LOBBY.size === "Map default" ? m.players : parseInt((LOBBY.size.match(/\((\d+)\)/) || [0, m.players])[1], 10);
+  const fmt = DATA.formats.find(f => f.id === LOBBY.format), vic = DATA.victories.find(v => v.id === LOBBY.victory);
+  const wOpts = warlordOptions();
+  const rows = LOBBY.slots.map((s, i) => {
+    const off = i >= maxP || s.who === "Closed";
+    const solo = WARLORD[s.w1] && DUO[WARLORD[s.w1].duo].single;
+    const w2opts = LOBBY.mixing === "Allowed" ? wOpts.filter(([id]) => !DUO[WARLORD[id].duo].single) : (WARLORD[s.w1] ? DUO[WARLORD[s.w1].duo].warlords.map(([id, n]) => [id, n]) : wOpts);
+    const whoList = i === 0 ? ["You"] : LOBBY.format === "solo" ? ["AI", "Closed"] : LOBBY.format === "duos" ? ["Player pair", "AI", "Open", "Closed"] : ["Player", "AI", "Open", "Closed"];
+    return `<div class="slot-row ${off ? "off" : ""}">
+      <span class="num">${i + 1}</span>
+      ${i >= maxP ? `<span class="dim" style="font-size:.78rem">Map holds ${maxP}</span>` : sel(s.who, LOBBY.format === "duos" && i === 0 ? [["You", "You + partner"]] : whoList, `setSlot(${i},'who',this.value)`)}
+      ${sel(s.w1, wOpts, `setSlot(${i},'w1',this.value)`)}
+      ${solo ? `<span class="dim" style="font-size:.78rem;text-align:center">Commands alone</span>` : sel(s.w2, w2opts, `setSlot(${i},'w2',this.value)`)}
+      ${sel(s.team, ["-", "1", "2", "3", "4"], `setSlot(${i},'team',this.value)`)}
+      <span><span class="dot" style="background:${L.colourHex[s.colour]}"></span>${sel(s.colour, L.colours, `setSlot(${i},'colour',this.value)`)}</span></div>`;
+  }).join("");
+  const active = LOBBY.slots.filter((s, i) => i < maxP && s.who !== "Closed");
+  const set = (label, key, list) => `<div class="set-row"><span>${label}</span>${sel(LOBBY[key], list, `setLobby('${key}',this.value)`)}</div>`;
+  return `
+    <div class="tree-head"><div class="kicker">Set up a match — Age of Empires II style</div><h2>Game Modes</h2><p>Pick a format and victory condition, choose a map, fill the slots with Warlord pairs, then read the match card. Prototype only — it doesn't launch the game yet.</p></div>
+    <div class="lobby" style="margin-top:14px">
+      <div>
+        <div class="slots">
+          <div class="slot-row head"><span>#</span><span>Player</span><span>Warlord I</span><span>Warlord II</span><span>Team</span><span>Colour</span></div>
+          ${rows}
+        </div>
+        <div class="mode-desc"><b>${esc(fmt.name)}</b> — ${ed(`formats.${DATA.formats.indexOf(fmt)}.desc`, fmt.desc, true)}<ul>${fmt.rules.map((r, k) => `<li>${ed(`formats.${DATA.formats.indexOf(fmt)}.rules.${k}`, r)}</li>`).join("")}</ul></div>
+        <div class="mode-desc"><b>${esc(vic.name)}</b> — ${ed(`victories.${DATA.victories.indexOf(vic)}.desc`, vic.desc, true)}<ul>${vic.rules.map((r, k) => `<li>${ed(`victories.${DATA.victories.indexOf(vic)}.rules.${k}`, r)}</li>`).join("")}</ul></div>
+      </div>
+      <div class="settings">
+        ${set("Format", "format", DATA.formats.map(f => [f.id, f.name]))}
+        ${set("Victory", "victory", DATA.victories.map(v => [v.id, v.name]))}
+        ${set("Map", "map", DATA.maps.map(x => [x.id, x.name]))}
+        ${set("Map size", "size", L.size)}
+        ${set("Resources", "resources", L.resources)}
+        ${set("Starting age", "age", L.age)}
+        ${set("Game speed", "speed", L.speed)}
+        ${set("Population cap", "pop", L.pop)}
+        ${set("Treaty", "treaty", L.treaty)}
+        ${set("Visibility", "fog", L.fog)}
+        ${set("AI difficulty", "ai", L.ai)}
+        ${set("Warlord mixing", "mixing", L.mixing)}
+        <div class="center-row" style="margin-top:10px"><button class="btn" onclick="openViewer('${m.id}')">&#128506; Preview map</button><button class="mini" onclick="LOBBY=defaultLobby();saveLobby();renderAll()">Reset</button></div>
+      </div>
+    </div>
+    <div class="match-card">
+      <h4>Match card</h4>
+      <p style="margin:0 0 6px">${esc(fmt.name)} · ${esc(vic.name)} on <b style="color:${DUO[m.duo].color}">${esc(m.name)}</b> (${esc(BIOME(m.biome).name)}) · ${active.length} colonies · ${esc(LOBBY.resources)} resources · ${esc(LOBBY.age)} age · pop ${esc(LOBBY.pop)} · ${esc(LOBBY.speed)} · treaty ${esc(LOBBY.treaty)} · ${esc(LOBBY.fog)}</p>
+      <div class="center-row">${active.map((s, i) => { const a1 = WARLORD[s.w1], a2 = WARLORD[s.w2]; const home = DUO[a1.duo].id === m.duo || (a2 && DUO[a2.duo].id === m.duo); return `<span class="chip" style="border-color:${L.colourHex[s.colour]}"><span class="dot" style="background:${L.colourHex[s.colour]}"></span>${esc(s.who)}: <b style="color:${a1.accent}">${esc(a1.name)}</b>${a2 && a2.id !== a1.id ? ` + <b style="color:${a2.accent}">${esc(a2.name)}</b>` : ""}${home ? " ★ home turf" : ""}</span>`; }).join("")}</div>
+      <div class="center-row" style="margin-top:10px"><button class="btn" onclick="copyMatch()">Copy setup</button><button class="btn" onclick="toast('Not wired to the game yet — setup saved as your preset')">&#9654; Start (prototype)</button></div>
+    </div>`;
+}
+function copyMatch() {
+  const m = MAP(LOBBY.map), txt = `Embers of Eden — ${DATA.formats.find(f => f.id === LOBBY.format).name} / ${DATA.victories.find(v => v.id === LOBBY.victory).name} on ${m.name}\n` +
+    LOBBY.slots.filter(s => s.who !== "Closed").map((s, i) => `${i + 1}. ${s.who} — ${WARLORD[s.w1].name}${s.w2 !== s.w1 ? " + " + WARLORD[s.w2].name : ""} (team ${s.team}, ${s.colour})`).join("\n") +
+    `\nResources ${LOBBY.resources} · Age ${LOBBY.age} · Pop ${LOBBY.pop} · Speed ${LOBBY.speed} · Treaty ${LOBBY.treaty} · ${LOBBY.fog}`;
+  navigator.clipboard && navigator.clipboard.writeText(txt).then(() => toast("Setup copied — paste it to Axel"), () => toast("Copy failed"));
+}
+
+/* ---------- Extras — map info page ---------- */
+function renderExtras() {
+  const biomeCards = DATA.biomes.map((b, i) => {
+    const maps = DATA.maps.filter(m => m.biome === b.id || m.alt === b.id);
+    return `<div class="vcard" style="--tab:${DUO[b.duo].color}"><div class="bio-strip">${b.pal.map(c => `<i style="background:${c}"></i>`).join("")}</div>
+      <h3>${ed(`biomes.${i}.name`, b.name)}</h3><p>${ed(`biomes.${i}.desc`, b.desc, true)}</p>
+      <ul>${b.rules.map((r, k) => `<li>${ed(`biomes.${i}.rules.${k}`, r)}</li>`).join("")}</ul>
+      <p style="margin-top:8px"><small class="dim">Home:</small> ${duoChip(b.duo)} ${b.hostile.length ? `<small class="dim">Hostile for:</small> ${b.hostile.map(duoChip).join(" ")}` : ""}</p>
+      <p style="margin:0"><small class="dim">Maps:</small> ${maps.map(m => `<button class="xlink" onclick="state.map='${m.id}';go('maps')">${esc(m.name)}</button>`).join(" ")}</p></div>`;
+  }).join("");
+  const matrix = `<div class="matrix-wrap"><table class="matrix"><thead><tr><th>Duo</th>${DATA.biomes.map(b => `<th>${esc(b.name)}</th>`).join("")}</tr></thead><tbody>
+    ${EDEN_DUOS.map(d => `<tr><td class="duo" style="color:${d.color}">${sigil(d.id)}${esc(d.name)}</td>${DATA.biomes.map(b => b.duo === d.id ? `<td class="home">Home</td>` : b.hostile.includes(d.id) ? `<td class="hostile">Hostile</td>` : "<td></td>").join("")}</tr>`).join("")}
+    </tbody></table></div>`;
+  const terr = EDEN_DUOS.map(d => `<div class="vcard" style="--tab:${d.color}"><h3>${sigil(d.id)} ${esc(d.name)}</h3>
+    <p><b style="color:var(--good)">Home</b> — ${ed(`terrain.${d.id}.home`, DATA.terrain[d.id].home)}</p>
+    <p><b style="color:var(--bad)">Hostile</b> — ${ed(`terrain.${d.id}.hostile`, DATA.terrain[d.id].hostile)}</p>
+    <ul>${d.warlords.map(([id, n, acc]) => `<li><b style="color:${acc}">${esc(n)} · ${ed(`warlordTerrain.${id}.0`, DATA.warlordTerrain[id][0])}</b> — ${ed(`warlordTerrain.${id}.1`, DATA.warlordTerrain[id][1])}</li>`).join("")}</ul></div>`).join("");
+  return `
+    <div class="tree-head"><div class="kicker">Map info · temperaments · neutrals · relics</div><h2>Extras</h2><p>Each map has a temperament — a primary and a secondary terrain type. Every Duo has one home terrain and at most one hostile one; every Warlord adds one subtle terrain trait. Nothing decides a match on its own — it rewards reading the land.</p></div>
+    <div class="sec" style="margin-top:14px"><div class="sec-title">Terrain types</div><div class="vgrid">${biomeCards}</div></div>
+    <div class="sec"><div class="sec-title">Home-turf table</div>${matrix}</div>
+    <div class="sec"><div class="sec-title">Duo &amp; Warlord terrain traits</div><div class="vgrid">${terr}</div>
+      <p class="foot" style="text-align:center">Warlord traits also appear on each Warlord in Warlords of Eden. Values are subtle by design (±5–15%) and all placeholders until balanced.</p></div>
+    <div class="sec"><div class="sec-title">Neutral settlements &amp; NPC towns</div><div class="vgrid">${DATA.settlements.map((s, i) => `<div class="vcard"><h3>${ed(`settlements.${i}.name`, s.name)}</h3><p><small class="dim">${ed(`settlements.${i}.size`, s.size)}</small></p><p>${ed(`settlements.${i}.desc`, s.desc, true)}</p><p><b>Options:</b> ${ed(`settlements.${i}.options`, s.options)}</p></div>`).join("")}</div>
+      <div class="vcard" style="margin-top:12px"><h3>How Duos treat neutrals</h3><ul>${DATA.reactions.map((r, i) => `<li>${ed(`reactions.${i}`, r)}</li>`).join("")}</ul></div>
+      <p class="foot" style="text-align:center">Neutrals never expand. Options and reactions depend on your Warlords (Visions).</p></div>
+    <div class="sec"><div class="sec-title">Relics</div><div class="vgrid">${DATA.relics.map((r, i) => `<div class="vcard" style="--tab:#ffe08a"><h3>${ed(`relics.${i}.name`, r.name)}</h3><p>${ed(`relics.${i}.effect`, r.effect, true)}</p></div>`).join("")}</div>
+      <p class="foot" style="text-align:center">Relics are freshly placed each game; mechanics are still open — these are suggestions.</p></div>
+    <div class="sec"><div class="sec-title">Wildlife by terrain</div><div class="vcard"><ul>${DATA.wildlife.map((w, i) => `<li>${ed(`wildlife.${i}`, w)}</li>`).join("")}</ul></div></div>`;
+}
+
+/* ---------- modal, edit mode, toast ---------- */
+function openModal(html, wide) {
+  if (!quiet) SFX.play("modalOpen");
+  $("#modal-box").classList.toggle("wide", !!wide);
+  const b = $("#modal-body"), keep = quiet ? b.scrollTop : 0;
+  b.innerHTML = html; b.scrollTop = keep;
+  $("#modal").classList.add("open"); applyEditable();
+}
+function closeModal() { const o = $("#modal").classList.contains("open"); $("#modal").classList.remove("open"); reopen = null; if (o) { SFX.play("modalClose"); if (state.editing) renderAll(); } }
+const PLAIN = (() => { const d = document.createElement("div"); try { d.contentEditable = "plaintext-only"; return d.contentEditable === "plaintext-only"; } catch (e) { return false; } })();
+function applyEditable() { $$("[data-edit]").forEach(el => { if (state.editing) { el.setAttribute("contenteditable", PLAIN ? "plaintext-only" : "true"); el.spellcheck = true; } else el.removeAttribute("contenteditable"); }); }
+function toggleEdit() {
+  state.editing = !state.editing;
+  document.body.classList.toggle("editing", state.editing);
+  $("#btn-edit").classList.toggle("active", state.editing);
+  SFX.play("tab", { pitch: state.editing ? 1.15 : 0.88 });
+  refresh(); toast(state.editing ? "Edit mode on" : "Edit mode off");
+}
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1900); }
+document.addEventListener("focusout", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (!el || !state.editing) return;
+  const v = el.innerText.replace(/\u00a0/g, " ").trim();
+  if (getPath(DATA, el.dataset.edit) === v) return;
+  setPath(DATA, el.dataset.edit, v); persist("Saved");
+});
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (el && el.isContentEditable) { if (e.key === "Enter" && !el.hasAttribute("data-ml")) { e.preventDefault(); el.blur(); } if (e.key === "Escape") el.blur(); return; }
+  if (e.key === "Escape") return closeModal();
+  if ($("#modal").classList.contains("open") || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= DATA.tabs.length) go(DATA.tabs[n - 1].id);
+});
+
+/* ---------- UI sounds — procedural Web Audio with a warm room tone; one mute shared across books ---------- */
+const SFX = (() => {
+  let ctx = null, out = null, muted = false;
+  try { muted = (localStorage.getItem("edenCodex.mute") ?? localStorage.getItem("warlordsOfEden.mute")) === "1"; } catch (e) {}
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function ensure() {
+    if (reduce) return Promise.resolve();
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
+      out = ctx.createGain(); out.gain.value = 0.5;
+      const send = ctx.createGain(), dl = ctx.createDelay(0.5), fb = ctx.createGain(), lp = ctx.createBiquadFilter();
+      send.gain.value = 0.22; dl.delayTime.value = 0.09; fb.gain.value = 0.35; lp.type = "lowpass"; lp.frequency.value = 2200;
+      out.connect(comp); out.connect(send); send.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    return ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
+  }
+  document.addEventListener("pointerdown", () => { ensure(); }, { once: true, passive: true });
+  function env(g, t, peak, atk, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + atk); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function tone(f, t, dur, peak, type, f2) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    o.connect(g); g.connect(out); env(g, t, peak, Math.min(0.01, dur / 4), dur); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function pluck(f, t, dur, peak) { tone(f, t, dur, peak, "triangle"); tone(f * 2.003, t, dur * 0.6, peak * 0.25, "sine"); }
+  function hiss(t, dur, peak, type, f1, f2, q) {
+    const n = Math.ceil(ctx.sampleRate * (dur + 0.05)), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = b; fl.type = type; fl.frequency.setValueAtTime(f1, t);
+    if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    fl.Q.value = q || 1;
+    s.connect(fl); fl.connect(g); g.connect(out); env(g, t, peak, Math.min(0.02, dur / 3), dur); s.start(t); s.stop(t + dur + 0.05);
+  }
+  const KIT = {
+    tab: (t, p) => { hiss(t, 0.035, 0.16, "bandpass", 2400 * p, 0, 5); pluck(587 * p, t + 0.005, 0.12, 0.07); },
+    back: t => { pluck(659, t, 0.12, 0.06); pluck(494, t + 0.07, 0.16, 0.06); hiss(t, 0.12, 0.05, "bandpass", 1200, 500, 2); },
+    modalOpen: t => { hiss(t, 0.22, 0.07, "bandpass", 380, 1700, 1.4); tone(92, t, 0.24, 0.16, "sine", 52); pluck(880, t + 0.06, 0.4, 0.03); },
+    picker: t => { hiss(t, 0.2, 0.06, "bandpass", 500, 1900, 1.4); tone(110, t, 0.2, 0.12, "sine", 62); pluck(740, t + 0.05, 0.3, 0.035); pluck(988, t + 0.11, 0.3, 0.025); },
+    modalClose: t => { hiss(t, 0.14, 0.055, "bandpass", 1500, 420, 1.6); tone(330, t, 0.12, 0.045, "sine", 220); },
+    select: (t, p) => { pluck(523 * p, t, 0.22, 0.08); pluck(784 * p, t + 0.065, 0.3, 0.065); },
+    duoLoad: t => { tone(55, t, 0.7, 0.16, "sine"); tone(82.4, t + 0.02, 0.6, 0.08, "sine"); hiss(t, 0.5, 0.07, "lowpass", 180, 900, 0.7); [330, 415, 494, 659].forEach((f, i) => pluck(f, t + 0.12 + i * 0.07, 0.5, 0.04)); },
+    node: (t, p) => { hiss(t, 0.025, 0.08, "highpass", 3200, 0, 0.8); pluck(740 * p, t, 0.14, 0.055); },
+    toggle: (t, p, on) => { if (on) { pluck(523, t, 0.15, 0.06); pluck(784, t + 0.07, 0.2, 0.06); } else { pluck(784, t, 0.15, 0.05); pluck(523, t + 0.07, 0.2, 0.05); } },
+    save: t => [523, 659, 784, 1047].forEach((f, i) => pluck(f, t + i * 0.08, 0.45, 0.055)),
+    shutter: t => { hiss(t, 0.018, 0.14, "bandpass", 3000, 0, 3); hiss(t + 0.06, 0.022, 0.1, "bandpass", 2200, 0, 3); pluck(1175, t + 0.06, 0.08, 0.025); }
+  };
+  function play(kind, opts) {
+    if (muted || reduce || (typeof quiet !== "undefined" && quiet)) return;
+    const fn = KIT[kind];
+    if (!fn) return;
+    ensure().then(() => { if (ctx) fn(ctx.currentTime + 0.005, (opts && opts.pitch) || 1, !muted); }).catch(() => {});
+  }
+  function sync() {
+    const b = document.getElementById("btn-sound");
+    if (!b) return;
+    b.textContent = muted ? "\u{1F507} Muted" : "\u{266A} Sound";
+    b.classList.toggle("active", !muted);
+    b.title = muted ? "UI sounds off — click to enable" : "UI sounds on — click to mute";
+  }
+  function toggleMute() { muted = !muted; try { localStorage.setItem("edenCodex.mute", muted ? "1" : "0"); } catch (e) {} sync(); if (!muted) play("toggle"); }
+  return { play, toggleMute, sync };
+})();
+
+/* ---------- atmosphere particles ---------- */
+const FX = (() => {
+  const cv = $("#fx"), cx = cv.getContext("2d");
+  const N = (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? 0 : 100;
+  let w = 0, h = 0, parts = [], cfg = [], sig = "", raf = 0;
+  const R = (a, b) => a + Math.random() * (b - a);
+  function resize() { const d = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * d; cv.height = h * d; cv.style.width = w + "px"; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); }
+  function make(i, init) {
+    const c = cfg[i % cfg.length], p = { m: c.mode, c: c.color, t: 0, life: R(320, 900), a: R(.3, .85), s: R(1, 2.6), ph: R(0, 6.28), vx: 0, vy: 0 };
+    if (p.m === "embers") { p.x = R(0, w); p.y = init ? R(0, h) : h + R(0, 40); p.vx = R(-.2, .2); p.vy = -R(.35, 1.3); }
+    else if (p.m === "dust") { p.x = init ? R(0, w) : -R(0, 60); p.y = R(0, h); p.vx = R(.8, 2.6); p.vy = R(-.15, .15); p.a = R(.1, .35); }
+    else { p.x = R(0, w); p.y = init ? R(0, h) : -R(0, 40); p.vx = R(-.25, .35); p.vy = R(.25, .7); p.a = R(.15, .45); if (p.m === "ash" && Math.random() < .7) p.c = "#bdb5a6"; }
+    return p;
+  }
+  function tick() {
+    cx.clearRect(0, 0, w, h);
+    parts.forEach((p, i) => {
+      p.t++; p.x += p.vx + Math.sin(p.t / 45 + p.ph) * .3; p.y += p.vy;
+      if (p.y < -90 || p.y > h + 90 || p.x < -90 || p.x > w + 90 || p.t > p.life) { parts[i] = make(i, false); return; }
+      const fade = Math.max(0, Math.min(1, p.t / 40, (p.life - p.t) / 40));
+      cx.globalCompositeOperation = p.m === "embers" ? "lighter" : "source-over"; cx.fillStyle = p.c; cx.globalAlpha = p.a * fade;
+      cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, 6.283); cx.fill();
+    });
+    cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over"; raf = requestAnimationFrame(tick);
+  }
+  resize(); addEventListener("resize", resize);
+  return { set(next) { const s = JSON.stringify(next); if (s === sig) return; sig = s; cfg = next; parts = Array.from({ length: N }, (_, i) => make(i, true)); if (!raf && N) raf = requestAnimationFrame(tick); } };
+})();
+
+(function init() {
+  const note = boot();
+  IMG.seed(DATA.meta && DATA.meta.pictures);
+  const parts = decodeURIComponent(location.hash.slice(1)).split("/");
+  if (DATA.tabs.some(t => t.id === parts[0])) state.tab = parts[0];
+  if (MAP(parts[1])) state.map = parts[1];
+  SFX.sync(); renderAll();
+  if (parts[2] === "view") openViewer(state.map);
+  if (note) toast(note);
+})();
+</script>
+</body>
+</html>
