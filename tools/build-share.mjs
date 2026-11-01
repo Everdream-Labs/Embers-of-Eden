@@ -83,8 +83,9 @@ console.log(`\nShare folder: ${out}\nZip:          ${zip}`);
 if (process.argv.includes("--desktop")) {
   const desktop = path.join(os.homedir(), "Desktop");
   const dOut = path.join(desktop, name);
-  fs.rmSync(dOut, { recursive: true, force: true });
-  fs.cpSync(out, dOut, { recursive: true });
+  try { fs.rmSync(dOut, { recursive: true, force: true }); }
+  catch (e) { console.log("Desktop copy is open in another window — overwriting files in place."); }
+  fs.cpSync(out, dOut, { recursive: true, force: true });
   fs.copyFileSync(zip, path.join(desktop, `${name}.zip`));
   console.log(`Copied to Desktop: ${dOut} (+ .zip)`);
 }
