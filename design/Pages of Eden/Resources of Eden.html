@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resources of Eden — Embers of Eden Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eden-codex.css">
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+<div class="app book">
+  <main class="plate center" style="--acc:var(--tab)">
+    <header class="duo-head">
+      <div class="motif a" id="motif-a"></div><div class="motif b" id="motif-b"></div>
+      <div class="brandrow"><span class="brand"><b>Resources</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
+      <div class="head-sigils" id="head-sigils"></div>
+      <div class="kicker">Gather · refine · grow · equip</div>
+      <h1 class="duo-title">Resources</h1>
+      <div class="motto" id="book-motto">Every chain starts in the dirt.</div>
+    </header>
+    <div class="pairbar" id="pairbar"></div>
+    <nav class="navbar">
+      <div class="side"><button class="btn" id="btn-sound" onclick="SFX.toggleMute()">&#9836; Sound</button></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="side"><button class="btn" id="btn-edit" onclick="toggleEdit()" title="Toggle edit mode">&#9998; Edit</button></div>
+    </nav>
+    <div class="editbar" id="editbar"></div>
+    <div class="views"><section class="view active" id="view"></section></div>
+    <footer class="legend" id="legend"></footer>
+  </main>
+</div>
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal plate" id="modal-box"><button class="x" onclick="closeModal()" title="Close">&#10005;</button><div class="modal-body" id="modal-body"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="application/json" id="codex-baked">null</script>
+<script>
+const PRISTINE_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+/* ---------- Pictures: Name.jpg, Name1.jpg, Name2.jpg … — click a picture to cycle the shortlist ---------- */
+const IMG = (() => {
+  const EXT = ["jpg", "png", "webp", "jpeg"];
+  const EMB = window.EDEN_IMAGES || null;
+  const KEY = "edenCodex.pictures";
+  const cache = {};
+  let pick = {};
+  try { pick = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  const stemOf = p => String(p || "").replace(/\.(jpe?g|png|webp)$/i, "");
+  const src = p => (EMB && EMB[p]) || encodeURI(p).replace(/#/g, "%23");
+  const probe = p => new Promise(res => {
+    if (EMB) return res(!!EMB[p]);
+    const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = src(p);
+  });
+  async function at(stem, n) { for (const e of EXT) { const p = `${stem}${n || ""}.${e}`; if (await probe(p)) return p; } return null; }
+  function list(stem) {
+    if (!cache[stem]) cache[stem] = (async () => {
+      const out = [], first = await at(stem, 0);
+      if (first) out.push(first);
+      for (let n = 1; n < 40; n++) { const p = await at(stem, n); if (!p) break; out.push(p); }
+      return out;
+    })();
+    return cache[stem];
+  }
+  function badge(img, i, n) {
+    const host = img.parentNode; if (!host) return;
+    let b = host.querySelector(":scope > .pic-count");
+    if (n < 2) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("span"); b.className = "pic-count"; host.appendChild(b); }
+    b.textContent = `${i + 1} / ${n} · click to cycle`;
+  }
+  async function hydrate(img) {
+    if (img.dataset.ready) return;
+    img.dataset.ready = "1";
+    const stem = img.dataset.stem, paths = await list(stem);
+    if (!paths.length) { img.remove(); return; }
+    const i = (pick[stem] || 0) % paths.length;
+    img.onload = () => { if (img.parentNode) img.parentNode.classList.add("has-img"); };
+    img.src = src(paths[i]);
+    if (img.hasAttribute("data-cycle")) badge(img, i, paths.length);
+  }
+  async function cycle(img) {
+    const stem = img.dataset.stem, paths = await list(stem);
+    const file = stem.split("/").pop();
+    if (paths.length < 2) { toast(`Only one picture — add ${file}1.jpg, ${file}2.jpg… to shortlist more`); return; }
+    const i = ((pick[stem] || 0) + 1) % paths.length;
+    pick[stem] = i;
+    try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch (e) {}
+    document.querySelectorAll(`img[data-stem="${CSS.escape(stem)}"]`).forEach(x => { x.src = src(paths[i]); if (x.hasAttribute("data-cycle")) badge(x, i, paths.length); });
+    SFX.play("shutter");
+    toast(`Picture ${i + 1} of ${paths.length} — ${paths[i].split("/").pop()}`);
+  }
+  document.addEventListener("click", e => {
+    const img = e.target.closest && e.target.closest("img[data-cycle]");
+    if (!img) return;
+    e.stopPropagation(); e.preventDefault();
+    cycle(img);
+  }, true);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches("img[data-stem]")) hydrate(n);
+    n.querySelectorAll("img[data-stem]").forEach(hydrate);
+  }))).observe(document.documentElement, { childList: true, subtree: true });
+  return {
+    tag: (path, cycleIt, alt) => `<img data-stem="${esc(stemOf(path))}"${cycleIt ? " data-cycle" : ""} alt="${esc(alt || "")}">`,
+    hint: path => `add “${path}” — or ${stemOf(path).split("/").pop()}1, 2, 3… to shortlist`,
+    snapshot: () => Object.assign({}, pick),
+    seed: obj => { if (obj) Object.entries(obj).forEach(([k, v]) => { if (!(k in pick)) pick[k] = v; }); }
+  };
+})();
+/* ==========================================================================
+   DATA — mirrors Data/Resources_of_Eden.md. Access per Duo:
+   yes · boost · import (can use, cannot produce) · tbd · no.
+   "(suggestion)" = idea, not agreed. Mixed pairs use the union rule.
+   ========================================================================== */
+const N = (tab, id, name, code, row, col, era, kind, from, x) => Object.assign({ tab, id, name, code, row, col, era, kind, from: from || [], ext: [], madeAt: "", gate: "", desc: "", notes: "", alsoUsed: "", access: {}, locked: false }, x || {});
+const NOFOOD = { droids: "no" };
+const P = (id, name, code, row, col, era, kind, from, x) => { const n = N("produce", id, name, code, row, col, era, kind, from, x); n.access = Object.assign({}, NOFOOD, n.access); return n; };
+const DEFAULT_DATA = {
+  meta: { dataRev: "factory-2026-11-01", updated: "2026-11-01", source: "Data/Resources_of_Eden.md",
+    rule: "Union rule for mixed pairs: the pair gets the best access either side has. Import only = they can use stock bought or traded in, but cannot produce it. Buildings a pair cannot construct stay locked (Warlords of Eden) even if the resources exist — but a blacksmith can still forge imported ingots (e.g. Hardened Steel) into better gear." },
+  tabs: [
+    { id: "resources", label: "Resources", color: "#c9a24a", folder: "Resources", intro: "Natural resources and every refining step above them — ore to ingot to alloy. Follow the lines downward: each node is made from the nodes feeding into it." },
+    { id: "produce", label: "Produce", color: "#93b85c", folder: "Produce", intro: "Farms, pastures, foraging and fishing — and the kitchen chains that turn them into food. Droids ignore this whole tab." },
+    { id: "tools", label: "Tools & Equipment", color: "#5fb3c4", folder: "Tools", intro: "Tool tiers gate gathering (iron axe = softwood, steel axe = hardwood). Equipment below grows over time as new kit is needed." }
+  ],
+  bands: {
+    resources: [{ label: "Early", sub: "Gathered" }, { label: "Early", sub: "Processed" }, { label: "Mid", sub: "Gathered" }, { label: "Mid", sub: "Refined" }, { label: "Mid", sub: "Components" }, { label: "Late", sub: "Gathered" }, { label: "Late", sub: "Refined" }, { label: "Late", sub: "Advanced & alloys" }],
+    produce: [{ label: "Wild", sub: "Forage, fish, water" }, { label: "Farms", sub: "Crops & pastures" }, { label: "Raw", sub: "Raw goods" }, { label: "Processed", sub: "Workshops" }, { label: "Kitchen", sub: "Meals" }, { label: "Late", sub: "Bonus foods" }],
+    tools: [{ label: "Tier I", sub: "Stone / scrap" }, { label: "Tier II", sub: "Bronze" }, { label: "Tier III", sub: "Iron" }, { label: "Tier IV", sub: "Steel" }, { label: "Tier V", sub: "Hardened steel" }]
+  },
+  lanes: {
+    resources: [{ label: "Timber", color: "#a07a45" }, { label: "Stone", color: "#9a9488" }, { label: "Clay", color: "#b5653e" }, { label: "Sand & Glass", color: "#d8c48a" }, { label: "Tin", color: "#a9b4bd" }, { label: "Copper", color: "#c8743a" }, { label: "Coal & Iron", color: "#8a97a3" }, { label: "Alloys", color: "#6fb7d6" }, { label: "Alloys", color: "#6fb7d6" }, { label: "Scrap", color: "#a8996e" }, { label: "Components", color: "#57c2b0" }, { label: "Chemistry", color: "#c9b23a" }, { label: "Precious", color: "#e3c35a" }, { label: "Gems", color: "#b07ad6" }],
+    produce: [{ label: "Water", color: "#5fb3c4" }, { label: "Fish", color: "#4f8fbf" }, { label: "Berries", color: "#b0446a" }, { label: "Herbs", color: "#6faa55" }, { label: "Wild Game", color: "#9a6b3f" }, { label: "Grain", color: "#d8b450" }, { label: "Vegetables", color: "#7fae4a" }, { label: "Cotton", color: "#d9d2bf" }, { label: "Cattle", color: "#a77b52" }, { label: "Poultry", color: "#d9b77a" }, { label: "Pigs & Goats", color: "#c48d8d" }, { label: "Wild Beasts", color: "#c58a45" }, { label: "Dark Larder", color: "#9e3b3b" }],
+    tools: [{ label: "Axes", color: "#a07a45" }, { label: "Picks", color: "#9a9488" }, { label: "Farm Tools", color: "#d8b450" }, { label: "Building Tools", color: "#c9a24a" }, { label: "Fishing Gear", color: "#4f8fbf" }, { label: "Butchery", color: "#a77b52" }]
+  },
+  nodes: [
+    /* ---------------- RESOURCES ---------------- */
+    N("resources", "wood", "Wood", "Wd", 0, 0, "Early", "Gathered", [], { madeAt: "Lumber Camp", gate: "Any axe — a Stone Axe works scrub and deadfall; softwood forests need an Iron Axe", desc: "Core building material and early fuel.", access: { hunters: "boost" }, notes: "Hunters boost comes from Twig (wood & lumber)." }),
+    N("resources", "charcoal", "Charcoal", "Ch", 1, 0, "Early", "Processed", ["wood"], { madeAt: "Charcoal Kiln (suggestion)", desc: "Slow-burned wood. Early fuel for kilns, glass, gunpowder and smelting before coal arrives." }),
+    N("resources", "paper", "Paper", "Pp", 3, 0, "Mid", "Refined", ["wood"], { ext: ["produce:water"], madeAt: "Paper Mill (suggestion)", desc: "Research notes, blueprints and records for University-style research. Also wraps dynamite (suggestion)." }),
+    N("resources", "hardwood", "Hardwood", "Hw", 5, 0, "Late", "Gathered", ["wood"], { ext: ["tools:axe4"], madeAt: "Lumber Camp (upgraded)", gate: "Steel Axe — Visions: steel axe = hardwood", desc: "Dense late-game timber for premium buildings, longbows and fittings (suggestion).", access: { pack: "no" } }),
+    N("resources", "stone", "Stone", "St", 0, 1, "Early", "Gathered", [], { madeAt: "Quarry", gate: "Stone Pick", desc: "Foundations, walls and early tools. First rung of the mining ladder.", access: { hunters: "boost" }, notes: "Hunters boost comes from Brick (stone & mining)." }),
+    N("resources", "concrete", "Concrete", "Cn", 6, 1, "Late", "Refined", ["stone", "coal"], { ext: ["produce:water"], madeAt: "Cement Works (suggestion)", desc: "Late construction material for fortifications and advanced buildings.", access: { pack: "no" } }),
+    N("resources", "clay", "Clay", "Cl", 0, 2, "Early", "Gathered", [], { madeAt: "Clay Pit (suggestion)", desc: "Riverbank clay for bricks, pottery and kilns." }),
+    N("resources", "bricks", "Bricks", "Br", 3, 2, "Mid", "Refined", ["clay", "charcoal"], { madeAt: "Brick Kiln", desc: "Fired building material for sturdier, upgraded structures." }),
+    N("resources", "sand", "Sand", "Sd", 0, 3, "Early", "Gathered", [], { madeAt: "Sand Pit (suggestion)", desc: "Not on the Visions list yet — added so Glass has an input (suggestion)." }),
+    N("resources", "glass", "Glass", "Gl", 3, 3, "Mid", "Refined", ["sand", "charcoal"], { madeAt: "Glassworks (suggestion)", desc: "Windows, lenses, scopes, lab equipment and electronics.", access: { pack: "no" } }),
+    N("resources", "tin", "Tin", "Sn", 2, 4, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining I (tech) + Bronze Pick", desc: "First metal on the mining ladder. Alloyed with copper to make bronze.", access: { pack: "no" } }),
+    N("resources", "copper", "Copper", "Cu", 2, 5, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining II (tech) + Bronze Pick", desc: "Bronze, wire and electrics.", access: { pack: "no" } }),
+    N("resources", "bronze", "Bronze", "Bz", 3, 4, "Mid", "Refined", ["tin", "copper"], { madeAt: "Smelter", desc: "Second material tier: Stone → Bronze → Iron → Steel → Hardened Steel.", access: { pack: "no" }, notes: "The Pack skips bronze — stone to iron only, no alloy refinement." }),
+    N("resources", "wire", "Wire", "Wr", 3, 5, "Mid", "Refined", ["copper"], { madeAt: "Wireworks (suggestion)", desc: "Electrics, traps, fences, electronics and arc weapons.", access: { pack: "no", scientists: "boost" } }),
+    N("resources", "coal", "Coal", "Co", 2, 6, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining IV on the tech ladder (see notes)", desc: "High-heat fuel for iron, steel, bricks and concrete.", access: { pack: "tbd" }, notes: "Visions lists coal as Mid but puts it after iron on the mining ladder (stone → tin → copper → iron → coal → gold). Era vs ladder still to reconcile." }),
+    N("resources", "iron", "Iron", "Fe", 5, 6, "Late", "Gathered", ["coal"], { ext: ["tools:pick3"], madeAt: "Mine → Smelter", gate: "Mining III (tech) + Iron Pick", desc: "Third material tier. The Pack's ceiling — stone to iron, nothing refined beyond it." }),
+    N("resources", "steel", "Steel", "Sl", 6, 6, "Late", "Refined", ["iron", "coal"], { madeAt: "Smelter (Blast Furnace)", desc: "Fourth material tier. Every smelter can make regular steel.", access: { pack: "no", militia: "boost" }, alsoUsed: "Steel weapons, plate armour and steel tools (Arms of Eden)" }),
+    N("resources", "hardened", "Hardened Steel", "HS", 7, 6, "Late", "Special alloy", ["steel", "rarecomp"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy and the fifth material tier. Civ-limited: only some smelters can make it. Everyone else imports the ingots — and their blacksmith can still forge them into better gear.", access: { default: "import", scientists: "yes", militia: "yes", pack: "no" }, alsoUsed: "Hardened weapons, armour and tools (Arms of Eden)" }),
+    N("resources", "stainless", "Stainless Steel", "SS", 7, 7, "Late", "Special alloy", ["steel", "rarescrap"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy — corrosion-proof gear, medical and lab equipment (suggestion).", access: { default: "import", scientists: "yes", pack: "no" } }),
+    N("resources", "titanium", "Titanium", "Ti", 7, 8, "Late", "Special alloy", ["rarescrap", "fuel"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy — light, very strong frames and plating (suggestion).", access: { default: "import", scientists: "yes", droids: "yes", pack: "no" } }),
+    N("resources", "scrap", "Scrap", "Sc", 0, 9, "Early", "Gathered", [], { madeAt: "Scrapyard / dismantling", desc: "Generic wasteland material for construction and crafting — harvested from ruins and old buildings, or by dismantling.", access: { survivors: "boost" }, notes: "Survivors boost reflects their scavenge lean (suggestion)." }),
+    N("resources", "nails", "Nails", "Nl", 3, 9, "Mid", "Refined", ["scrap"], { madeAt: "Blacksmith", desc: "Construction fasteners — needed by many building upgrades." }),
+    N("resources", "mechparts", "Mechanical Parts", "MP", 4, 9, "Mid", "Component", ["scrap", "nails", "bronze"], { madeAt: "Workshop (suggestion)", desc: "Gears, springs and fittings for guns, machines and vehicles.", access: { pack: "no", nomads: "boost" } }),
+    N("resources", "rarescrap", "Rare Scrap", "RS", 5, 9, "Late", "Gathered", ["scrap"], { madeAt: "Sorting Yard (Scrapyard upgrade)", desc: "Valuable salvage sorted out of normal scrap mid / late game.", access: { survivors: "boost" } }),
+    N("resources", "rarecomp", "Rare Components", "RC", 3, 10, "Mid", "Component", ["scrap"], { madeAt: "Scrapyard (salvage)", desc: "Old-world parts — circuitry, bearings, optics.", access: { scientists: "boost", pack: "no" } }),
+    N("resources", "electronics", "Electronics", "El", 7, 10, "Late", "Advanced", ["rarecomp", "wire", "glass"], { madeAt: "Electronics Lab (suggestion)", desc: "Lasers, radios, droid parts and powered gear.", access: { scientists: "boost", droids: "boost", hunters: "import", pack: "no" }, notes: "Hunters import only: they distrust anything that hums (suggestion)." }),
+    N("resources", "salt", "Salt", "Sa", 0, 11, "Early", "Gathered", [], { madeAt: "Salt Pan (suggestion)", desc: "Preserves food and cures leather.", alsoUsed: "Smoked / Preserved Food, Cheese (Produce)" }),
+    N("resources", "sulphur", "Sulphur", "Su", 2, 11, "Mid", "Gathered", [], { madeAt: "Mine / vents", desc: "The key gunpowder input." }),
+    N("resources", "gunpowder", "Gunpowder", "Gp", 4, 11, "Mid", "Component", ["sulphur", "charcoal"], { ext: ["produce:fertiliser"], madeAt: "Munitions Workshop", desc: "Ammunition and explosives. Fertiliser stands in for nitrates (suggestion).", access: { pack: "tbd" }, notes: "The Pack never uses guns; explosives are still undecided for them." }),
+    N("resources", "fuel", "Fuel", "Fu", 6, 11, "Late", "Refined", ["coal"], { ext: ["produce:alcohol"], madeAt: "Refinery (suggestion)", desc: "Vehicles, generators and flamethrowers.", access: { nomads: "boost", ashen: "boost", pack: "no" } }),
+    N("resources", "silver", "Silver", "Ag", 0, 12, "Early", "Gathered", [], { madeAt: "Mine", desc: "Primary trade currency; its price slowly rises over the match. Also needed for many upgrades and luxury items." }),
+    N("resources", "gold", "Gold", "Au", 2, 12, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining V — the last rung", desc: "Unlocks mid-game. Currency, upgrades and luxuries; price slowly rises." }),
+    N("resources", "goldingot", "Gold Ingots", "GI", 6, 12, "Late", "Refined", ["gold", "coal"], { madeAt: "Smelter / Mint", desc: "Refined gold for upgrades, trade and jewellery." }),
+    N("resources", "puregold", "Pure Gold Ingots", "PG", 7, 12, "Late", "Refined", ["goldingot"], { madeAt: "Mint (suggestion)", desc: "Top-grade gold — late age checklists and wonders (suggestion)." }),
+    N("resources", "gems", "Gems", "Gm", 5, 13, "Late", "Gathered", [], { ext: ["tools:pick4"], madeAt: "Deep Mine", gate: "Steel Pick", desc: "Rare stones for jewellery and luxury trade.", access: { pack: "no" } }),
+    N("resources", "jewellery", "Jewellery", "Jw", 7, 13, "Late", "Luxury", ["gems", "goldingot", "silver"], { madeAt: "Jeweller (suggestion)", desc: "Luxury good — trade, happiness and age checklists (suggestion)." }),
+    /* ---------------- PRODUCE ---------------- */
+    P("water", "Water", "Wa", 0, 0, "Early", "Gathered", [], { madeAt: "Well / river", desc: "Upkeep for every unit alongside food. Wells near the colony; rivers and lakes elsewhere." }),
+    P("fish", "Fish", "Fi", 0, 1, "Early", "Gathered", [], { ext: ["tools:fish1"], madeAt: "Fishing Hut / dock", gate: "Fishing gear (Tools)", desc: "From fishable water. Edible raw; better smoked." }),
+    P("berries", "Berries", "Be", 0, 2, "Early", "Gathered", [], { madeAt: "Forager → Orchard (late)", desc: "Early forage. Orchards make it self-sustaining late game." }),
+    P("herbs", "Herbs", "He", 0, 3, "Early", "Gathered", [], { madeAt: "Herb Garden (suggestion)", desc: "Medicine, bandages and poultices — and poisons in the right hands." }),
+    P("game", "Wild Game", "Gm", 0, 4, "Early", "Gathered", [], { madeAt: "Hunting Lodge", desc: "Hunting wild animals for meat and hides (suggestion).", access: { hunters: "boost", pack: "boost" } }),
+    P("grain", "Grain", "Gr", 1, 5, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Staple crop for flour, bread and alcohol (suggestion)." }),
+    P("veg", "Vegetables", "Vg", 1, 6, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Stews and kitchen meals (suggestion)." }),
+    P("cotton", "Cotton", "Ct", 1, 7, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Cotton → Cloth (Visions)." }),
+    P("cattle", "Cattle", "Ca", 1, 8, "Early", "Pasture", [], { madeAt: "Pasture", desc: "Milk, meat, leather and manure." }),
+    P("chickens", "Chickens", "Ck", 1, 9, "Early", "Pasture", [], { madeAt: "Pasture / coop", desc: "Eggs and meat." }),
+    P("pigs", "Pigs & Goats", "Pg", 1, 10, "Early", "Pasture", [], { madeAt: "Pasture", desc: "Meat, goat milk and manure (suggestion)." }),
+    P("wildbreed", "Wild Breeding", "Wb", 1, 11, "Early", "Pasture", [], { madeAt: "Beast Den (Pack)", desc: "The Pack can breed any animal, including wild map animals. Other civs only get farm animals.", access: { default: "no", pack: "boost" } }),
+    P("milk", "Milk", "Mk", 2, 8, "Early", "Raw", ["cattle", "pigs"], { desc: "Edible raw; becomes cheese in the kitchen." }),
+    P("eggs", "Eggs", "Eg", 2, 9, "Early", "Raw", ["chickens"], { desc: "Edible raw or cooked." }),
+    P("meat", "Meat", "Mt", 2, 10, "Early", "Raw", ["cattle", "pigs", "chickens", "game", "wildbreed"], { madeAt: "Butcher (suggestion)", desc: "Edible raw; far better cooked, smoked or stewed." }),
+    P("leather", "Leather", "Lt", 2, 11, "Early", "Raw material", ["cattle", "game", "wildbreed"], { madeAt: "Tannery (suggestion)", desc: "Pasture by-product (e.g. cows). Distinct from Cloth — the two combine in armour and gear.", alsoUsed: "Leather armour, bows, saddles (Arms of Eden)" }),
+    P("humanmeat", "Human Meat", "Hm", 2, 12, "Early", "Raw", [], { madeAt: "Slain enemies / POWs", desc: "The Pack can use human meat. For anyone else it would be low-quality food with negative effects (food-quality tiers under consideration).", access: { default: "no", pack: "yes" } }),
+    P("flour", "Flour", "Fl", 3, 5, "Mid", "Processed", ["grain"], { madeAt: "Mill (suggestion)", desc: "Ground grain for bread." }),
+    P("fertiliser", "Fertiliser", "Fz", 3, 6, "Mid", "Processed", ["cattle", "pigs", "chickens"], { madeAt: "Manure Pit (suggestion)", desc: "Boosts farm yield. Also stands in for nitrates in gunpowder (suggestion).", alsoUsed: "Gunpowder (Resources tab)" }),
+    P("cloth", "Cloth", "Cf", 3, 7, "Early", "Processed", ["cotton"], { madeAt: "Weaver", desc: "Clothing, padded armour, bandages and sails. Combines with Leather.", alsoUsed: "Padded armour (Arms of Eden)" }),
+    P("alcohol", "Alcohol", "Al", 3, 2, "Mid", "Processed", ["berries", "grain"], { madeAt: "Distillery (suggestion)", desc: "Trade good, medicine input, fuel and molotovs.", alsoUsed: "Fuel (Resources tab), Molotov (Arms of Eden)" }),
+    P("medicine", "Medicine", "Md", 3, 3, "Mid", "Processed", ["herbs", "alcohol"], { madeAt: "Apothecary (suggestion)", desc: "Healing and cleansing; supplies healer units.", access: { scientists: "boost" } }),
+    P("bread", "Bread", "Bd", 4, 5, "Mid", "Meal", ["flour", "water"], { madeAt: "Kitchen", desc: "Staple meal (suggestion)." }),
+    P("stew", "Hearty Stew", "Sw", 4, 8, "Mid", "Meal", ["meat", "veg", "water"], { madeAt: "Kitchen", desc: "Combining ingredients gives a higher yield than eating them raw (suggestion)." }),
+    P("cheese", "Cheese", "Cs", 4, 9, "Mid", "Meal", ["milk"], { ext: ["resources:salt"], madeAt: "Creamery (suggestion)", desc: "Long-keeping dairy (suggestion)." }),
+    P("smoked", "Smoked / Preserved Food", "Sm", 4, 10, "Mid", "Meal", ["meat", "fish"], { ext: ["resources:salt", "resources:charcoal"], madeAt: "Smokehouse", desc: "Long-lasting food for trade and army upkeep. The Hunters excel at export.", access: { hunters: "boost" } }),
+    P("feast", "Feast", "Fs", 5, 8, "Late", "Meal", ["bread", "stew", "cheese", "alcohol"], { madeAt: "Kitchen (late)", desc: "Late foods can give minor bonuses (Visions). Exact bonuses TBD." }),
+    P("rations", "Field Rations", "Rt", 5, 10, "Late", "Meal", ["smoked", "bread"], { madeAt: "Kitchen", desc: "Packed food for armies on the march — eases military upkeep (suggestion)." }),
+    /* ---------------- TOOLS (material tiers) ---------------- */
+    N("tools", "axe1", "Stone Axe", "Ax", 0, 0, "Tier I", "Axe", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Scrub and deadfall wood (suggestion)" }),
+    N("tools", "axe2", "Bronze Axe", "Ax", 1, 0, "Tier II", "Axe", ["axe1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Faster felling (suggestion)", access: { pack: "no" } }),
+    N("tools", "axe3", "Iron Axe", "Ax", 2, 0, "Tier III", "Axe", ["axe2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Softwood forests (Visions)" }),
+    N("tools", "axe4", "Steel Axe", "Ax", 3, 0, "Tier IV", "Axe", ["axe3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Hardwood (Visions)", access: { pack: "no" } }),
+    N("tools", "axe5", "Hardened Axe", "Ax", 4, 0, "Tier V", "Axe", ["axe4"], { ext: ["resources:hardened", "resources:hardwood"], madeAt: "Blacksmith", gate: "Fastest felling; late tree farms (suggestion)", desc: "Forged from Hardened Steel ingots — imported for most Duos.", access: { pack: "no" } }),
+    N("tools", "pick1", "Stone Pick", "Pk", 0, 1, "Tier I", "Pick", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Stone, clay, salt" }),
+    N("tools", "pick2", "Bronze Pick", "Pk", 1, 1, "Tier II", "Pick", ["pick1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Tin & copper — Mining I–II", access: { pack: "no" } }),
+    N("tools", "pick3", "Iron Pick", "Pk", 2, 1, "Tier III", "Pick", ["pick2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Iron & coal — Mining III–IV" }),
+    N("tools", "pick4", "Steel Pick", "Pk", 3, 1, "Tier IV", "Pick", ["pick3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Gold & gems — Mining V", access: { pack: "no" } }),
+    N("tools", "pick5", "Hardened Pick", "Pk", 4, 1, "Tier V", "Pick", ["pick4"], { ext: ["resources:hardened"], madeAt: "Blacksmith", gate: "Deep veins — late mine extensions (Visions)", access: { pack: "no" } }),
+    N("tools", "farm1", "Stone Hoe", "Ho", 0, 2, "Tier I", "Farm tool", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Basic crop plots" }),
+    N("tools", "farm2", "Bronze Sickle", "Si", 1, 2, "Tier II", "Farm tool", ["farm1"], { ext: ["resources:bronze"], madeAt: "Blacksmith", gate: "Faster harvest (suggestion)", access: { pack: "no" } }),
+    N("tools", "farm3", "Iron Scythe", "Sy", 2, 2, "Tier III", "Farm tool", ["farm2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Large fields (suggestion)" }),
+    N("tools", "farm4", "Steel Plough", "Pl", 3, 2, "Tier IV", "Farm tool", ["farm3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Highest yield per farm (suggestion)", access: { pack: "no" } }),
+    N("tools", "build1", "Stone Mallet", "Ml", 0, 3, "Tier I", "Building tool", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Basic construction" }),
+    N("tools", "build2", "Bronze Saw", "Sw", 1, 3, "Tier II", "Building tool", ["build1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Faster building (suggestion)", access: { pack: "no" } }),
+    N("tools", "build3", "Iron Toolset", "Ts", 2, 3, "Tier III", "Building tool", ["build2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Building upgrades", desc: "This is the generic “Tools” good from the Visions mid list — consumed by building upgrades (suggestion)." }),
+    N("tools", "build4", "Steel Toolset", "Ts", 3, 3, "Tier IV", "Building tool", ["build3"], { ext: ["resources:steel", "resources:nails"], madeAt: "Blacksmith", gate: "Advanced upgrades (suggestion)", access: { pack: "no" } }),
+    N("tools", "build5", "Hardened Toolset", "Ts", 4, 3, "Tier V", "Building tool", ["build4"], { ext: ["resources:hardened"], madeAt: "Blacksmith", gate: "Wonders and fortifications (suggestion)", access: { pack: "no" } }),
+    N("tools", "fish1", "Hook & Line", "Hk", 0, 4, "Tier I", "Fishing gear", [], { ext: ["resources:wood", "produce:cloth"], madeAt: "Workbench (suggestion)", gate: "Shore fishing" }),
+    N("tools", "fish2", "Fishing Net", "Nt", 1, 4, "Tier II", "Fishing gear", ["fish1"], { ext: ["produce:cloth"], madeAt: "Weaver", gate: "More fish per trip (suggestion)" }),
+    N("tools", "fish3", "Iron Harpoon", "Hp", 2, 4, "Tier III", "Fishing gear", ["fish2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Big fish, deep water (suggestion)" }),
+    N("tools", "fish4", "Trawler Kit", "Tw", 3, 4, "Tier IV", "Fishing gear", ["fish3"], { ext: ["resources:steel", "produce:cloth"], madeAt: "Dock (suggestion)", gate: "Boats and deep water (suggestion)", access: { pack: "no" } }),
+    N("tools", "butch1", "Flint Knife", "Kn", 0, 5, "Tier I", "Butchery", [], { ext: ["resources:stone"], madeAt: "Workbench (suggestion)", gate: "Basic meat & hides" }),
+    N("tools", "butch2", "Bronze Knife", "Kn", 1, 5, "Tier II", "Butchery", ["butch1"], { ext: ["resources:bronze"], madeAt: "Blacksmith", gate: "Cleaner cuts (suggestion)", access: { pack: "no" } }),
+    N("tools", "butch3", "Iron Cleaver", "Cv", 2, 5, "Tier III", "Butchery", ["butch2"], { ext: ["resources:iron"], madeAt: "Blacksmith", gate: "More meat & leather per animal (suggestion)" }),
+    N("tools", "butch4", "Steel Skinning Kit", "Sk", 3, 5, "Tier IV", "Butchery", ["butch3"], { ext: ["resources:steel"], madeAt: "Blacksmith", gate: "Best leather yield (suggestion)", access: { pack: "no" } })
+  ],
+  equipment: [
+    { id: "gasmask", name: "Gas Mask", code: "GM", ext: ["produce:cloth", "resources:charcoal", "resources:glass"], madeAt: "Workshop", desc: "Filters toxic air — hazard zones and poison clouds.", access: { afflicted: "boost" } },
+    { id: "filter", name: "Water Filter", code: "WF", ext: ["resources:charcoal", "produce:cloth", "resources:scrap"], madeAt: "Workshop", desc: "Cleans bad water sources (suggestion).", access: {} },
+    { id: "bandage", name: "Bandages", code: "Bn", ext: ["produce:cloth", "produce:herbs"], madeAt: "Apothecary", desc: "Field healing; stops bleeding (suggestion).", access: {} },
+    { id: "medkit", name: "Med Kit", code: "MK", ext: ["produce:medicine", "produce:cloth"], madeAt: "Apothecary", desc: "Healer supply; cleanses some status effects.", access: { scientists: "boost" } },
+    { id: "rope", name: "Rope & Pulley", code: "Rp", ext: ["produce:cloth", "resources:wood"], madeAt: "Workshop", desc: "Construction, hauling and cliffs (suggestion).", access: {} },
+    { id: "lantern", name: "Lantern", code: "Ln", ext: ["resources:glass", "produce:alcohol"], madeAt: "Workshop", desc: "Night work and vision (suggestion).", access: { pack: "no" } },
+    { id: "trapkit", name: "Trap Kit", code: "TK", ext: ["resources:wire", "resources:wood"], madeAt: "Hunting Lodge", desc: "Snares for hunting and defence — Twig's speciality.", access: { hunters: "boost", pack: "no" } },
+    { id: "saddle", name: "Saddle & Tack", code: "Sd", ext: ["produce:leather"], madeAt: "Tannery", desc: "Mounts and beasts of burden (suggestion).", access: { nomads: "boost", droids: "no" } },
+    { id: "vehicleparts", name: "Vehicle Parts", code: "VP", ext: ["resources:mechparts", "resources:steel", "resources:fuel"], madeAt: "Caravan Yard / Workshop", desc: "Builds and repairs vehicles.", access: { default: "tbd", nomads: "boost", pack: "no" } },
+    { id: "repairkit", name: "Repair Kit", code: "RK", ext: ["resources:mechparts", "resources:electronics"], madeAt: "Workshop", desc: "Repairs machines and droid chassis.", access: { droids: "boost", pack: "no" } },
+    { id: "radio", name: "Radio Set", code: "Rd", ext: ["resources:electronics", "resources:wire"], madeAt: "Electronics Lab", desc: "Ties into the Radio / TV Broadcast Centre for settler recruitment.", access: { hunters: "import", pack: "no" } }
+  ],
+  duoNotes: {
+    mutants: "Mutants: poor tool and weapon use — gathering penalty (TBD).",
+    droids: "Droids: no food economy — they ignore food entirely, but pay more materials.",
+    pack: "The Pack: stone → iron only. No bronze, steel or alloy refinement (could become Import only — TBD).",
+    hunters: "The Hunters: stone + wood specialists; distrust high-tech electronics (suggestion)."
+  }
+};
+
+/* ==========================================================================
+   ROSTER (filter) — full profiles live in Warlords of Eden
+   ========================================================================== */
+const EDEN_DUOS = [
+  { id: "survivors", name: "Survivors", color: "#8b9096", fx: "embers", warlords: [["viktor", "Viktor", "Images/Warlords/Viktor.jpg", "#5b8fd1"], ["ayla", "Ayla", "Images/Warlords/Ayla.jpg", "#9a6bb8"]] },
+  { id: "hunters", name: "The Hunters", color: "#a3a84e", fx: "ash", warlords: [["brick", "Brick", "Images/Warlords/Brick.jpg", "#b8875a"], ["twig", "Twig", "Images/Warlords/Twig.jpg", "#6faa45"]] },
+  { id: "scientists", name: "Scientists", color: "#3fd0c9", fx: "sparks", warlords: [["drsomething", "Dr. Something", "Images/Warlords/Dr Something.jpg", "#4f9dff"], ["mixy", "Mixy", "Images/Warlords/Mixy.jpg", "#7fe3a4"]] },
+  { id: "mutants", name: "Mutants", color: "#9bc53d", fx: "spores", warlords: [["smash", "Smash", "Images/Warlords/Smash.jpg", "#e2552f"], ["bash", "Bash", "Images/Warlords/Bash.jpg", "#d9a23a"]] },
+  { id: "afflicted", name: "Afflicted", color: "#c2c43c", fx: "spores", warlords: [["afflicted1", "Afflicted I", "Images/Warlords/Afflicted I.jpg", "#a8e04a"], ["afflicted2", "Afflicted II", "Images/Warlords/Afflicted II.jpg", "#4fb39a"]] },
+  { id: "militia", name: "Militia", color: "#a4ae74", fx: "ash", warlords: [["militia1", "Militia Brother", "Images/Warlords/Militia Brother.jpg", "#7f94a6"], ["militia2", "Militia Sister", "Images/Warlords/Militia Sister.jpg", "#c9a24a"]] },
+  { id: "bloodveil", name: "Bloodveil", color: "#c42a42", fx: "drip", warlords: [["bloodveil1", "Brunette Sister", "Images/Warlords/Brunette Sister.jpg", "#8e3a7c"], ["bloodveil2", "Redhead Sister", "Images/Warlords/Redhead Sister.jpg", "#e8643a"]] },
+  { id: "templars", name: "Templars", color: "#d6b45e", fx: "ash", warlords: [["templar1", "Templar I", "Images/Warlords/Templar I.jpg", "#e2d9c3"], ["templar2", "Templar II", "Images/Warlords/Templar II.jpg", "#b8433a"]] },
+  { id: "pack", name: "The Pack", color: "#c58a45", fx: "dust", warlords: [["pack1", "Pack Cousin I", "Images/Warlords/Pack Cousin I.jpg", "#b0412e"], ["pack2", "Pack Cousin II", "Images/Warlords/Pack Cousin II.jpg", "#d8c08a"]] },
+  { id: "ashen", name: "Ashen", color: "#ff5a1f", fx: "embers", warlords: [["blowtorch", "Blowtorch", "Images/Warlords/Blowtorch.jpg", "#ffb02e"], ["vesper", "Vesper", "Images/Warlords/Vesper.jpg", "#9da3c2"]] },
+  { id: "nomads", name: "Nomads", color: "#d7a85e", fx: "dust", warlords: [["nomad1", "Nomad Mother", "Images/Warlords/Nomad Mother.jpg", "#b8693a"], ["nomad2", "Nomad Son", "Images/Warlords/Nomad Son.jpg", "#3fbfae"]] },
+  { id: "droids", name: "Droids", color: "#4fb0ff", fx: "data", single: true, warlords: [["hive", "Droid 0001", "Images/Warlords/Droid 0001.jpg", "#bfeaff"]] }
+];
+const DUO = Object.fromEntries(EDEN_DUOS.map(d => [d.id, d]));
+const WARLORD = {};
+EDEN_DUOS.forEach(d => d.warlords.forEach(([id, name, portrait, accent]) => { WARLORD[id] = { id, name, portrait, accent, duo: d.id }; }));
+const SIGILS = {
+  survivors: '<circle cx="32" cy="32" r="27"/><path d="M32 13c6 9 12 14 12 23a12 12 0 0 1-24 0c0-6 3-10 6-15 2 4 3 6 6 8 0-6-2-10 0-16z"/>',
+  hunters: '<circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="4"/><path d="M32 4v16M32 44v16M4 32h16M44 32h16"/>',
+  scientists: '<ellipse cx="32" cy="32" rx="27" ry="10"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  mutants: '<circle cx="24" cy="32" r="16"/><circle cx="40" cy="32" r="16"/><path d="M32 19v26"/>',
+  afflicted: '<path d="M32 7c12 0 20 8 20 20 0 8-4 14-10 18v7H22v-7c-6-4-10-10-10-18C12 15 20 7 32 7z"/><circle cx="24" cy="27" r="5"/><circle cx="40" cy="27" r="5"/><circle cx="32" cy="45" r="4"/>',
+  militia: '<path d="M10 10h44"/><path d="M12 20l20 11 20-11M12 32l20 11 20-11M12 44l20 11 20-11"/>',
+  bloodveil: '<path d="M32 5C24 19 15 29 15 40a17 17 0 0 0 34 0C49 29 40 19 32 5z"/><path d="M24 41a8 8 0 0 0 8 8"/>',
+  templars: '<path d="M32 5v54M13 22h38"/><path d="M26 5h12M26 59h12M13 16v12M51 16v12"/>',
+  pack: '<path d="M13 9c10 14 12 30 8 47M30 5c8 16 8 34 2 54M47 9c6 14 6 30 0 47"/>',
+  ashen: '<path d="M32 4c10 14 18 20 18 34a18 18 0 0 1-36 0c0-10 6-14 8-22 4 6 6 8 8 10 2-8 0-14 2-22z"/><path d="M32 40c4 4 6 6 6 10a6 6 0 0 1-12 0c0-4 2-6 6-10z"/>',
+  nomads: '<circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="6"/><path d="M32 6v20M32 38v20M6 32h20M38 32h20M14 14l14 14M36 36l14 14M50 14L36 28M28 36L14 50"/>',
+  droids: '<path d="M32 4l24 14v28L32 60 8 46V18z"/><circle cx="32" cy="32" r="10"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  open: '<circle cx="32" cy="32" r="26" stroke-dasharray="6 6"/><path d="M24 25a8 8 0 1 1 12 7c-3 2-4 3-4 7"/><circle cx="32" cy="46" r="1.6" fill="currentColor"/>'
+};
+const sigil = id => `<svg class="sig" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${SIGILS[id] || SIGILS.open}</svg>`;
+const flag = (id, color) => `<svg class="flag" viewBox="0 0 38 44" aria-hidden="true" style="color:${color}"><path d="M8 5v37" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".22"/><path d="M11 8h16v5H11z" fill="currentColor" opacity=".7"/></svg>`;
+const crest = d => `<span class="crest" style="color:${d.color}">${sigil(d.id)}${flag(d.id, d.color)}</span>`;
+
+/* ==========================================================================
+   HELPERS + ACCESS
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
+const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
+const isSugg = s => /\(suggestion\)/i.test(s || "");
+const BOOKS = [["visions", "Visions", "Visions of Eden.html", false], ["warlords", "Warlords", "Warlords of Eden.html", false], ["arms", "Arms", "Arms of Eden.html", true], ["resources", "Resources", "Resources of Eden.html", true]];
+const ACC = {
+  rank: { no: 0, tbd: 1, import: 2, yes: 3, boost: 4, early: 4 },
+  label: { no: "No access", tbd: "Undecided", import: "Import only", yes: "Can produce", boost: "Stronger", early: "Early access" },
+  mark: { no: "✕", tbd: "?", import: "⇄", yes: "✓", boost: "★", early: "⚡" },
+  color: { no: "var(--bad)", tbd: "var(--tbd)", import: "#e0a85a", yes: "var(--good)", boost: "var(--tbd)", early: "#4fb0ff" },
+  cycle: ["yes", "boost", "import", "tbd", "no"]
+};
+const accessOf = (item, duo) => (item.access && (item.access[duo] || item.access.default)) || "yes";
+const union = list => list.reduce((b, v) => (b == null || (ACC.rank[v] ?? 1) > (ACC.rank[b] ?? 1) ? v : b), null) || "tbd";
+
+/* ---------- pair filter ---------- */
+const PAIR = { w1: "", w2: "" };
+const partner = wid => { const d = DUO[WARLORD[wid].duo]; return (d.warlords.find(w => w[0] !== wid) || d.warlords[0])[0]; };
+const pairDuos = () => { if (!PAIR.w1) return []; const a = WARLORD[PAIR.w1].duo, b = WARLORD[PAIR.w2 || PAIR.w1].duo; return a === b ? [a] : [a, b]; };
+const pairKind = () => !PAIR.w1 ? "none" : DUO[pairDuos()[0]].single ? "hive" : pairDuos().length === 1 ? "natural" : "mixed";
+const pairHash = () => (PAIR.w1 ? `${PAIR.w1}+${PAIR.w2}` : "all");
+const pairAccents = () => (!PAIR.w1 ? [] : [...new Set([PAIR.w1, PAIR.w2])].map(id => WARLORD[id]));
+const verdict = item => (PAIR.w1 ? union(pairDuos().map(d => accessOf(item, d))) : null);
+function readPair(str) {
+  const m = String(str || "").match(/^(\w+)\+(\w+)$/);
+  PAIR.w1 = PAIR.w2 = "";
+  if (!m || !WARLORD[m[1]] || !WARLORD[m[2]]) return;
+  if (DUO[WARLORD[m[1]].duo].single || DUO[WARLORD[m[2]].duo].single) { PAIR.w1 = PAIR.w2 = "hive"; return; }
+  PAIR.w1 = m[1]; PAIR.w2 = m[1] === m[2] ? partner(m[1]) : m[2];
+}
+function setPair(slot, id) {
+  const prev = pairKind();
+  if (!id) { if (slot === 1) PAIR.w1 = PAIR.w2 = ""; else if (PAIR.w1) PAIR.w2 = partner(PAIR.w1); }
+  else if (DUO[WARLORD[id].duo].single) PAIR.w1 = PAIR.w2 = id;
+  else if (slot === 1) { PAIR.w1 = id; if (!PAIR.w2 || prev !== "mixed" || PAIR.w2 === id || DUO[WARLORD[PAIR.w2].duo].single) PAIR.w2 = partner(id); }
+  else { if (!PAIR.w1 || DUO[WARLORD[PAIR.w1].duo].single) PAIR.w1 = partner(id); PAIR.w2 = id; if (PAIR.w1 === PAIR.w2) PAIR.w1 = partner(id); }
+  try { localStorage.setItem("edenCodex.pair", pairHash()); } catch (e) {}
+  SFX.play(pairKind() === "mixed" ? "duoLoad" : "select");
+  renderAll();
+}
+function pairLabel() {
+  const k = pairKind(); if (k === "none") return "No filter — showing every Duo's access";
+  const a = WARLORD[PAIR.w1], b = WARLORD[PAIR.w2];
+  if (k === "hive") return "Droid 0001 — commands alone, never mixes";
+  if (k === "natural") return `Natural Duo · ${DUO[a.duo].name}`;
+  return `Mixed pair · ${a.name} + ${b.name}`;
+}
+function pslot(slot) {
+  const wid = slot === 1 ? PAIR.w1 : PAIR.w2, w = wid ? WARLORD[wid] : null, d = w ? DUO[w.duo] : null, hive = pairKind() === "hive";
+  const opts = (slot === 1 ? `<option value="">— No filter · show all —</option>` : `<option value="">${hive ? "Droid 0001 commands alone" : "— pick Warlord I first —"}</option>`) +
+    EDEN_DUOS.map(dd => `<optgroup label="${esc(dd.name)}">${dd.warlords.map(([id, nm]) => `<option value="${id}" ${id === wid && !(hive && slot === 2) ? "selected" : ""} ${slot === 2 && dd.single ? "disabled" : ""}>${esc(nm)}${dd.single ? " (solo)" : ""}</option>`).join("")}</optgroup>`).join("");
+  const c = d ? d.color : "#6f675b";
+  return `<div class="pslot" style="--c:${c};--wa:${w ? w.accent : c}"><span class="pthumb">${sigil(d ? d.id : "open")}${w ? IMG.tag(w.portrait) : ""}</span>
+    <label><span class="plabel">${w ? `<i>●</i> ` : ""}Warlord ${slot === 1 ? "I" : "II"}${d ? ` · <b style="color:${c}">${esc(d.name)}</b>` : ""}</span>
+    <select ${slot === 2 && (!PAIR.w1 || hive) ? "disabled" : ""} onchange="setPair(${slot},this.value)">${opts}</select></label>${d ? flag(d.id, c) : ""}</div>`;
+}
+function pairBarHTML() {
+  const k = pairKind(), ds = pairDuos();
+  return `${pslot(1)}<div class="pmid"><div class="pkind ${k}">${esc(pairLabel())}</div>
+    <div class="pchips">${pairAccents().map(w => `<span class="chip" style="color:${w.accent};border-color:${w.accent}">${sigil(w.duo)}${esc(w.name)}</span>`).join('<span class="xsep">+</span>') || '<span class="dim">Pick a Warlord to grey out what that team cannot use</span>'}</div>
+    <div class="prule">${k === "mixed" ? "Union rule — if either side has it, the pair has it" : "The filter carries across Arms & Resources"}</div>
+    <div class="center-row" style="margin-top:6px">${k === "mixed" ? `<button class="mini" onclick="setPair(2,partner(PAIR.w1))">⇄ Natural partner</button>` : ""}${PAIR.w1 ? `<button class="mini" onclick="setPair(1,'')">✕ Clear filter</button>` : ""}</div></div>${pslot(2)}`;
+}
+
+/* ==========================================================================
+   STATE + PERSISTENCE (browser edits + Save into HTML)
+   ========================================================================== */
+const STORE_KEY = "resourcesOfEden.v1";
+const state = { tab: "resources", editing: false };
+let DATA = null, fileRev = "factory", reopen = null, quiet = false;
+function readBaked() { try { const t = $("#codex-baked").textContent.trim(); return t && t !== "null" ? JSON.parse(t) : null; } catch (e) { return null; } }
+function boot() {
+  const file = readBaked() || clone(DEFAULT_DATA);
+  fileRev = (file.meta && file.meta.dataRev) || "factory";
+  DATA = file;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.basedOn === fileRev && s.data) { DATA = s.data; return "Loaded your browser edits"; }
+      localStorage.setItem(STORE_KEY + ".archived", raw); localStorage.removeItem(STORE_KEY);
+      return "This file was updated — older browser edits archived";
+    }
+  } catch (e) {}
+  return "";
+}
+function persist(msg) { try { localStorage.setItem(STORE_KEY, JSON.stringify({ basedOn: fileRev, data: DATA })); } catch (e) {} if (msg) toast(msg); }
+async function saveHtml() {
+  const re = /(<script type="application\/json" id="codex-baked">)[\s\S]*?(<\/script>)/;
+  const now = new Date();
+  DATA.meta.dataRev = "save-" + now.toISOString(); DATA.meta.updated = now.toISOString().slice(0, 10); DATA.meta.pictures = IMG.snapshot();
+  const html = PRISTINE_HTML.replace(re, (m, a, b) => a + JSON.stringify(DATA).replace(/</g, "\\u003c") + b);
+  let done = false;
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({ suggestedName: "Resources of Eden.html", types: [{ description: "HTML page", accept: { "text/html": [".html"] } }] });
+      const w = await h.createWritable(); await w.write(html); await w.close(); done = true;
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (!done) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = "Resources of Eden.html"; a.click(); }
+  fileRev = DATA.meta.dataRev; persist(); SFX.play("save");
+  toast(done ? "Saved into the HTML file" : "Downloaded — replace the old HTML with it");
+}
+function exportData() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" })); a.download = "resources-of-eden-data.json"; a.click(); toast("Exported resources-of-eden-data.json"); }
+function importData(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d.nodes || !d.tabs) throw 0; DATA = d; persist("Imported"); renderAll(); } catch (e) { toast("Import failed — not a Resources of Eden file"); } };
+  r.readAsText(file);
+}
+function resetData() {
+  if (!confirm("Discard this browser's edits and go back to the content saved in this HTML file?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  DATA = readBaked() || clone(DEFAULT_DATA); renderAll(); toast("Back to the file version");
+}
+function refresh() { quiet = true; renderAll(); if (reopen && $("#modal").classList.contains("open")) reopen(); quiet = false; }
+
+/* ==========================================================================
+   LOOKUPS
+   ========================================================================== */
+const TAB = id => DATA.tabs.find(t => t.id === id);
+const NODE = id => DATA.nodes.find(n => n.id === id);
+const EQUIP = id => DATA.equipment.find(e => e.id === id);
+function refItem(ref) {
+  const [tab, id] = ref.includes(":") ? ref.split(":") : [null, ref];
+  const n = NODE(id);
+  if (n && (!tab || n.tab === tab)) return { kind: "node", item: n };
+  const e = EQUIP(id);
+  return e ? { kind: "equip", item: e } : null;
+}
+function usesOf(id) {
+  const out = [];
+  DATA.nodes.forEach(n => { if (n.from.includes(id) || n.ext.some(r => r.split(":")[1] === id)) out.push({ kind: "node", item: n }); });
+  DATA.equipment.forEach(e => { if (e.ext.some(r => r.split(":")[1] === id)) out.push({ kind: "equip", item: e }); });
+  return out;
+}
+const laneColor = n => (DATA.lanes[n.tab][n.col] || {}).color || "var(--tab)";
+const imgPath = (item, folder) => `Images/${folder}/${item.name.replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+
+/* ==========================================================================
+   TREE CANVAS
+   ========================================================================== */
+const GEO = { head: 44, colW: 172, rowH: 140, nodeW: 144, nodeH: 100 };
+function nodeCard(n, color, onclick, extCount) {
+  const v = verdict(n);
+  const cls = [!n.locked ? "placeholder" : "", v === "no" ? "gated" : "", v === "import" ? "imp" : ""].join(" ");
+  const badge = v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : "";
+  return `<div class="node ${cls}" data-key="${n.id}" style="--acc:${color}" onclick="${onclick}">${badge}
+    <div class="code">${esc(n.code)}</div><div class="n-name">${esc(n.name)}</div><div class="n-sub">${esc(n.era)} · ${esc(n.kind)}</div>
+    ${extCount ? `<span class="ext" title="Also needs inputs from another tab">↗${extCount}</span>` : ""}</div>`;
+}
+function treeHTML(tab) {
+  const lanes = DATA.lanes[tab], bands = DATA.bands[tab], nodes = DATA.nodes.filter(n => n.tab === tab);
+  const W = lanes.length * GEO.colW + 16, H = GEO.head + bands.length * GEO.rowH + 8;
+  const pos = {};
+  nodes.forEach(n => { pos[n.id] = { x: 8 + n.col * GEO.colW + (GEO.colW - GEO.nodeW) / 2, y: GEO.head + n.row * GEO.rowH + (GEO.rowH - GEO.nodeH) / 2 }; });
+  let links = "";
+  nodes.forEach(n => n.from.forEach(f => {
+    const a = pos[f], b = pos[n.id]; if (!a || !b) return;
+    const x1 = a.x + GEO.nodeW / 2, y1 = a.y + GEO.nodeH, x2 = b.x + GEO.nodeW / 2, y2 = b.y, dy = Math.max(26, (y2 - y1) * 0.5);
+    links += `<path data-a="${f}" data-b="${n.id}" class="${verdict(n) === "no" ? "gated" : ""}" stroke="${laneColor(n)}" d="M${x1},${y1} C${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}"/>`;
+  }));
+  return `<div class="tc-wrap" id="tree">
+    <div class="tc-labels" style="padding-top:${GEO.head}px">${bands.map(b => `<div class="tc-blabel" style="height:${GEO.rowH}px"><b>${esc(b.label)}</b><small>${esc(b.sub)}</small></div>`).join("")}</div>
+    <div class="tc-scroll"><div class="tc-canvas" style="width:${W}px;height:${H}px">
+      ${bands.map((b, i) => `<div class="tc-band ${i % 2 ? "alt" : ""}" style="top:${GEO.head + i * GEO.rowH}px;height:${GEO.rowH}px"></div>`).join("")}
+      ${lanes.map((l, i) => `<div class="tc-lane" style="left:${8 + i * GEO.colW}px;width:${GEO.colW}px;--lc:${l.color}">${esc(l.label)}</div>`).join("")}
+      <svg class="tc-links" width="${W}" height="${H}">${links}</svg>
+      ${nodes.map(n => `<div class="tc-node" style="left:${pos[n.id].x}px;top:${pos[n.id].y}px;width:${GEO.nodeW}px;height:${GEO.nodeH}px">${nodeCard(n, laneColor(n), `openNode('${n.id}')`, n.ext.length)}</div>`).join("")}
+    </div></div></div>`;
+}
+function wireTree() {
+  const root = $("#tree"); if (!root) return;
+  const up = {}, down = {};
+  DATA.nodes.filter(n => n.tab === state.tab).forEach(n => n.from.forEach(f => { (up[n.id] = up[n.id] || []).push(f); (down[f] = down[f] || []).push(n.id); }));
+  const walk = (k, map, set) => (map[k] || []).forEach(x => { if (!set.has(x)) { set.add(x); walk(x, map, set); } });
+  root.querySelectorAll(".node[data-key]").forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      const set = new Set([el.dataset.key]); walk(el.dataset.key, up, set); walk(el.dataset.key, down, set);
+      root.classList.add("tracing");
+      root.querySelectorAll(".node[data-key]").forEach(x => x.classList.toggle("lit", set.has(x.dataset.key)));
+      root.querySelectorAll("path[data-a]").forEach(p => p.classList.toggle("lit", set.has(p.dataset.a) && set.has(p.dataset.b)));
+    });
+    el.addEventListener("mouseleave", () => { root.classList.remove("tracing"); root.querySelectorAll(".lit").forEach(x => x.classList.remove("lit")); });
+  });
+  const sc = root.querySelector(".tc-scroll");
+  let drag = null;
+  sc.addEventListener("pointerdown", e => { if (e.target.closest(".node")) return; drag = { x: e.clientX, l: sc.scrollLeft }; sc.classList.add("grab"); });
+  sc.addEventListener("pointermove", e => { if (drag) sc.scrollLeft = drag.l - (e.clientX - drag.x); });
+  ["pointerup", "pointerleave"].forEach(ev => sc.addEventListener(ev, () => { drag = null; sc.classList.remove("grab"); }));
+}
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+function go(tab) { if (tab === state.tab) return; SFX.play("tab", { pitch: 1 + DATA.tabs.findIndex(t => t.id === tab) * 0.06 }); state.tab = tab; renderAll(); $(".views").scrollTop = 0; }
+function renderAll() {
+  const t = TAB(state.tab), ds = pairDuos();
+  const root = document.documentElement.style;
+  root.setProperty("--tab", t.color); root.setProperty("--duo-a", t.color);
+  root.setProperty("--duo-b", ds.length ? DUO[ds[ds.length - 1]].color : "#5a4a3a");
+  const acc = pairAccents(); root.setProperty("--w1", acc.length ? acc[0].accent : "#3a3128"); root.setProperty("--w2", acc.length ? acc[acc.length - 1].accent : "#3a3128");
+  $("#motif-a").dataset.m = ds[0] || ""; $("#motif-b").dataset.m = ds[ds.length - 1] || "";
+  $("#head-sigils").innerHTML = ds.map(id => crest(DUO[id])).join('<span class="xsep">✕</span>');
+  $("#book-motto").textContent = PAIR.w1 ? pairLabel() : "Every chain starts in the dirt.";
+  $("#codex-nav").innerHTML = BOOKS.map(([id, l, f, p]) => `<a class="${id === "resources" ? "cur" : ""}" href="${encodeURI(f)}${p ? "#" + pairHash() : ""}">${l}</a>`).join("");
+  $("#pairbar").innerHTML = pairBarHTML();
+  $("#tabs").innerHTML = DATA.tabs.map((x, i) => `<button class="btn ${x.id === t.id ? "active" : ""}" style="--tc:${x.color}" onclick="go('${x.id}')" title="Key ${i + 1}">${esc(x.label)}</button>`).join("");
+  $("#editbar").innerHTML = `<span>Edit mode — click dashed text to rewrite it; click a Duo chip in a card to cycle its access. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+    <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button><button class="mini" onclick="exportData()">Export JSON</button>
+    <button class="mini" onclick="$('#import-file').click()">Import JSON</button><button class="mini" onclick="resetData()">Discard browser edits</button>
+    <input type="file" id="import-file" accept=".json" hidden onchange="importData(this.files[0]);this.value=''">`;
+  const ti = DATA.tabs.indexOf(t);
+  const notes = ds.map(d => DATA.duoNotes[d]).filter(Boolean);
+  let body = `<div class="tree-head"><div class="kicker">${t.id === "tools" ? "Material tiers I – V" : "Top to bottom: gathered → refined → advanced"}</div><h2>${esc(t.label)}</h2>
+    <p>${ed(`tabs.${ti}.intro`, t.intro, true)}</p></div>
+    ${notes.length ? `<div class="verdict" style="--vc:var(--tbd)">${notes.map(esc).join("<br>")}</div>` : ""}
+    <p class="foot" style="text-align:center;margin:0 0 10px">Hover a node to trace everything it comes from and leads to · drag the background to pan · click for details</p>
+    ${treeHTML(t.id)}`;
+  if (t.id === "tools") {
+    body += `<div class="sec" style="margin-top:24px"><div class="sec-title">Equipment</div>
+      <p class="foot" style="text-align:center;margin:-4px 0 12px">Misc kit — this list grows as new equipment is needed.</p>
+      <div class="bgrid">${DATA.equipment.map(e => equipCard(e)).join("")}</div>
+      <div class="center-row edit-only" style="margin-top:10px"><button class="mini" onclick="addEquipment()">+ Add equipment</button></div></div>`;
+  }
+  body += `<p class="foot" style="text-align:center;margin-top:18px">${esc(DATA.meta.rule)}</p>`;
+  $("#view").innerHTML = body;
+  $("#legend").innerHTML = `<span><i class="dash"></i>Dashed = placeholder / not locked</span>
+    ${["yes", "boost", "import", "tbd", "no"].map(s => `<span><b style="color:${ACC.color[s]}">${ACC.mark[s]}</b> ${ACC.label[s]}</span>`).join("")}
+    <span class="dim">Updated ${esc(DATA.meta.updated)} · Keys 1–3 tabs · Esc closes</span>`;
+  const fx = ds.length ? pairAccents().map(w => ({ mode: DUO[w.duo].fx, color: w.accent })) : [{ mode: "dust", color: t.color }, { mode: "ash", color: "#bdb5a6" }];
+  FX.set(fx);
+  try { history.replaceState(null, "", `#${pairHash()}/${state.tab}`); } catch (e) {}
+  wireTree();
+  applyEditable();
+}
+function equipCard(e) {
+  const v = verdict(e);
+  const cls = [!e.locked ? "placeholder" : "", v === "no" ? "gated" : "", v === "import" ? "imp" : ""].join(" ");
+  return `<div class="node ${cls}" style="--acc:var(--tab)" onclick="openEquip('${e.id}')">${v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : ""}
+    <div class="code">${esc(e.code)}</div><div class="n-name">${esc(e.name)}</div><div class="n-sub">${esc(e.madeAt)}</div></div>`;
+}
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+function chipFor(r) {
+  const tabName = r.kind === "node" ? TAB(r.item.tab).label : "Equipment";
+  const v = verdict(r.item);
+  const fn = r.kind === "node" ? `openNode('${r.item.id}')` : `openEquip('${r.item.id}')`;
+  return `<button class="xlink ${v === "no" ? "gated" : ""}" onclick="${fn}" title="${esc(tabName)}">${v ? accMarkHTML(v) : ""}${esc(r.item.name)}<small class="dim">${r.kind === "node" && r.item.tab !== state.tab ? " · " + esc(tabName) : ""}</small></button>`;
+}
+const accMarkHTML = s => `<b style="color:${ACC.color[s]}">${ACC.mark[s]}</b>`;
+function verdictHTML(item) {
+  if (!PAIR.w1) return "";
+  const ds = pairDuos(), v = verdict(item);
+  const parts = ds.map(d => `${esc(DUO[d].name)}: ${ACC.label[accessOf(item, d)]}`).join(" · ");
+  const extra = v === "import" ? "They can spend imported or traded stock, but cannot produce it themselves." : v === "no" ? "This team cannot produce or use it." : "";
+  return `<div class="verdict" style="--vc:${ACC.color[v]}"><b style="color:${ACC.color[v]}">${ACC.mark[v]} ${esc(pairLabel())} → ${ACC.label[v]}</b><small>${parts}</small>${extra ? `<small>${extra}</small>` : ""}</div>`;
+}
+function accessRowHTML(item, path) {
+  return `<div class="acc-row">${EDEN_DUOS.map(d => {
+    const s = accessOf(item, d.id);
+    return `<span class="chip ${s === "no" ? "no" : ""}" style="--c:${d.color}" title="${esc(d.name)}: ${ACC.label[s]}" onclick="cycleAccess('${path}','${d.id}')">${accMarkHTML(s)}${esc(d.name)}</span>`;
+  }).join("")}</div>`;
+}
+function cycleAccess(path, duo) {
+  if (!state.editing) return;
+  const item = getPath(DATA, path); item.access = item.access || {};
+  const cur = accessOf(item, duo), next = ACC.cycle[(ACC.cycle.indexOf(cur) + 1) % ACC.cycle.length];
+  item.access[duo] = next;
+  persist(`${DUO[duo].name}: ${ACC.label[next]}`); refresh();
+}
+function openNode(id) {
+  const n = NODE(id), i = DATA.nodes.indexOf(n), base = `nodes.${i}`, t = TAB(n.tab), color = laneColor(n);
+  if (n.tab !== state.tab) { state.tab = n.tab; renderAll(); }
+  SFX.play("node", { pitch: 0.9 + (n.row % 5) * 0.05 });
+  reopen = () => openNode(id);
+  const inputs = n.from.map(f => refItem(f)).filter(Boolean).concat(n.ext.map(refItem).filter(Boolean));
+  const uses = usesOf(n.id);
+  openModal(`
+    <div class="m-kicker">${esc(t.label)} · ${esc(n.era)} · ${esc(n.kind)}</div>
+    <h3 class="m-title" style="--acc:${color}">${ed(base + ".name", n.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${color}">${esc(n.code)} · ${esc(DATA.lanes[n.tab][n.col].label)}</span>${n.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}${isSugg(n.desc + n.madeAt) ? '<span class="badge-draft">Has suggestions</span>' : ""}</div>
+    ${verdictHTML(n)}
+    ${art(imgPath(n, t.folder), n.code, color)}
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", n.desc || "—", true)}</p></div>
+    <div class="kv"><div><span>Made / gathered at</span><b>${ed(base + ".madeAt", n.madeAt || "—")}</b></div><div><span>Gate / requirement</span><b>${ed(base + ".gate", n.gate || "—", true)}</b></div></div>
+    <div class="m-sec"><div class="sec-title">Made from</div>${inputs.length ? `<div class="xlinks">${inputs.map(chipFor).join("")}</div>` : '<p class="dim" style="text-align:center">Raw — gathered directly.</p>'}</div>
+    <div class="m-sec"><div class="sec-title">Leads to</div>${uses.length ? `<div class="xlinks">${uses.map(chipFor).join("")}</div>` : '<p class="dim" style="text-align:center">End product in this book.</p>'}
+      ${n.alsoUsed ? `<p class="foot" style="text-align:center">Also: ${ed(base + ".alsoUsed", n.alsoUsed)} · <a class="vlink" href="${encodeURI("Arms of Eden.html")}#${pairHash()}/weapons" style="color:var(--tab)">Arms of Eden ↗</a></p>` : ""}</div>
+    <div class="m-sec"><div class="sec-title">Access by Duo</div>${accessRowHTML(n, base)}
+      <p class="foot" style="text-align:center">✓ can produce · ★ stronger · ⇄ import only · ? undecided · ✕ none${state.editing ? " — click a chip to cycle it" : ""}</p></div>
+    ${n.notes || state.editing ? `<div class="m-sec"><div class="sec-title">Notes</div><p class="dim">${ed(base + ".notes", n.notes || "—", true)}</p></div>` : ""}
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.nodes[${i}])">${n.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function openEquip(id) {
+  const e = EQUIP(id), i = DATA.equipment.indexOf(e), base = `equipment.${i}`;
+  if (state.tab !== "tools") { state.tab = "tools"; renderAll(); }
+  SFX.play("node", { pitch: 1.1 });
+  reopen = () => openEquip(id);
+  const inputs = e.ext.map(refItem).filter(Boolean);
+  openModal(`
+    <div class="m-kicker">Tools & Equipment · Equipment</div>
+    <h3 class="m-title" style="--acc:var(--tab)">${ed(base + ".name", e.name)}</h3>
+    <div class="m-tags"><span class="chip">${esc(e.code)}</span>${e.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${verdictHTML(e)}
+    ${art(imgPath(e, "Tools"), e.code, "var(--tab)")}
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", e.desc || "—", true)}</p></div>
+    <div class="kv"><div><span>Made at</span><b>${ed(base + ".madeAt", e.madeAt || "—")}</b></div><div><span>Inputs</span><b>${inputs.length} resource${inputs.length === 1 ? "" : "s"}</b></div></div>
+    <div class="m-sec"><div class="sec-title">Made from</div><div class="xlinks">${inputs.map(chipFor).join("") || '<span class="dim">TBD</span>'}</div></div>
+    <div class="m-sec"><div class="sec-title">Access by Duo</div>${accessRowHTML(e, base)}</div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.equipment[${i}])">${e.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function art(path, icon, color) {
+  return `<div class="build-art short" style="--acc:${color}">${IMG.tag(path, true)}<div class="ph"><span class="ico">${esc(icon)}</span><span>Image placeholder — ${esc(IMG.hint(path))}</span></div></div>`;
+}
+function addEquipment() { DATA.equipment.push({ id: "eq" + Date.now(), name: "New equipment", code: "Nw", ext: [], madeAt: "Workshop", desc: "Describe it.", access: {} }); persist("Added"); renderAll(); }
+function toggleLock(obj) { obj.locked = !obj.locked; persist(obj.locked ? "Marked locked" : "Marked placeholder"); refresh(); }
+
+/* ---------- modal, edit mode, toast ---------- */
+function openModal(html) {
+  if (!quiet) SFX.play("modalOpen");
+  const b = $("#modal-body"), keep = quiet ? b.scrollTop : 0;
+  b.innerHTML = html; b.scrollTop = keep;
+  $("#modal").classList.add("open"); applyEditable();
+}
+function closeModal() { const o = $("#modal").classList.contains("open"); $("#modal").classList.remove("open"); reopen = null; if (o) { SFX.play("modalClose"); if (state.editing) renderAll(); } }
+const PLAIN = (() => { const d = document.createElement("div"); try { d.contentEditable = "plaintext-only"; return d.contentEditable === "plaintext-only"; } catch (e) { return false; } })();
+function applyEditable() { $$("[data-edit]").forEach(el => { if (state.editing) { el.setAttribute("contenteditable", PLAIN ? "plaintext-only" : "true"); el.spellcheck = true; } else el.removeAttribute("contenteditable"); }); }
+function toggleEdit() {
+  state.editing = !state.editing;
+  document.body.classList.toggle("editing", state.editing);
+  $("#btn-edit").classList.toggle("active", state.editing);
+  SFX.play("tab", { pitch: state.editing ? 1.15 : 0.88 });
+  refresh(); toast(state.editing ? "Edit mode on" : "Edit mode off");
+}
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1900); }
+document.addEventListener("focusout", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (!el || !state.editing) return;
+  const v = el.innerText.replace(/\u00a0/g, " ").trim();
+  if (getPath(DATA, el.dataset.edit) === v) return;
+  setPath(DATA, el.dataset.edit, v); persist("Saved");
+});
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (el && el.isContentEditable) { if (e.key === "Enter" && !el.hasAttribute("data-ml")) { e.preventDefault(); el.blur(); } if (e.key === "Escape") el.blur(); return; }
+  if (e.key === "Escape") return closeModal();
+  if ($("#modal").classList.contains("open") || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= DATA.tabs.length) go(DATA.tabs[n - 1].id);
+});
+
+/* ---------- UI sounds — procedural Web Audio with a warm room tone; one mute shared across books ---------- */
+const SFX = (() => {
+  let ctx = null, out = null, muted = false;
+  try { muted = (localStorage.getItem("edenCodex.mute") ?? localStorage.getItem("warlordsOfEden.mute")) === "1"; } catch (e) {}
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function ensure() {
+    if (reduce) return Promise.resolve();
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
+      out = ctx.createGain(); out.gain.value = 0.5;
+      const send = ctx.createGain(), dl = ctx.createDelay(0.5), fb = ctx.createGain(), lp = ctx.createBiquadFilter();
+      send.gain.value = 0.22; dl.delayTime.value = 0.09; fb.gain.value = 0.35; lp.type = "lowpass"; lp.frequency.value = 2200;
+      out.connect(comp); out.connect(send); send.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    return ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
+  }
+  document.addEventListener("pointerdown", () => { ensure(); }, { once: true, passive: true });
+  function env(g, t, peak, atk, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + atk); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function tone(f, t, dur, peak, type, f2) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    o.connect(g); g.connect(out); env(g, t, peak, Math.min(0.01, dur / 4), dur); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function pluck(f, t, dur, peak) { tone(f, t, dur, peak, "triangle"); tone(f * 2.003, t, dur * 0.6, peak * 0.25, "sine"); }
+  function hiss(t, dur, peak, type, f1, f2, q) {
+    const n = Math.ceil(ctx.sampleRate * (dur + 0.05)), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = b; fl.type = type; fl.frequency.setValueAtTime(f1, t);
+    if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    fl.Q.value = q || 1;
+    s.connect(fl); fl.connect(g); g.connect(out); env(g, t, peak, Math.min(0.02, dur / 3), dur); s.start(t); s.stop(t + dur + 0.05);
+  }
+  const KIT = {
+    tab: (t, p) => { hiss(t, 0.035, 0.16, "bandpass", 2400 * p, 0, 5); pluck(587 * p, t + 0.005, 0.12, 0.07); },
+    back: t => { pluck(659, t, 0.12, 0.06); pluck(494, t + 0.07, 0.16, 0.06); hiss(t, 0.12, 0.05, "bandpass", 1200, 500, 2); },
+    modalOpen: t => { hiss(t, 0.22, 0.07, "bandpass", 380, 1700, 1.4); tone(92, t, 0.24, 0.16, "sine", 52); pluck(880, t + 0.06, 0.4, 0.03); },
+    picker: t => { hiss(t, 0.2, 0.06, "bandpass", 500, 1900, 1.4); tone(110, t, 0.2, 0.12, "sine", 62); pluck(740, t + 0.05, 0.3, 0.035); pluck(988, t + 0.11, 0.3, 0.025); },
+    modalClose: t => { hiss(t, 0.14, 0.055, "bandpass", 1500, 420, 1.6); tone(330, t, 0.12, 0.045, "sine", 220); },
+    select: (t, p) => { pluck(523 * p, t, 0.22, 0.08); pluck(784 * p, t + 0.065, 0.3, 0.065); },
+    duoLoad: t => { tone(55, t, 0.7, 0.16, "sine"); tone(82.4, t + 0.02, 0.6, 0.08, "sine"); hiss(t, 0.5, 0.07, "lowpass", 180, 900, 0.7); [330, 415, 494, 659].forEach((f, i) => pluck(f, t + 0.12 + i * 0.07, 0.5, 0.04)); },
+    node: (t, p) => { hiss(t, 0.025, 0.08, "highpass", 3200, 0, 0.8); pluck(740 * p, t, 0.14, 0.055); },
+    toggle: (t, p, on) => { if (on) { pluck(523, t, 0.15, 0.06); pluck(784, t + 0.07, 0.2, 0.06); } else { pluck(784, t, 0.15, 0.05); pluck(523, t + 0.07, 0.2, 0.05); } },
+    save: t => [523, 659, 784, 1047].forEach((f, i) => pluck(f, t + i * 0.08, 0.45, 0.055)),
+    shutter: t => { hiss(t, 0.018, 0.14, "bandpass", 3000, 0, 3); hiss(t + 0.06, 0.022, 0.1, "bandpass", 2200, 0, 3); pluck(1175, t + 0.06, 0.08, 0.025); }
+  };
+  function play(kind, opts) {
+    if (muted || reduce || (typeof quiet !== "undefined" && quiet)) return;
+    const fn = KIT[kind];
+    if (!fn) return;
+    ensure().then(() => { if (ctx) fn(ctx.currentTime + 0.005, (opts && opts.pitch) || 1, !muted); }).catch(() => {});
+  }
+  function sync() {
+    const b = document.getElementById("btn-sound");
+    if (!b) return;
+    b.textContent = muted ? "\u{1F507} Muted" : "\u{266A} Sound";
+    b.classList.toggle("active", !muted);
+    b.title = muted ? "UI sounds off — click to enable" : "UI sounds on — click to mute";
+  }
+  function toggleMute() { muted = !muted; try { localStorage.setItem("edenCodex.mute", muted ? "1" : "0"); } catch (e) {} sync(); if (!muted) play("toggle"); }
+  return { play, toggleMute, sync };
+})();
+
+/* ---------- atmosphere particles ---------- */
+const FX = (() => {
+  const cv = $("#fx"), cx = cv.getContext("2d");
+  const N = (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? 0 : 110;
+  let w = 0, h = 0, parts = [], cfg = [], sig = "", raf = 0;
+  const R = (a, b) => a + Math.random() * (b - a);
+  function resize() { const d = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * d; cv.height = h * d; cv.style.width = w + "px"; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); }
+  function make(i, init) {
+    const c = cfg[i % cfg.length], p = { m: c.mode, c: c.color, t: 0, life: R(320, 900), a: R(.3, .85), s: R(1, 2.6), ph: R(0, 6.28), vx: 0, vy: 0, wait: 0 };
+    switch (p.m) {
+      case "embers": p.x = R(0, w); p.y = init ? R(0, h) : h + R(0, 40); p.vx = R(-.2, .2); p.vy = -R(.35, 1.3); break;
+      case "spores": p.x = R(0, w); p.y = R(0, h); p.vx = R(-.15, .15); p.vy = R(-.18, .08); p.s = R(1.5, 4.5); p.a = R(.08, .32); break;
+      case "sparks": { p.x = R(0, w); p.y = R(0, h); const an = R(0, 6.28), sp = R(1.5, 4.5); p.vx = Math.cos(an) * sp; p.vy = Math.sin(an) * sp; p.life = R(16, 46); p.s = R(.8, 1.7); p.wait = R(0, 300); break; }
+      case "dust": p.x = init ? R(0, w) : -R(0, 60); p.y = R(0, h); p.vx = R(.8, 2.6); p.vy = R(-.15, .15); p.a = R(.1, .35); p.s = R(.8, 2); break;
+      case "drip": p.x = R(0, w); p.y = init ? R(0, h) : -R(0, 80); p.vy = R(.6, 1.6); p.s = R(1, 2); p.a = R(.25, .6); break;
+      case "data": p.x = Math.round(R(0, w) / 16) * 16; p.y = init ? R(0, h) : -R(0, 60); p.vy = R(.4, 1.4); p.s = R(1.5, 3); p.a = R(.15, .5); break;
+      default: p.x = R(0, w); p.y = init ? R(0, h) : -R(0, 40); p.vx = R(-.25, .35); p.vy = R(.25, .7); p.a = R(.15, .45); if (Math.random() < .7) p.c = "#bdb5a6";
+    }
+    return p;
+  }
+  function tick() {
+    cx.clearRect(0, 0, w, h);
+    parts.forEach((p, i) => {
+      if (p.wait > 0) { p.wait--; return; }
+      p.t++; p.x += p.vx; p.y += p.vy;
+      if (p.m === "embers" || p.m === "ash") p.x += Math.sin(p.t / 45 + p.ph) * .3;
+      if (p.y < -90 || p.y > h + 90 || p.x < -90 || p.x > w + 90 || p.t > p.life) { parts[i] = make(i, false); return; }
+      const fade = Math.max(0, Math.min(1, p.t / 40, (p.life - p.t) / 40)); let al = p.a * fade;
+      cx.globalCompositeOperation = /embers|sparks|data/.test(p.m) ? "lighter" : "source-over"; cx.fillStyle = cx.strokeStyle = p.c;
+      if (p.m === "sparks") { cx.globalAlpha = al; cx.lineWidth = p.s; cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3); cx.stroke(); return; }
+      if (p.m === "data") { cx.globalAlpha = al; cx.fillRect(p.x, p.y, p.s, p.s * 2.4); return; }
+      if (p.m === "embers") { al *= .65 + .35 * Math.sin(p.t / 6 + p.ph); cx.globalAlpha = al * .18; cx.beginPath(); cx.arc(p.x, p.y, p.s * 3.2, 0, 6.283); cx.fill(); }
+      cx.globalAlpha = al; cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, 6.283); cx.fill();
+    });
+    cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over"; raf = requestAnimationFrame(tick);
+  }
+  resize(); addEventListener("resize", resize);
+  return { set(next) { const s = JSON.stringify(next); if (s === sig) return; sig = s; cfg = next; parts = Array.from({ length: N }, (_, i) => make(i, true)); if (!raf && N) raf = requestAnimationFrame(tick); } };
+})();
+
+/* ==========================================================================
+   START — URL: #pair/tab/open:id  (pair = "all" or warlord1+warlord2)
+   ========================================================================== */
+(function init() {
+  const note = boot();
+  IMG.seed(DATA.meta && DATA.meta.pictures);
+  const parts = decodeURIComponent(location.hash.slice(1)).split("/");
+  let saved = ""; try { saved = localStorage.getItem("edenCodex.pair") || ""; } catch (e) {}
+  readPair(parts[0] && parts[0] !== "" ? (parts[0] === "all" ? "" : parts[0]) : saved);
+  if (DATA.tabs.some(t => t.id === parts[1])) state.tab = parts[1];
+  SFX.sync(); renderAll();
+  const open = (parts[2] || "").replace(/^open:/, "");
+  if (open) { quiet = true; if (NODE(open)) openNode(open); else if (EQUIP(open)) openEquip(open); quiet = false; }
+  if (note) toast(note);
+})();
+</script>
+</body>
+</html>

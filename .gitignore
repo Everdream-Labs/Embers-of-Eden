@@ -11,8 +11,12 @@ export_presets.cfg
 data_*/
 mono_crash.*
 
+# Build output (shareable codex etc.)
+dist/
+
 # OS / editor
 .DS_Store
 Thumbs.db
+desktop.ini
 *~
 *.swp

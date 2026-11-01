@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arms of Eden — Embers of Eden Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eden-codex.css">
+<style>
+.support-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px}
+.sig-card .n-sub b{color:var(--ink)}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.status-grid .node{min-height:96px;display:flex;flex-direction:column;justify-content:center}
+@media (max-width:760px){.support-cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+<div class="app book">
+  <main class="plate center" style="--acc:var(--tab)">
+    <header class="duo-head">
+      <div class="motif a" id="motif-a"></div><div class="motif b" id="motif-b"></div>
+      <div class="brandrow"><span class="brand"><b>Arms</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
+      <div class="head-sigils" id="head-sigils"></div>
+      <div class="kicker">Troops · weapons · armour · status effects</div>
+      <h1 class="duo-title">Arms</h1>
+      <div class="motto" id="book-motto">Every soldier is equipped, fed and paid for.</div>
+    </header>
+    <div class="pairbar" id="pairbar"></div>
+    <nav class="navbar">
+      <div class="side"><button class="btn" id="btn-sound" onclick="SFX.toggleMute()">&#9836; Sound</button></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="side"><button class="btn" id="btn-edit" onclick="toggleEdit()" title="Toggle edit mode">&#9998; Edit</button></div>
+    </nav>
+    <div class="editbar" id="editbar"></div>
+    <div class="views"><section class="view active" id="view"></section></div>
+    <footer class="legend" id="legend"></footer>
+  </main>
+</div>
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal plate" id="modal-box"><button class="x" onclick="closeModal()" title="Close">&#10005;</button><div class="modal-body" id="modal-body"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="application/json" id="codex-baked">null</script>
+<script>
+const PRISTINE_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+/* ---------- Pictures: Name.jpg, Name1.jpg, Name2.jpg … — click a picture to cycle the shortlist ---------- */
+const IMG = (() => {
+  const EXT = ["jpg", "png", "webp", "jpeg"];
+  const EMB = window.EDEN_IMAGES || null;
+  const KEY = "edenCodex.pictures";
+  const cache = {};
+  let pick = {};
+  try { pick = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  const stemOf = p => String(p || "").replace(/\.(jpe?g|png|webp)$/i, "");
+  const src = p => (EMB && EMB[p]) || encodeURI(p).replace(/#/g, "%23");
+  const probe = p => new Promise(res => {
+    if (EMB) return res(!!EMB[p]);
+    const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = src(p);
+  });
+  async function at(stem, n) { for (const e of EXT) { const p = `${stem}${n || ""}.${e}`; if (await probe(p)) return p; } return null; }
+  function list(stem) {
+    if (!cache[stem]) cache[stem] = (async () => {
+      const out = [], first = await at(stem, 0);
+      if (first) out.push(first);
+      for (let n = 1; n < 40; n++) { const p = await at(stem, n); if (!p) break; out.push(p); }
+      return out;
+    })();
+    return cache[stem];
+  }
+  function badge(img, i, n) {
+    const host = img.parentNode; if (!host) return;
+    let b = host.querySelector(":scope > .pic-count");
+    if (n < 2) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("span"); b.className = "pic-count"; host.appendChild(b); }
+    b.textContent = `${i + 1} / ${n} · click to cycle`;
+  }
+  async function hydrate(img) {
+    if (img.dataset.ready) return;
+    img.dataset.ready = "1";
+    const stem = img.dataset.stem, paths = await list(stem);
+    if (!paths.length) { img.remove(); return; }
+    const i = (pick[stem] || 0) % paths.length;
+    img.onload = () => { if (img.parentNode) img.parentNode.classList.add("has-img"); };
+    img.src = src(paths[i]);
+    if (img.hasAttribute("data-cycle")) badge(img, i, paths.length);
+  }
+  async function cycle(img) {
+    const stem = img.dataset.stem, paths = await list(stem);
+    const file = stem.split("/").pop();
+    if (paths.length < 2) { toast(`Only one picture — add ${file}1.jpg, ${file}2.jpg… to shortlist more`); return; }
+    const i = ((pick[stem] || 0) + 1) % paths.length;
+    pick[stem] = i;
+    try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch (e) {}
+    document.querySelectorAll(`img[data-stem="${CSS.escape(stem)}"]`).forEach(x => { x.src = src(paths[i]); if (x.hasAttribute("data-cycle")) badge(x, i, paths.length); });
+    SFX.play("shutter");
+    toast(`Picture ${i + 1} of ${paths.length} — ${paths[i].split("/").pop()}`);
+  }
+  document.addEventListener("click", e => {
+    const img = e.target.closest && e.target.closest("img[data-cycle]");
+    if (!img) return;
+    e.stopPropagation(); e.preventDefault();
+    cycle(img);
+  }, true);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches("img[data-stem]")) hydrate(n);
+    n.querySelectorAll("img[data-stem]").forEach(hydrate);
+  }))).observe(document.documentElement, { childList: true, subtree: true });
+  return {
+    tag: (path, cycleIt, alt) => `<img data-stem="${esc(stemOf(path))}"${cycleIt ? " data-cycle" : ""} alt="${esc(alt || "")}">`,
+    hint: path => `add “${path}” — or ${stemOf(path).split("/").pop()}1, 2, 3… to shortlist`,
+    snapshot: () => Object.assign({}, pick),
+    seed: obj => { if (obj) Object.entries(obj).forEach(([k, v]) => { if (!(k in pick)) pick[k] = v; }); }
+  };
+})();
+/* ==========================================================================
+   DATA — mirrors Data/Arms_of_Eden.md. Access per Duo:
+   yes · boost (stronger) · early · import · tbd · no. Mixed pairs = union.
+   "(suggestion)" = idea, not agreed.
+   ========================================================================== */
+const W_ = (id, name, code, row, col, cls, material, inputs, x) => Object.assign({ id, name, code, row, col, cls, material, inputs, from: [], status: [], madeAt: "Blacksmith", desc: "", access: {}, locked: false }, x || {});
+const NO_DROIDS = { droids: "no" };
+const A_ = (id, name, code, row, col, type, inputs, x) => { const a = Object.assign({ id, name, code, row, col, type, inputs, from: [], resist: [], melee: 0, ranged: 0, madeAt: "Armourer", desc: "", access: {}, locked: false }, x || {}); a.access = Object.assign({}, a.type === "Faction" ? {} : NO_DROIDS, a.access); return a; };
+const DEFAULT_DATA = {
+  meta: { dataRev: "factory-2026-11-01", updated: "2026-11-01", source: "Data/Arms_of_Eden.md",
+    rule: "Union rule for mixed pairs: if either Warlord's Duo can field a weapon class, troop line, armour or status, the pair can. Tweak item by item as the game develops." },
+  tabs: [
+    { id: "troops", label: "Troops", color: "#d6573b" },
+    { id: "weapons", label: "Weapons", color: "#e2a73b" },
+    { id: "armour", label: "Armour", color: "#7fa6c9" },
+    { id: "status", label: "Status Effects", color: "#b07ad6" }
+  ],
+  classes: { melee: "Melee", bow: "Bows", gun: "Guns", laser: "Laser", plasma: "Plasma", explosive: "Explosives", special: "Special", support: "Support", siege: "Siege" },
+  duos: {
+    survivors: { arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "yes" }, inflict: { bleed: "yes", burn: "yes", poison: "yes", disease: "no", radiation: "no", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Broad access, shallow specialisation." },
+    hunters: { arsenal: { melee: "boost", bow: "yes", gun: "boost", laser: "no", plasma: "no", explosive: "boost", support: "yes", siege: "boost" }, inflict: { bleed: "yes", burn: "yes", poison: "tbd", disease: "no", radiation: "no", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Never lasers. Guns, blades and explosives are their strength." },
+    scientists: { arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "boost", explosive: "yes", support: "boost", siege: "yes" }, inflict: { bleed: "yes", burn: "yes", poison: "tbd", disease: "no", radiation: "tbd", paralysis: "boost", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Strongest plasma; electricity / paralysis specialists." },
+    mutants: { arsenal: { melee: "boost", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "yes" }, inflict: { bleed: "yes", burn: "tbd", poison: "no", disease: "no", radiation: "tbd", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Exceptional melee tanks; poor weapon and tool use." },
+    afflicted: { arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "tbd" }, inflict: { bleed: "tbd", burn: "no", poison: "boost", disease: "boost", radiation: "boost", paralysis: "no", psychosis: "tbd" }, immune: [], resist: ["poison", "radiation"], vuln: [], note: "Hazmat suits — thrive in zones that hurt everyone else." },
+    militia: { arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "boost" }, inflict: { bleed: "yes", burn: "yes", poison: "no", disease: "no", radiation: "no", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Heavy armour; heavy-firearms direction still being separated from Templars." },
+    bloodveil: { arsenal: { melee: "boost", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "boost", siege: "tbd" }, inflict: { bleed: "boost", burn: "no", poison: "yes", disease: "no", radiation: "no", paralysis: "no", psychosis: "yes" }, immune: [], resist: [], vuln: [], note: "Female troops only. One of the few groups that can inflict Psychosis." },
+    templars: { arsenal: { melee: "boost", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "yes" }, inflict: { bleed: "yes", burn: "tbd", poison: "no", disease: "no", radiation: "no", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "In review with Axel — may lean into guns over pure medieval melee." },
+    pack: { arsenal: { melee: "boost", bow: "yes", gun: "no", laser: "no", plasma: "no", explosive: "tbd", support: "tbd", siege: "tbd" }, inflict: { bleed: "boost", burn: "no", poison: "no", disease: "no", radiation: "no", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Narrowest access — no guns, stone → iron gear. Compensates with troop variety, animals and attack speed." },
+    ashen: { arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "yes" }, inflict: { bleed: "tbd", burn: "boost", poison: "tbd", disease: "no", radiation: "no", paralysis: "no", psychosis: "yes" }, immune: [], resist: ["burn"], vuln: [], note: "Fire and psychology. Reduced fire damage taken." },
+    nomads: { arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes", support: "yes", siege: "yes" }, inflict: { bleed: "yes", burn: "yes", poison: "tbd", disease: "no", radiation: "no", paralysis: "no", psychosis: "no" }, immune: [], resist: [], vuln: [], note: "Vehicles and mobility; possible global movement-speed bonus." },
+    droids: { arsenal: { melee: "yes", bow: "tbd", gun: "yes", laser: "early", plasma: "early", explosive: "tbd", support: "tbd", siege: "yes" }, inflict: { bleed: "no", burn: "yes", poison: "no", disease: "no", radiation: "tbd", paralysis: "tbd", psychosis: "no" }, immune: ["bleed", "poison", "psychosis"], resist: [], vuln: ["paralysis"], note: "Immune to Poison, Bleeding and Psychosis; vulnerable to Electricity / Paralysis. Chassis troops only." }
+  },
+  categories: {
+    Melee: { color: "#d6573b", counters: "Grenadier", by: "Archer", trainedAt: "Barracks" },
+    Archer: { color: "#93b85c", counters: "Melee", by: "Grenadier", trainedAt: "Range" },
+    Grenadier: { color: "#e2a73b", counters: "Archer", by: "Melee", trainedAt: "Munitions Workshop" },
+    Support: { color: "#5fb3c4", counters: "—", by: "—", trainedAt: "Infirmary (suggestion)" },
+    Siege: { color: "#a4ae74", counters: "Buildings", by: "Melee", trainedAt: "Siege Workshop (suggestion)" }
+  },
+  lines: [
+    { id: "infantry", cat: "Melee", name: "Infantry Line", level: 3, desc: "Core frontline. Militia → Champion style upgrade path.", stages: [
+      { name: "Scrapper", cls: "melee", weapon: "w_scrapblade", armour: "a_padded", desc: "Cheap scrap-blade militia." },
+      { name: "Brawler", cls: "melee", weapon: "w_bronzesword", armour: "a_leather", desc: "Sturdier melee infantry." },
+      { name: "Enforcer", cls: "melee", weapon: "w_ironcleaver", armour: "a_ironmail", desc: "Armoured line infantry." },
+      { name: "Champion", cls: "melee", weapon: "w_steelblade", armour: "a_steelplate", desc: "Elite melee — top of the line." }] },
+    { id: "polearm", cat: "Melee", name: "Polearm Line", level: 1, desc: "Reach weapons that hold a line.", stages: [
+      { name: "Spiker", cls: "melee", weapon: "w_rebar", armour: "a_padded", desc: "Sharpened rebar on a pole." },
+      { name: "Pikeman", cls: "melee", weapon: "w_ironpike", armour: "a_leather", desc: "Disciplined reach infantry." },
+      { name: "Halberdier", cls: "melee", weapon: "w_halberd", armour: "a_ironmail", desc: "Elite polearm." }] },
+    { id: "bow", cat: "Archer", name: "Bow Line", level: 2, desc: "Quiet ranged line — The Pack's only ranged option.", stages: [
+      { name: "Slinger", cls: "bow", weapon: "w_sling", armour: "a_padded", desc: "Stones and scrap." },
+      { name: "Bowman", cls: "bow", weapon: "w_shortbow", armour: "a_leather", desc: "Basic archer." },
+      { name: "Longbowman", cls: "bow", weapon: "w_longbow", armour: "a_brigandine", desc: "Elite archer." }] },
+    { id: "firearm", cat: "Archer", name: "Firearm Line", level: 1, desc: "Guns, then laser at the top. Hunters never take the laser stage; the Pack never takes guns.", stages: [
+      { name: "Pipe Gunner", cls: "gun", weapon: "w_pipegun", armour: "a_padded", desc: "Improvised firearm." },
+      { name: "Rifleman", cls: "gun", weapon: "w_boltrifle", armour: "a_leather", desc: "Reliable rifles." },
+      { name: "Marksman", cls: "gun", weapon: "w_marksman", armour: "a_brigandine", desc: "Elite marksman." },
+      { name: "Laser Marksman", cls: "laser", weapon: "w_laserrifle", armour: "a_ranger", desc: "Energy-weapon marksman." }] },
+    { id: "grenadier", cat: "Grenadier", name: "Grenadier Line", level: 1, desc: "Thrown explosives.", stages: [
+      { name: "Bomb Thrower", cls: "explosive", weapon: "w_molotov", armour: "a_padded", desc: "Molotovs and pipe bombs." },
+      { name: "Grenadier", cls: "explosive", weapon: "w_grenade", armour: "a_leather", desc: "Proper grenades." },
+      { name: "Demolitionist", cls: "explosive", weapon: "w_dynamite", armour: "a_ironmail", desc: "Elite explosives expert." }] },
+    { id: "launcher", cat: "Grenadier", name: "Launcher Line", level: 0, desc: "Heavy indirect fire. The plasma stage is strongest for Scientists.", stages: [
+      { name: "Mortar Crew", cls: "explosive", weapon: "w_pipebomb", armour: "a_leather", desc: "Scrap mortar team." },
+      { name: "Rocketeer", cls: "explosive", weapon: "w_rocket", armour: "a_brigandine", desc: "Rocket launchers." },
+      { name: "Plasma Lobber", cls: "plasma", weapon: "w_plasma", armour: "a_ranger", desc: "Plasma artillery." }] },
+    { id: "medic", cat: "Support", name: "Medic Line", level: 1, desc: "AoE Monk-style healers — restore HP and cleanse some status effects.", stages: [
+      { name: "Field Medic", cls: "support", weapon: "", armour: "a_padded", desc: "Bandages and stitches. Stops bleeding." },
+      { name: "Combat Medic", cls: "support", weapon: "", armour: "a_leather", desc: "Heals under fire; cleanses poison (suggestion)." },
+      { name: "Surgeon", cls: "support", weapon: "", armour: "a_leather", desc: "Elite healer; cleanses most statuses (suggestion)." }] },
+    { id: "siege", cat: "Siege", name: "Siege Line", level: 0, desc: "Siege matters — and not every civ is equally good at it.", stages: [
+      { name: "Ram Crew", cls: "siege", weapon: "", armour: "a_scrapplate", desc: "Scrap battering ram." },
+      { name: "Scrap Catapult", cls: "siege", weapon: "", armour: "", desc: "Lobs rubble and burning barrels." },
+      { name: "Siege Mortar", cls: "explosive", weapon: "w_rocket", armour: "", desc: "Heavy explosive siege." },
+      { name: "Plasma Cannon", cls: "plasma", weapon: "w_plasma", armour: "", desc: "Top-end energy siege. Scientists stronger." }] }
+  ],
+  signatures: {
+    viktor: { kind: "troop", name: "Wasteland Raider", role: "Fast raider that loots resources on kills (suggestion).", level: 0 },
+    ayla: { kind: "troop", name: "Gate Warden", role: "Shield defender — bonus while holding walls and gates (suggestion).", level: 0 },
+    brick: { kind: "troop", name: "Sapper", role: "Explosive charges against walls and buildings; mining bonus (suggestion).", level: 0 },
+    twig: { kind: "troop", name: "Trapper", role: "Marksman who lays snares that slow and bleed (suggestion).", level: 0 },
+    drsomething: { kind: "troop", name: "Arc Trooper", role: "Paralysis weapon that stuns groups (suggestion).", level: 0 },
+    mixy: { kind: "building", name: "Field Infirmary", role: "Heals nearby units and cleanses status effects (suggestion)." },
+    smash: { kind: "troop", name: "Mutant Brute", role: "Huge melee damage — double rations (suggestion).", level: 0 },
+    bash: { kind: "troop", name: "Thickhide", role: "Tank brute that soaks damage for the line (suggestion).", level: 0 },
+    afflicted1: { kind: "troop", name: "Hazmat Sprayer", role: "Poison clouds; immune to its own toxins (suggestion).", level: 0 },
+    afflicted2: { kind: "troop", name: "Plague Carrier", role: "Spreads disease between enemy units (suggestion).", level: 0 },
+    militia1: { kind: "troop", name: "Shield-wall Trooper", role: "Heavy-armour formation infantry (suggestion).", level: 0 },
+    militia2: { kind: "troop", name: "Heavy Gunner", role: "Heavy-firearm suppression — the Militia's gun identity vs the Templars (suggestion).", level: 0 },
+    bloodveil1: { kind: "troop", name: "Bleed Dancer", role: "Female blade dancer — stacking bleed (suggestion).", level: 0 },
+    bloodveil2: { kind: "troop", name: "Coven Witch", role: "Female caster — conversion and psychosis (suggestion).", level: 0 },
+    templar1: { kind: "troop", name: "Holy Knight", role: "Heavy knight in scavenged plate (suggestion).", level: 0 },
+    templar2: { kind: "troop", name: "Gun Templar", role: "Faith and firearms — the guns direction under review (suggestion).", level: 0 },
+    pack1: { kind: "troop", name: "Ravager", role: "Cannibal berserker with extreme attack speed (suggestion).", level: 0 },
+    pack2: { kind: "troop", name: "Beastmaster", role: "Handler that commands and buffs animal packs (suggestion).", level: 0 },
+    blowtorch: { kind: "troop", name: "Flame Trooper", role: "Flamethrower infantry — burning (suggestion).", level: 0 },
+    vesper: { kind: "building", name: "Breaking Pens", role: "Psychological control of POWs and slaves (suggestion)." },
+    nomad1: { kind: "building", name: "Waystation", role: "Relocatable outpost and satellite-colony hub (suggestion)." },
+    nomad2: { kind: "troop", name: "War Buggy", role: "Fast vehicle raider (suggestion).", level: 0 },
+    hive: { kind: "building", name: "Data Centre", role: "Replaces the Town Centre. Destroy it and the Droids are eliminated." }
+  },
+  faction: {
+    pack: [
+      { name: "Dogs", role: "Animals class — cheap, fast early hunters.", level: 0 },
+      { name: "Vultures", role: "Animals class — flying scouts and scavengers.", level: 0 },
+      { name: "Lions", role: "Animals class — fast melee predators.", level: 0 },
+      { name: "Bears", role: "Animals class — tanky melee.", level: 0 },
+      { name: "Elephants", role: "Animals class — heavy trample and siege.", level: 0 },
+      { name: "Hippos", role: "Animals class — swamp and river bruisers.", level: 0 },
+      { name: "Wild Beasts", role: "Any map animal can be bred — other civs only get farm animals.", level: 0 }],
+    droids: [
+      { name: "Light Chassis", role: "Fast, fragile frame — melee or ranged modules.", level: 0 },
+      { name: "Heavy Chassis", role: "Slow, armoured frame.", level: 0 },
+      { name: "Chassis – Placeholder", role: "Further chassis types TBD.", level: 0 }],
+    nomads: [
+      { name: "Dune Buggy", role: "Vehicle — fast scout and raider (suggestion).", level: 0 },
+      { name: "War Rig", role: "Vehicle — armoured transport (suggestion).", level: 0 },
+      { name: "Mobile Platform", role: "Vehicle — mobile firing platform (suggestion).", level: 0 }],
+    bloodveil: [{ name: "Female troops only", role: "Roster rule — every Bloodveil unit is a woman.", level: 0, rule: true }]
+  },
+  weaponBands: [{ label: "Tier I", sub: "Stone / scrap" }, { label: "Tier II", sub: "Bronze · black powder" }, { label: "Tier III", sub: "Iron" }, { label: "Tier IV", sub: "Steel · energy" }, { label: "Tier V", sub: "Hardened · plasma" }],
+  weaponLanes: [{ label: "Blades", color: "#d6573b" }, { label: "Polearms", color: "#c0643f" }, { label: "Bows", color: "#93b85c" }, { label: "Guns", color: "#c9a24a" }, { label: "Heavy Guns", color: "#a4ae74" }, { label: "Laser", color: "#4fb0ff" }, { label: "Plasma", color: "#3fd0c9" }, { label: "Explosives", color: "#e2a73b" }, { label: "Demolition", color: "#ff8a3d" }, { label: "Electric", color: "#7ec8ff" }, { label: "Fire & Chem", color: "#9bc53d" }, { label: "Ritual", color: "#c42a42" }],
+  weapons: [
+    W_("w_scrapblade", "Scrap Blade", "SB", 0, 0, "melee", "Scrap", ["scrap"], { status: ["bleed"], madeAt: "Workbench (suggestion)", desc: "Sharpened scrap — every Duo starts here." }),
+    W_("w_bronzesword", "Bronze Sword", "BS", 1, 0, "melee", "Bronze", ["bronze", "leather"], { from: ["w_scrapblade"], status: ["bleed"], access: { pack: "no" }, desc: "First real blade." }),
+    W_("w_ironcleaver", "Iron Cleaver", "IC", 2, 0, "melee", "Iron", ["iron", "wood"], { from: ["w_bronzesword"], status: ["bleed"], desc: "Heavy iron blade — the Pack's best steel-free option." }),
+    W_("w_steelblade", "Steel Longblade", "SL", 3, 0, "melee", "Steel", ["steel", "leather"], { from: ["w_ironcleaver"], status: ["bleed"], access: { pack: "no" }, desc: "Elite steel blade." }),
+    W_("w_hardblade", "Hardened Warblade", "HW", 4, 0, "melee", "Hardened Steel", ["hardened", "leather"], { from: ["w_steelblade"], status: ["bleed"], access: { pack: "no" }, desc: "Forged from Hardened Steel ingots — imported for most Duos, but any blacksmith can work them." }),
+    W_("w_rebar", "Rebar Spike", "RS", 0, 1, "melee", "Scrap", ["scrap", "wood"], { madeAt: "Workbench (suggestion)", desc: "Sharpened rebar on a pole." }),
+    W_("w_bronzespear", "Bronze Spear", "Sp", 1, 1, "melee", "Bronze", ["bronze", "wood"], { from: ["w_rebar"], access: { pack: "no" }, desc: "Reach weapon with a bronze head." }),
+    W_("w_ironpike", "Iron Pike", "Pk", 2, 1, "melee", "Iron", ["iron", "wood"], { from: ["w_bronzespear"], desc: "Long pike for holding a line." }),
+    W_("w_halberd", "Steel Halberd", "Hb", 3, 1, "melee", "Steel", ["steel", "wood"], { from: ["w_ironpike"], status: ["bleed"], access: { pack: "no" }, desc: "Elite polearm — axe, hook and spike." }),
+    W_("w_sling", "Sling", "Sg", 0, 2, "bow", "Leather", ["leather", "stone"], { madeAt: "Workbench (suggestion)", desc: "Stones and scrap shot." }),
+    W_("w_shortbow", "Short Bow", "SB", 1, 2, "bow", "Wood", ["wood", "leather"], { from: ["w_sling"], madeAt: "Bowyer (suggestion)", desc: "Basic bow — no metal needed." }),
+    W_("w_longbow", "Longbow", "LB", 2, 2, "bow", "Wood + iron tips", ["wood", "iron"], { from: ["w_shortbow"], status: ["bleed"], madeAt: "Bowyer (suggestion)", desc: "Elite archer bow. Hardwood versions late (suggestion)." }),
+    W_("w_compound", "Compound Bow", "CB", 3, 2, "bow", "Steel", ["steel", "wire"], { from: ["w_longbow"], madeAt: "Bowyer (suggestion)", access: { pack: "no" }, desc: "Pulleys and steel — quiet, brutal range." }),
+    W_("w_pipegun", "Pipe Gun", "PG", 1, 3, "gun", "Scrap", ["scrap", "gunpowder"], { madeAt: "Gunsmith (suggestion)", desc: "Improvised firearm." }),
+    W_("w_boltrifle", "Bolt Rifle", "BR", 2, 3, "gun", "Iron", ["iron", "wood", "gunpowder"], { from: ["w_pipegun"], madeAt: "Gunsmith (suggestion)", desc: "Reliable rifle." }),
+    W_("w_repeater", "Repeater Rifle", "RR", 3, 3, "gun", "Steel", ["steel", "mechparts", "gunpowder"], { from: ["w_boltrifle"], madeAt: "Gunsmith (suggestion)", desc: "Fast-cycling rifle." }),
+    W_("w_marksman", "Marksman Rifle", "MR", 4, 3, "gun", "Hardened Steel", ["hardened", "glass", "mechparts"], { from: ["w_repeater"], madeAt: "Gunsmith (suggestion)", desc: "Scoped elite rifle." }),
+    W_("w_scattergun", "Scattergun", "SG", 2, 4, "gun", "Iron", ["iron", "gunpowder"], { from: ["w_pipegun"], madeAt: "Gunsmith (suggestion)", desc: "Close-range spread (suggestion)." }),
+    W_("w_hmg", "Heavy Machine Gun", "MG", 3, 4, "gun", "Steel", ["steel", "mechparts", "gunpowder"], { from: ["w_scattergun"], madeAt: "Gunsmith (suggestion)", access: { militia: "boost" }, desc: "Heavy suppression — part of the Militia's firearms identity (suggestion)." }),
+    W_("w_laserpistol", "Laser Pistol", "LP", 3, 5, "laser", "Electronics", ["electronics", "glass", "wire"], { madeAt: "Electronics Lab (suggestion)", status: ["burn"], desc: "First energy weapon. Droids reach it early." }),
+    W_("w_laserrifle", "Laser Rifle", "LR", 4, 5, "laser", "Electronics", ["electronics", "glass", "steel"], { from: ["w_laserpistol"], madeAt: "Electronics Lab (suggestion)", status: ["burn"], desc: "Energy marksman weapon." }),
+    W_("w_plasma", "Plasma Caster", "PC", 4, 6, "plasma", "Electronics", ["electronics", "rarecomp", "fuel"], { madeAt: "Laboratory (suggestion)", status: ["burn"], desc: "Top-end energy weapon. Scientists get a stronger version; Droids start early." }),
+    W_("w_molotov", "Molotov", "Mo", 0, 7, "explosive", "Glass + alcohol", ["alcohol", "cloth"], { madeAt: "Munitions Workshop", status: ["burn"], desc: "Bottle, rag, fire." }),
+    W_("w_pipebomb", "Pipe Bomb", "PB", 1, 7, "explosive", "Scrap", ["scrap", "gunpowder"], { from: ["w_molotov"], madeAt: "Munitions Workshop", desc: "Crude blast charge." }),
+    W_("w_grenade", "Grenade", "Gr", 2, 7, "explosive", "Iron", ["iron", "gunpowder"], { from: ["w_pipebomb"], madeAt: "Munitions Workshop", desc: "Proper fragmentation grenade.", status: ["bleed"] }),
+    W_("w_rocket", "Rocket Launcher", "RL", 3, 7, "explosive", "Steel", ["steel", "gunpowder", "fuel", "mechparts"], { from: ["w_grenade"], madeAt: "Munitions Workshop", status: ["burn"], desc: "Heavy launcher — also used by siege." }),
+    W_("w_dynamite", "Dynamite Charge", "Dy", 2, 8, "explosive", "Paper + powder", ["gunpowder", "paper"], { from: ["w_pipebomb"], madeAt: "Munitions Workshop", access: { hunters: "boost" }, desc: "Brick's speciality — mining and demolition." }),
+    W_("w_shaped", "Shaped Charge", "SC", 3, 8, "explosive", "Steel", ["steel", "gunpowder"], { from: ["w_dynamite"], madeAt: "Munitions Workshop", access: { hunters: "boost" }, desc: "Directed blast against walls (Hunters unique research idea)." }),
+    W_("w_stunprod", "Stun Prod", "St", 2, 9, "special", "Copper", ["copper", "wire"], { madeAt: "Laboratory (suggestion)", status: ["paralysis"], access: { default: "tbd", scientists: "boost", pack: "no" }, desc: "Electric melee stun. Paralysis may be duo-exclusive." }),
+    W_("w_arcgun", "Arc Gun", "AG", 3, 9, "special", "Electronics", ["electronics", "wire", "copper"], { from: ["w_stunprod"], madeAt: "Laboratory (suggestion)", status: ["paralysis"], access: { default: "tbd", scientists: "boost", pack: "no", hunters: "no" }, desc: "Dr. Something's arcing weapon — ranged paralysis." }),
+    W_("w_toxinflask", "Toxin Flask", "TF", 1, 10, "special", "Glass + herbs", ["glass", "herbs"], { madeAt: "Apothecary (suggestion)", status: ["poison"], access: { default: "tbd", afflicted: "boost", bloodveil: "yes", pack: "no" }, desc: "Thrown poison." }),
+    W_("w_sprayer", "Toxin Sprayer", "TS", 2, 10, "special", "Scrap + herbs", ["scrap", "herbs", "mechparts"], { from: ["w_toxinflask"], madeAt: "Gas Works (suggestion)", status: ["poison", "disease"], access: { default: "no", afflicted: "boost" }, desc: "Area-denial poison cloud." }),
+    W_("w_flamer", "Flamethrower", "FT", 3, 10, "special", "Steel + fuel", ["steel", "fuel"], { from: ["w_molotov"], madeAt: "Munitions Workshop", status: ["burn"], access: { default: "tbd", ashen: "boost", pack: "no" }, desc: "Blowtorch's art form." }),
+    W_("w_ritualblade", "Ritual Blade", "RB", 1, 11, "special", "Bronze / iron + herbs", ["iron", "herbs"], { madeAt: "Blood Altar (suggestion)", status: ["bleed", "poison"], access: { default: "no", bloodveil: "boost" }, desc: "Coven blade — bleed and poison." }),
+    W_("w_censer", "Veil Censer", "VC", 2, 11, "special", "Silver + herbs", ["silver", "herbs"], { from: ["w_ritualblade"], madeAt: "Blood Altar (suggestion)", status: ["psychosis"], access: { default: "no", bloodveil: "yes", ashen: "tbd" }, desc: "Burning herbs that break minds — psychosis delivery (suggestion)." })
+  ],
+  armourBands: [{ label: "Tier I", sub: "Cloth / scrap" }, { label: "Tier II", sub: "Bronze · leather" }, { label: "Tier III", sub: "Iron" }, { label: "Tier IV", sub: "Steel" }, { label: "Tier V", sub: "Hardened · tech" }],
+  armourLanes: [{ label: "Light", color: "#c9b88f" }, { label: "Medium", color: "#9aa7b3" }, { label: "Heavy", color: "#7fa6c9" }, { label: "Shields", color: "#a4ae74" }, { label: "Hazard & Tech", color: "#c2c43c" }, { label: "Faction", color: "#b07ad6" }],
+  armour: [
+    A_("a_padded", "Padded Cloth", "PC", 0, 0, "Light", ["cloth"], { melee: 1, ranged: 1, madeAt: "Weaver", desc: "Layered cloth — better than nothing." }),
+    A_("a_leather", "Leather Armour", "LA", 1, 0, "Light", ["leather", "cloth"], { from: ["a_padded"], melee: 2, ranged: 2, madeAt: "Tannery", desc: "Cloth and leather combined." }),
+    A_("a_brigandine", "Brigandine", "Bg", 2, 0, "Light", ["leather", "iron", "cloth"], { from: ["a_leather"], melee: 3, ranged: 3, desc: "Iron plates riveted inside leather." }),
+    A_("a_ranger", "Ranger Weave", "RW", 3, 0, "Light", ["steel", "leather", "cloth"], { from: ["a_brigandine"], melee: 3, ranged: 5, access: { pack: "no" }, desc: "Light steel-laced gear for ranged elites." }),
+    A_("a_scrapplate", "Scrap Plating", "SP", 0, 1, "Medium", ["scrap", "leather"], { melee: 2, ranged: 1, desc: "Hubcaps, sheet metal and straps." }),
+    A_("a_bronzescale", "Bronze Scale", "BS", 1, 1, "Medium", ["bronze", "leather"], { from: ["a_scrapplate"], melee: 3, ranged: 2, access: { pack: "no" }, desc: "Overlapping bronze scales." }),
+    A_("a_ironmail", "Iron Mail", "IM", 2, 1, "Medium", ["iron"], { from: ["a_bronzescale"], melee: 4, ranged: 3, desc: "Riveted iron rings." }),
+    A_("a_steelmail", "Steel Mail", "SM", 3, 1, "Medium", ["steel"], { from: ["a_ironmail"], melee: 5, ranged: 4, access: { pack: "no" }, desc: "Lighter, stronger mail." }),
+    A_("a_ironplate", "Iron Plate", "IP", 2, 2, "Heavy", ["iron", "leather"], { melee: 6, ranged: 4, access: { bloodveil: "tbd", militia: "boost", templars: "boost" }, desc: "Heavy plate — slows the wearer." }),
+    A_("a_steelplate", "Steel Plate", "SP", 3, 2, "Heavy", ["steel", "leather", "cloth"], { from: ["a_ironplate"], melee: 7, ranged: 6, access: { pack: "no", bloodveil: "tbd", militia: "boost", templars: "boost" }, desc: "Full steel plate. Especially valuable for Militia and Templars." }),
+    A_("a_hardplate", "Hardened Plate", "HP", 4, 2, "Heavy", ["hardened", "leather"], { from: ["a_steelplate"], melee: 9, ranged: 8, access: { pack: "no", bloodveil: "tbd", militia: "boost" }, desc: "Forged from Hardened Steel — imported ingots for most Duos." }),
+    A_("a_scrapshield", "Scrap Shield", "Sh", 0, 3, "Shield", ["scrap", "wood"], { melee: 1, ranged: 2, desc: "Car door with a handle." }),
+    A_("a_buckler", "Bronze Buckler", "Bk", 1, 3, "Shield", ["bronze", "wood"], { from: ["a_scrapshield"], melee: 2, ranged: 2, access: { pack: "no" }, desc: "Small, quick parrying shield." }),
+    A_("a_kite", "Iron Kite Shield", "KS", 2, 3, "Shield", ["iron", "wood"], { from: ["a_buckler"], melee: 3, ranged: 4, access: { militia: "boost" }, desc: "Tall shield for holding a line." }),
+    A_("a_riot", "Riot Shield", "RS", 3, 3, "Shield", ["steel", "glass"], { from: ["a_kite"], melee: 3, ranged: 6, access: { pack: "no", militia: "boost" }, desc: "Old-world riot gear with a viewport." }),
+    A_("a_fireproof", "Fireproof Coat", "FC", 2, 4, "Hazard", ["leather", "clay"], { resist: ["burn"], melee: 2, ranged: 2, access: { ashen: "boost" }, desc: "Clay-treated leather — resists burning." }),
+    A_("a_hazmat", "Hazmat Suit", "HZ", 3, 4, "Hazard", ["cloth", "glass", "rarecomp"], { resist: ["poison", "radiation", "disease"], melee: 1, ranged: 1, access: { default: "tbd", afflicted: "boost", scientists: "yes", pack: "no" }, desc: "The Afflicted's signature look — radiation and poison resistance." }),
+    A_("a_exo", "Powered Exo-Frame", "EX", 4, 4, "Tech", ["steel", "electronics", "fuel"], { melee: 8, ranged: 7, access: { default: "tbd", scientists: "yes", pack: "no", hunters: "no" }, desc: "Powered armour (suggestion)." }),
+    A_("a_garb", "Ritual Garb", "RG", 1, 5, "Faction", ["cloth", "leather", "herbs"], { melee: 1, ranged: 1, resist: ["bleed"], access: { default: "no", bloodveil: "boost" }, desc: "Coven robes — light, fast, ritual protection (suggestion)." }),
+    A_("a_pelts", "Beast Pelts", "BP", 2, 5, "Faction", ["leather"], { melee: 3, ranged: 2, access: { default: "no", pack: "boost" }, desc: "Hides from bred beasts — the Pack's answer to steel (suggestion)." }),
+    A_("a_templarplate", "Templar Plate", "TP", 3, 5, "Faction", ["steel", "gold"], { melee: 8, ranged: 6, access: { default: "no", templars: "boost" }, desc: "Holy plate — morale aura (suggestion)." }),
+    A_("a_droidplate", "Droid Plating", "DP", 4, 5, "Faction", ["steel", "electronics", "titanium"], { melee: 7, ranged: 7, access: { default: "no", droids: "boost" }, desc: "Chassis armour — Droids wear nothing else." })
+  ],
+  statuses: [
+    { id: "bleed", name: "Bleeding", code: "Bl", color: "#c42a42", dot: "Medium damage over time", desc: "Open wounds keep draining HP.", counter: "Bandages and medics; armour reduces it (suggestion)." },
+    { id: "burn", name: "Burning", code: "Bu", color: "#ff6a2a", dot: "Short, intense damage over time", desc: "Fire, plasma and energy burns.", counter: "Fireproof gear, Fireproofing tech; Ashen resist it." },
+    { id: "poison", name: "Poison", code: "Po", color: "#9bc53d", dot: "Long damage over time", desc: "Toxins that linger for a long time.", counter: "Medicine, Antitoxins tech, hazmat suits." },
+    { id: "disease", name: "Disease", code: "Di", color: "#c2c43c", dot: "Spreads between nearby units (suggestion)", desc: "Afflicted plague mechanic — not in the Visions list yet (suggestion).", counter: "Medics, quarantine (suggestion)." },
+    { id: "radiation", name: "Radiation", code: "Ra", color: "#e0d84a", dot: "Environmental zones", desc: "Hostile zones that hurt most groups. The Afflicted resist it and gain bonuses there.", counter: "Radiation Shielding tech, hazmat suits." },
+    { id: "paralysis", name: "Paralysis", code: "Pa", color: "#4fb0ff", dot: "Electricity stun", desc: "Possibly duo-exclusive (Scientists). Droids are vulnerable to it.", counter: "Distance, insulation (suggestion)." },
+    { id: "psychosis", name: "Psychosis", code: "Ps", color: "#b07ad6", dot: "Temporary conversion — AoE monk-style", desc: "An alive-but-controlled state. One of the rarest effects: Bloodveil and Ashen.", counter: "Healers cleanse it (suggestion). Droids are immune." }
+  ]
+};
+
+/* ==========================================================================
+   ROSTER (filter) — full profiles live in Warlords of Eden
+   ========================================================================== */
+const EDEN_DUOS = [
+  { id: "survivors", name: "Survivors", color: "#8b9096", fx: "embers", warlords: [["viktor", "Viktor", "Images/Warlords/Viktor.jpg", "#5b8fd1"], ["ayla", "Ayla", "Images/Warlords/Ayla.jpg", "#9a6bb8"]] },
+  { id: "hunters", name: "The Hunters", color: "#a3a84e", fx: "ash", warlords: [["brick", "Brick", "Images/Warlords/Brick.jpg", "#b8875a"], ["twig", "Twig", "Images/Warlords/Twig.jpg", "#6faa45"]] },
+  { id: "scientists", name: "Scientists", color: "#3fd0c9", fx: "sparks", warlords: [["drsomething", "Dr. Something", "Images/Warlords/Dr Something.jpg", "#4f9dff"], ["mixy", "Mixy", "Images/Warlords/Mixy.jpg", "#7fe3a4"]] },
+  { id: "mutants", name: "Mutants", color: "#9bc53d", fx: "spores", warlords: [["smash", "Smash", "Images/Warlords/Smash.jpg", "#e2552f"], ["bash", "Bash", "Images/Warlords/Bash.jpg", "#d9a23a"]] },
+  { id: "afflicted", name: "Afflicted", color: "#c2c43c", fx: "spores", warlords: [["afflicted1", "Afflicted I", "Images/Warlords/Afflicted I.jpg", "#a8e04a"], ["afflicted2", "Afflicted II", "Images/Warlords/Afflicted II.jpg", "#4fb39a"]] },
+  { id: "militia", name: "Militia", color: "#a4ae74", fx: "ash", warlords: [["militia1", "Militia Brother", "Images/Warlords/Militia Brother.jpg", "#7f94a6"], ["militia2", "Militia Sister", "Images/Warlords/Militia Sister.jpg", "#c9a24a"]] },
+  { id: "bloodveil", name: "Bloodveil", color: "#c42a42", fx: "drip", warlords: [["bloodveil1", "Brunette Sister", "Images/Warlords/Brunette Sister.jpg", "#8e3a7c"], ["bloodveil2", "Redhead Sister", "Images/Warlords/Redhead Sister.jpg", "#e8643a"]] },
+  { id: "templars", name: "Templars", color: "#d6b45e", fx: "ash", warlords: [["templar1", "Templar I", "Images/Warlords/Templar I.jpg", "#e2d9c3"], ["templar2", "Templar II", "Images/Warlords/Templar II.jpg", "#b8433a"]] },
+  { id: "pack", name: "The Pack", color: "#c58a45", fx: "dust", warlords: [["pack1", "Pack Cousin I", "Images/Warlords/Pack Cousin I.jpg", "#b0412e"], ["pack2", "Pack Cousin II", "Images/Warlords/Pack Cousin II.jpg", "#d8c08a"]] },
+  { id: "ashen", name: "Ashen", color: "#ff5a1f", fx: "embers", warlords: [["blowtorch", "Blowtorch", "Images/Warlords/Blowtorch.jpg", "#ffb02e"], ["vesper", "Vesper", "Images/Warlords/Vesper.jpg", "#9da3c2"]] },
+  { id: "nomads", name: "Nomads", color: "#d7a85e", fx: "dust", warlords: [["nomad1", "Nomad Mother", "Images/Warlords/Nomad Mother.jpg", "#b8693a"], ["nomad2", "Nomad Son", "Images/Warlords/Nomad Son.jpg", "#3fbfae"]] },
+  { id: "droids", name: "Droids", color: "#4fb0ff", fx: "data", single: true, warlords: [["hive", "Droid 0001", "Images/Warlords/Droid 0001.jpg", "#bfeaff"]] }
+];
+const DUO = Object.fromEntries(EDEN_DUOS.map(d => [d.id, d]));
+const WARLORD = {};
+EDEN_DUOS.forEach(d => d.warlords.forEach(([id, name, portrait, accent]) => { WARLORD[id] = { id, name, portrait, accent, duo: d.id }; }));
+const SIGILS = {
+  survivors: '<circle cx="32" cy="32" r="27"/><path d="M32 13c6 9 12 14 12 23a12 12 0 0 1-24 0c0-6 3-10 6-15 2 4 3 6 6 8 0-6-2-10 0-16z"/>',
+  hunters: '<circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="4"/><path d="M32 4v16M32 44v16M4 32h16M44 32h16"/>',
+  scientists: '<ellipse cx="32" cy="32" rx="27" ry="10"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  mutants: '<circle cx="24" cy="32" r="16"/><circle cx="40" cy="32" r="16"/><path d="M32 19v26"/>',
+  afflicted: '<path d="M32 7c12 0 20 8 20 20 0 8-4 14-10 18v7H22v-7c-6-4-10-10-10-18C12 15 20 7 32 7z"/><circle cx="24" cy="27" r="5"/><circle cx="40" cy="27" r="5"/><circle cx="32" cy="45" r="4"/>',
+  militia: '<path d="M10 10h44"/><path d="M12 20l20 11 20-11M12 32l20 11 20-11M12 44l20 11 20-11"/>',
+  bloodveil: '<path d="M32 5C24 19 15 29 15 40a17 17 0 0 0 34 0C49 29 40 19 32 5z"/><path d="M24 41a8 8 0 0 0 8 8"/>',
+  templars: '<path d="M32 5v54M13 22h38"/><path d="M26 5h12M26 59h12M13 16v12M51 16v12"/>',
+  pack: '<path d="M13 9c10 14 12 30 8 47M30 5c8 16 8 34 2 54M47 9c6 14 6 30 0 47"/>',
+  ashen: '<path d="M32 4c10 14 18 20 18 34a18 18 0 0 1-36 0c0-10 6-14 8-22 4 6 6 8 8 10 2-8 0-14 2-22z"/><path d="M32 40c4 4 6 6 6 10a6 6 0 0 1-12 0c0-4 2-6 6-10z"/>',
+  nomads: '<circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="6"/><path d="M32 6v20M32 38v20M6 32h20M38 32h20M14 14l14 14M36 36l14 14M50 14L36 28M28 36L14 50"/>',
+  droids: '<path d="M32 4l24 14v28L32 60 8 46V18z"/><circle cx="32" cy="32" r="10"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  open: '<circle cx="32" cy="32" r="26" stroke-dasharray="6 6"/><path d="M24 25a8 8 0 1 1 12 7c-3 2-4 3-4 7"/><circle cx="32" cy="46" r="1.6" fill="currentColor"/>'
+};
+const sigil = id => `<svg class="sig" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${SIGILS[id] || SIGILS.open}</svg>`;
+const flag = (id, color) => `<svg class="flag" viewBox="0 0 38 44" aria-hidden="true" style="color:${color}"><path d="M8 5v37" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".22"/><path d="M11 8h16v5H11z" fill="currentColor" opacity=".7"/></svg>`;
+const crest = d => `<span class="crest" style="color:${d.color}">${sigil(d.id)}${flag(d.id, d.color)}</span>`;
+
+/* ==========================================================================
+   HELPERS + ACCESS + PAIR FILTER
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
+const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
+const BOOKS = [["visions", "Visions", "Visions of Eden.html", false], ["warlords", "Warlords", "Warlords of Eden.html", false], ["arms", "Arms", "Arms of Eden.html", true], ["resources", "Resources", "Resources of Eden.html", true]];
+const ACC = {
+  rank: { no: 0, tbd: 1, import: 2, yes: 3, boost: 4, early: 4 },
+  label: { no: "No access", tbd: "Undecided", import: "Import only", yes: "Available", boost: "Stronger", early: "Early access" },
+  mark: { no: "✕", tbd: "?", import: "⇄", yes: "✓", boost: "★", early: "⚡" },
+  color: { no: "var(--bad)", tbd: "var(--tbd)", import: "#e0a85a", yes: "var(--good)", boost: "var(--tbd)", early: "#4fb0ff" },
+  cycle: ["yes", "boost", "early", "tbd", "no"]
+};
+const union = list => list.reduce((b, v) => (b == null || (ACC.rank[v] ?? 1) > (ACC.rank[b] ?? 1) ? v : b), null) || "tbd";
+const accMarkHTML = s => `<b style="color:${ACC.color[s]}">${ACC.mark[s]}</b>`;
+const PAIR = { w1: "", w2: "" };
+const partner = wid => { const d = DUO[WARLORD[wid].duo]; return (d.warlords.find(w => w[0] !== wid) || d.warlords[0])[0]; };
+const pairDuos = () => { if (!PAIR.w1) return []; const a = WARLORD[PAIR.w1].duo, b = WARLORD[PAIR.w2 || PAIR.w1].duo; return a === b ? [a] : [a, b]; };
+const pairKind = () => !PAIR.w1 ? "none" : DUO[pairDuos()[0]].single ? "hive" : pairDuos().length === 1 ? "natural" : "mixed";
+const pairHash = () => (PAIR.w1 ? `${PAIR.w1}+${PAIR.w2}` : "all");
+const pairAccents = () => (!PAIR.w1 ? [] : [...new Set([PAIR.w1, PAIR.w2])].map(id => WARLORD[id]));
+const pairWarlords = () => (!PAIR.w1 ? [] : PAIR.w1 === PAIR.w2 ? [PAIR.w1] : [PAIR.w1, PAIR.w2]);
+function readPair(str) {
+  const m = String(str || "").match(/^(\w+)\+(\w+)$/);
+  PAIR.w1 = PAIR.w2 = "";
+  if (!m || !WARLORD[m[1]] || !WARLORD[m[2]]) return;
+  if (DUO[WARLORD[m[1]].duo].single || DUO[WARLORD[m[2]].duo].single) { PAIR.w1 = PAIR.w2 = "hive"; return; }
+  PAIR.w1 = m[1]; PAIR.w2 = m[1] === m[2] ? partner(m[1]) : m[2];
+}
+function setPair(slot, id) {
+  const prev = pairKind();
+  if (!id) { if (slot === 1) PAIR.w1 = PAIR.w2 = ""; else if (PAIR.w1) PAIR.w2 = partner(PAIR.w1); }
+  else if (DUO[WARLORD[id].duo].single) PAIR.w1 = PAIR.w2 = id;
+  else if (slot === 1) { PAIR.w1 = id; if (!PAIR.w2 || prev !== "mixed" || PAIR.w2 === id || DUO[WARLORD[PAIR.w2].duo].single) PAIR.w2 = partner(id); }
+  else { if (!PAIR.w1 || DUO[WARLORD[PAIR.w1].duo].single) PAIR.w1 = partner(id); PAIR.w2 = id; if (PAIR.w1 === PAIR.w2) PAIR.w1 = partner(id); }
+  try { localStorage.setItem("edenCodex.pair", pairHash()); } catch (e) {}
+  SFX.play(pairKind() === "mixed" ? "duoLoad" : "select");
+  renderAll();
+}
+function pairLabel() {
+  const k = pairKind(); if (k === "none") return "No filter — showing every Duo's access";
+  const a = WARLORD[PAIR.w1], b = WARLORD[PAIR.w2];
+  if (k === "hive") return "Droid 0001 — commands alone, never mixes";
+  if (k === "natural") return `Natural Duo · ${DUO[a.duo].name}`;
+  return `Mixed pair · ${a.name} + ${b.name}`;
+}
+function pslot(slot) {
+  const wid = slot === 1 ? PAIR.w1 : PAIR.w2, w = wid ? WARLORD[wid] : null, d = w ? DUO[w.duo] : null, hive = pairKind() === "hive";
+  const opts = (slot === 1 ? `<option value="">— No filter · show all —</option>` : `<option value="">${hive ? "Droid 0001 commands alone" : "— pick Warlord I first —"}</option>`) +
+    EDEN_DUOS.map(dd => `<optgroup label="${esc(dd.name)}">${dd.warlords.map(([id, nm]) => `<option value="${id}" ${id === wid && !(hive && slot === 2) ? "selected" : ""} ${slot === 2 && dd.single ? "disabled" : ""}>${esc(nm)}${dd.single ? " (solo)" : ""}</option>`).join("")}</optgroup>`).join("");
+  const c = d ? d.color : "#6f675b";
+  return `<div class="pslot" style="--c:${c};--wa:${w ? w.accent : c}"><span class="pthumb">${sigil(d ? d.id : "open")}${w ? IMG.tag(w.portrait) : ""}</span>
+    <label><span class="plabel">${w ? `<i>●</i> ` : ""}Warlord ${slot === 1 ? "I" : "II"}${d ? ` · <b style="color:${c}">${esc(d.name)}</b>` : ""}</span>
+    <select ${slot === 2 && (!PAIR.w1 || hive) ? "disabled" : ""} onchange="setPair(${slot},this.value)">${opts}</select></label>${d ? flag(d.id, c) : ""}</div>`;
+}
+function pairBarHTML() {
+  const k = pairKind(), ds = pairDuos();
+  return `${pslot(1)}<div class="pmid"><div class="pkind ${k}">${esc(pairLabel())}</div>
+    <div class="pchips">${pairAccents().map(w => `<span class="chip" style="color:${w.accent};border-color:${w.accent}">${sigil(w.duo)}${esc(w.name)}</span>`).join('<span class="xsep">+</span>') || '<span class="dim">Pick a Warlord to grey out what that team cannot field</span>'}</div>
+    <div class="prule">${k === "mixed" ? "Union rule — if either side has it, the pair has it" : "The filter carries across Arms & Resources"}</div>
+    <div class="center-row" style="margin-top:6px">${k === "mixed" ? `<button class="mini" onclick="setPair(2,partner(PAIR.w1))">⇄ Natural partner</button>` : ""}${PAIR.w1 ? `<button class="mini" onclick="setPair(1,'')">✕ Clear filter</button>` : ""}</div></div>${pslot(2)}`;
+}
+
+/* ---------- access functions ---------- */
+const classAccess = (cls, duo) => (DATA.duos[duo].arsenal[cls] || "tbd");
+const weaponAccess = (w, duo) => (w.access && (w.access[duo] || w.access.default)) || classAccess(w.cls, duo);
+const armourAccess = (a, duo) => (a.access && (a.access[duo] || a.access.default)) || "yes";
+const inflictAccess = (sid, duo) => DATA.duos[duo].inflict[sid] || "tbd";
+const verdictBy = fn => (PAIR.w1 ? union(pairDuos().map(fn)) : null);
+const WEAPON = id => DATA.weapons.find(w => w.id === id);
+const ARMOUR = id => DATA.armour.find(a => a.id === id);
+const STATUS = id => DATA.statuses.find(s => s.id === id);
+const RES_NAME = { scrap: "Scrap", wood: "Wood", stone: "Stone", bronze: "Bronze", leather: "Leather", iron: "Iron", steel: "Steel", hardened: "Hardened Steel", wire: "Wire", gunpowder: "Gunpowder", mechparts: "Mechanical Parts", glass: "Glass", electronics: "Electronics", rarecomp: "Rare Components", fuel: "Fuel", alcohol: "Alcohol", cloth: "Cloth", paper: "Paper", copper: "Copper", herbs: "Herbs", silver: "Silver", clay: "Clay", gold: "Gold", titanium: "Titanium" };
+const RES_TAB = { leather: "produce", alcohol: "produce", cloth: "produce", herbs: "produce" };
+const resLink = id => `<a class="xlink out" href="${encodeURI("Resources of Eden.html")}#${pairHash()}/${RES_TAB[id] || "resources"}/open:${id}" title="Open in Resources of Eden">${esc(RES_NAME[id] || id)}</a>`;
+const imgPath = (name, folder) => `Images/${folder}/${String(name).replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+
+/* ==========================================================================
+   STATE + PERSISTENCE
+   ========================================================================== */
+const STORE_KEY = "armsOfEden.v1";
+const state = { tab: "troops", editing: false };
+let DATA = null, fileRev = "factory", reopen = null, quiet = false;
+function readBaked() { try { const t = $("#codex-baked").textContent.trim(); return t && t !== "null" ? JSON.parse(t) : null; } catch (e) { return null; } }
+function boot() {
+  const file = readBaked() || clone(DEFAULT_DATA);
+  fileRev = (file.meta && file.meta.dataRev) || "factory";
+  DATA = file;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.basedOn === fileRev && s.data) { DATA = s.data; return "Loaded your browser edits"; }
+      localStorage.setItem(STORE_KEY + ".archived", raw); localStorage.removeItem(STORE_KEY);
+      return "This file was updated — older browser edits archived";
+    }
+  } catch (e) {}
+  return "";
+}
+function persist(msg) { try { localStorage.setItem(STORE_KEY, JSON.stringify({ basedOn: fileRev, data: DATA })); } catch (e) {} if (msg) toast(msg); }
+async function saveHtml() {
+  const re = /(<script type="application\/json" id="codex-baked">)[\s\S]*?(<\/script>)/;
+  const now = new Date();
+  DATA.meta.dataRev = "save-" + now.toISOString(); DATA.meta.updated = now.toISOString().slice(0, 10); DATA.meta.pictures = IMG.snapshot();
+  const html = PRISTINE_HTML.replace(re, (m, a, b) => a + JSON.stringify(DATA).replace(/</g, "\\u003c") + b);
+  let done = false;
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({ suggestedName: "Arms of Eden.html", types: [{ description: "HTML page", accept: { "text/html": [".html"] } }] });
+      const w = await h.createWritable(); await w.write(html); await w.close(); done = true;
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (!done) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = "Arms of Eden.html"; a.click(); }
+  fileRev = DATA.meta.dataRev; persist(); SFX.play("save");
+  toast(done ? "Saved into the HTML file" : "Downloaded — replace the old HTML with it");
+}
+function exportData() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" })); a.download = "arms-of-eden-data.json"; a.click(); toast("Exported arms-of-eden-data.json"); }
+function importData(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d.weapons || !d.lines) throw 0; DATA = d; persist("Imported"); renderAll(); } catch (e) { toast("Import failed — not an Arms of Eden file"); } };
+  r.readAsText(file);
+}
+function resetData() {
+  if (!confirm("Discard this browser's edits and go back to the content saved in this HTML file?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  DATA = readBaked() || clone(DEFAULT_DATA); renderAll(); toast("Back to the file version");
+}
+function refresh() { quiet = true; renderAll(); if (reopen && $("#modal").classList.contains("open")) reopen(); quiet = false; }
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+const TAB = id => DATA.tabs.find(t => t.id === id);
+function go(tab) { if (tab === state.tab) return; SFX.play("tab", { pitch: 1 + DATA.tabs.findIndex(t => t.id === tab) * 0.06 }); state.tab = tab; renderAll(); $(".views").scrollTop = 0; }
+function renderAll() {
+  const t = TAB(state.tab), ds = pairDuos(), root = document.documentElement.style;
+  root.setProperty("--tab", t.color); root.setProperty("--duo-a", t.color);
+  root.setProperty("--duo-b", ds.length ? DUO[ds[ds.length - 1]].color : "#5a4a3a");
+  const acc = pairAccents(); root.setProperty("--w1", acc.length ? acc[0].accent : "#3a3128"); root.setProperty("--w2", acc.length ? acc[acc.length - 1].accent : "#3a3128");
+  $("#motif-a").dataset.m = ds[0] || ""; $("#motif-b").dataset.m = ds[ds.length - 1] || "";
+  $("#head-sigils").innerHTML = ds.map(id => crest(DUO[id])).join('<span class="xsep">✕</span>');
+  $("#book-motto").textContent = PAIR.w1 ? pairLabel() : "Every soldier is equipped, fed and paid for.";
+  $("#codex-nav").innerHTML = BOOKS.map(([id, l, f, p]) => `<a class="${id === "arms" ? "cur" : ""}" href="${encodeURI(f)}${p ? "#" + pairHash() : ""}">${l}</a>`).join("");
+  $("#pairbar").innerHTML = pairBarHTML();
+  $("#tabs").innerHTML = DATA.tabs.map((x, i) => `<button class="btn ${x.id === t.id ? "active" : ""}" style="--tc:${x.color}" onclick="go('${x.id}')" title="Key ${i + 1}">${esc(x.label)}</button>`).join("");
+  $("#editbar").innerHTML = `<span>Edit mode — click dashed text to rewrite it; click Duo chips or table cells to cycle access. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+    <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button><button class="mini" onclick="exportData()">Export JSON</button>
+    <button class="mini" onclick="$('#import-file').click()">Import JSON</button><button class="mini" onclick="resetData()">Discard browser edits</button>
+    <input type="file" id="import-file" accept=".json" hidden onchange="importData(this.files[0]);this.value=''">`;
+  const notes = ds.map(d => `<b style="color:${DUO[d].color}">${esc(DUO[d].name)}:</b> ${esc(DATA.duos[d].note)}`);
+  const noteBox = notes.length ? `<div class="verdict" style="--vc:var(--tab)">${notes.join("<br>")}</div>` : "";
+  $("#view").innerHTML = noteBox + ({ troops: renderTroops, weapons: () => renderTree("weapons"), armour: () => renderTree("armour"), status: renderStatus })[state.tab]() +
+    `<p class="foot" style="text-align:center;margin-top:18px">${esc(DATA.meta.rule)}</p>`;
+  $("#legend").innerHTML = `<span><i class="dash"></i>Dashed = placeholder / not locked</span>
+    ${["yes", "boost", "early", "tbd", "no"].map(s => `<span><b style="color:${ACC.color[s]}">${ACC.mark[s]}</b> ${ACC.label[s]}</span>`).join("")}
+    <span class="dim">Updated ${esc(DATA.meta.updated)} · Keys 1–4 tabs · Esc closes</span>`;
+  FX.set(ds.length ? pairAccents().map(w => ({ mode: DUO[w.duo].fx, color: w.accent })) : [{ mode: "embers", color: t.color }, { mode: "ash", color: "#bdb5a6" }]);
+  try { history.replaceState(null, "", `#${pairHash()}/${state.tab}`); } catch (e) {}
+  if (state.tab === "weapons" || state.tab === "armour") wireTree(state.tab);
+  applyEditable();
+}
+
+/* ---------- TROOPS ---------- */
+function triangleSVG() {
+  const C = DATA.categories, m = C.Melee.color, a = C.Archer.color, g = C.Grenadier.color;
+  return `<svg class="tri" viewBox="0 0 260 240">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#cfc6b4"/></marker></defs>
+    <g stroke="#cfc6b4" stroke-width="2" fill="none" stroke-dasharray="5 4"><path d="M144 58 L206 166" marker-end="url(#arr)"/><path d="M196 196 L66 196" marker-end="url(#arr)"/><path d="M54 166 L116 58" marker-end="url(#arr)"/></g>
+    <g font-size="10" fill="#a89f8f" text-anchor="middle"><text x="196" y="104" transform="rotate(60 196 104)">beats</text><text x="130" y="214">beats</text><text x="64" y="104" transform="rotate(-60 64 104)">beats</text></g>
+    <g font-size="11" font-weight="600" text-anchor="middle">
+      <circle cx="130" cy="36" r="26" fill="#1b1612" stroke="${m}" stroke-width="2"/><text x="130" y="40" fill="${m}">Melee</text>
+      <circle cx="222" cy="196" r="28" fill="#1b1612" stroke="${g}" stroke-width="2"/><text x="222" y="200" fill="${g}" font-size="9.5">Grenadier</text>
+      <circle cx="38" cy="196" r="26" fill="#1b1612" stroke="${a}" stroke-width="2"/><text x="38" y="200" fill="${a}">Archer</text></g></svg>`;
+}
+const stageAccess = s => verdictBy(d => classAccess(s.cls, d));
+function lineHTML(l, li) {
+  const c = DATA.categories[l.cat].color;
+  const stage = (s, si) => {
+    const v = stageAccess(s);
+    const cls = [s.locked ? "" : "placeholder", v === "no" ? "gated" : ""].join(" ");
+    const badge = v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : "";
+    return `<div class="node stage ${cls}" style="--acc:${c}" onclick="openStage(${li},${si})">${badge}<div class="n-name">${esc(s.name)}</div><div class="n-sub">Stage ${si + 1} · ${esc(DATA.classes[s.cls] || s.cls)}</div></div>`;
+  };
+  return `<div class="line-card"><h4>${esc(l.name)}</h4>
+    <div class="lvl"><span>Global level ${l.level} / 10</span>${meter(l.level * 10)}</div>
+    <div class="stages">${l.stages.map((s, si) => (si ? '<div class="stage-arrow">▼</div>' : "") + stage(s, si)).join("")}</div></div>`;
+}
+const meter = pct => `<div class="meter"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
+function sigCard(wid) {
+  const w = WARLORD[wid], d = DUO[w.duo], s = DATA.signatures[wid];
+  if (!s) return "";
+  const isB = s.kind === "building";
+  return `<div class="node unique sig-card ${s.locked ? "" : "placeholder"}" style="--acc:${d.color}" onclick="openSig('${wid}')">
+    <div class="ico">${sigil(d.id)}</div><div class="n-name">${esc(s.name)}</div><div class="n-sub"><b>${esc(w.name)}</b> · ${isB ? "Unique building ↗ Warlords" : "Unique troop"}</div></div>`;
+}
+function factionCards(did) {
+  const list = DATA.faction[did] || [], d = DUO[did];
+  return list.map((u, i) => `<div class="node unique ${u.locked ? "" : "placeholder"}" style="--acc:${d.color}" onclick="openFaction('${did}',${i})">
+    <div class="ico">${sigil(d.id)}</div><div class="n-name">${esc(u.name)}</div><div class="n-sub">${esc(d.name)} · ${u.rule ? "Roster rule" : "Faction troop"}</div></div>`).join("");
+}
+function renderTroops() {
+  const C = DATA.categories;
+  const col = cat => `<div style="--cc:${C[cat].color}"><div class="tcol-head"><h3>${cat}</h3><small>${cat === "Support" ? "Heals and cleanses" : cat === "Siege" ? "Breaks walls and buildings" : `Counters ${C[cat].counters} · Countered by ${C[cat].by}`}</small></div>
+    ${DATA.lines.map((l, li) => (l.cat === cat ? lineHTML(l, li) : "")).join("")}</div>`;
+  const ws = pairWarlords();
+  const sigs = ws.length ? ws.map(sigCard).join("") : "";
+  const allSigs = EDEN_DUOS.map(d => `<div style="--c:${d.color}"><div class="group-head">${sigil(d.id)}${esc(d.name)}</div><div class="bgrid">${d.warlords.map(([id]) => sigCard(id)).join("")}${factionCards(d.id)}</div></div>`).join("");
+  const factions = pairDuos().map(factionCards).join("");
+  return `
+    <div class="counter-wrap">${triangleSVG()}
+      <div class="rules">
+        <div class="sec-title">Counter system</div>
+        <p>Rock-paper-scissors foundation: <b style="color:${C.Melee.color}">Melee</b> beats Grenadier, <b style="color:${C.Grenadier.color}">Grenadier</b> beats Archer, <b style="color:${C.Archer.color}">Archer</b> beats Melee. Each category has two lines; each line upgrades in stages.</p>
+        <div class="sec-title">Global levelling</div>
+        <p>A shared troop <b>line</b> levels globally and keeps that level in every Duo that fields it. Unique troops only level by playing their native Warlord or Duo.</p>
+        <div class="sec-title">Gating</div>
+        <p>Stages grey out when the selected team cannot field that weapon class. Each stage lists its typical weapon and armour — open it to jump to the gear.</p>
+      </div>
+    </div>
+    <div class="troop-cols">${["Melee", "Archer", "Grenadier"].map(col).join("")}</div>
+    <div class="support-cols">${["Support", "Siege"].map(col).join("")}</div>
+    <div class="sec" style="margin-top:26px"><div class="sec-title">Unique troops ${ws.length ? "— this pair" : "— every Warlord"}</div>
+      ${ws.length ? `<p class="foot" style="text-align:center;margin:-4px 0 12px">Usually one signature per Warlord: a unique troop, or sometimes a unique building (catalogued in Warlords of Eden).</p>
+        <div class="bgrid">${sigs}</div>
+        ${factions ? `<div class="sec-title" style="margin-top:18px">Faction troops</div><div class="bgrid">${factions}</div>` : ""}`
+      : `<p class="foot" style="text-align:center;margin:-4px 0 12px">Pick a pair above to show just those two Warlords' signatures.</p><div class="uniq-wrap">${allSigs}</div>`}
+    </div>`;
+}
+
+/* ---------- WEAPONS + ARMOUR TREES ---------- */
+const GEO = { head: 44, colW: 168, rowH: 140, nodeW: 142, nodeH: 100 };
+function treeSpec(kind) {
+  return kind === "weapons"
+    ? { items: DATA.weapons, lanes: DATA.weaponLanes, bands: DATA.weaponBands, acc: weaponAccess, open: "openWeapon", sub: w => `${DATA.classes[w.cls]} · ${w.material}`, intro: "Material tiers run top to bottom (Stone → Bronze → Iron → Steel → Hardened Steel); energy weapons arrive at the steel tier. Lines show upgrade lineage." }
+    : { items: DATA.armour, lanes: DATA.armourLanes, bands: DATA.armourBands, acc: armourAccess, open: "openArmour", sub: a => `${a.type} · M${a.melee} / R${a.ranged}`, intro: "Light, medium, heavy and shields follow the material tiers. Hazard, tech and faction armour sit on the right. Droids wear only their own plating." };
+}
+function renderTree(kind) {
+  const S = treeSpec(kind);
+  const W = S.lanes.length * GEO.colW + 16, H = GEO.head + S.bands.length * GEO.rowH + 8, pos = {};
+  S.items.forEach(n => { pos[n.id] = { x: 8 + n.col * GEO.colW + (GEO.colW - GEO.nodeW) / 2, y: GEO.head + n.row * GEO.rowH + (GEO.rowH - GEO.nodeH) / 2 }; });
+  const color = n => S.lanes[n.col].color;
+  let links = "";
+  S.items.forEach(n => (n.from || []).forEach(f => {
+    const a = pos[f], b = pos[n.id]; if (!a || !b) return;
+    const x1 = a.x + GEO.nodeW / 2, y1 = a.y + GEO.nodeH, x2 = b.x + GEO.nodeW / 2, y2 = b.y, dy = Math.max(26, (y2 - y1) * 0.5);
+    links += `<path data-a="${f}" data-b="${n.id}" class="${verdictBy(d => S.acc(n, d)) === "no" ? "gated" : ""}" stroke="${color(n)}" d="M${x1},${y1} C${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}"/>`;
+  }));
+  const card = n => {
+    const v = verdictBy(d => S.acc(n, d));
+    const cls = [n.locked ? "" : "placeholder", v === "no" ? "gated" : ""].join(" ");
+    const badge = v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : "";
+    const st = (n.status || n.resist || []).map(id => { const s = STATUS(id); return s ? `<b style="color:${s.color}">${esc(s.code)}</b>` : ""; }).join(" ");
+    return `<div class="node ${cls}" data-key="${n.id}" style="--acc:${color(n)}" onclick="${S.open}('${n.id}')">${badge}<div class="code">${esc(n.code)}</div><div class="n-name">${esc(n.name)}</div><div class="n-sub">${esc(S.sub(n))}</div>${st ? `<span class="ext">${st}</span>` : ""}</div>`;
+  };
+  return `<div class="tree-head"><div class="kicker">${kind === "weapons" ? "Crafted at Blacksmith · Bowyer · Gunsmith · Lab" : "Crafted at the Armourer"}</div><h2>${kind === "weapons" ? "Weapons" : "Armour"}</h2><p>${S.intro}</p></div>
+    <p class="foot" style="text-align:center;margin:0 0 10px">Hover to trace a lineage · drag the background to pan · click for recipe, troops and access · small codes mark status effects${kind === "armour" ? " resisted" : " inflicted"}</p>
+    <div class="tc-wrap" id="tree">
+      <div class="tc-labels" style="padding-top:${GEO.head}px">${S.bands.map(b => `<div class="tc-blabel" style="height:${GEO.rowH}px"><b>${esc(b.label)}</b><small>${esc(b.sub)}</small></div>`).join("")}</div>
+      <div class="tc-scroll"><div class="tc-canvas" style="width:${W}px;height:${H}px">
+        ${S.bands.map((b, i) => `<div class="tc-band ${i % 2 ? "alt" : ""}" style="top:${GEO.head + i * GEO.rowH}px;height:${GEO.rowH}px"></div>`).join("")}
+        ${S.lanes.map((l, i) => `<div class="tc-lane" style="left:${8 + i * GEO.colW}px;width:${GEO.colW}px;--lc:${l.color}">${esc(l.label)}</div>`).join("")}
+        <svg class="tc-links" width="${W}" height="${H}">${links}</svg>
+        ${S.items.map(n => `<div class="tc-node" style="left:${pos[n.id].x}px;top:${pos[n.id].y}px;width:${GEO.nodeW}px;height:${GEO.nodeH}px">${card(n)}</div>`).join("")}
+      </div></div></div>`;
+}
+function wireTree(kind) {
+  const root = $("#tree"); if (!root) return;
+  const items = kind === "weapons" ? DATA.weapons : DATA.armour, up = {}, down = {};
+  items.forEach(n => (n.from || []).forEach(f => { (up[n.id] = up[n.id] || []).push(f); (down[f] = down[f] || []).push(n.id); }));
+  const walk = (k, map, set) => (map[k] || []).forEach(x => { if (!set.has(x)) { set.add(x); walk(x, map, set); } });
+  root.querySelectorAll(".node[data-key]").forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      const set = new Set([el.dataset.key]); walk(el.dataset.key, up, set); walk(el.dataset.key, down, set);
+      root.classList.add("tracing");
+      root.querySelectorAll(".node[data-key]").forEach(x => x.classList.toggle("lit", set.has(x.dataset.key)));
+      root.querySelectorAll("path[data-a]").forEach(p => p.classList.toggle("lit", set.has(p.dataset.a) && set.has(p.dataset.b)));
+    });
+    el.addEventListener("mouseleave", () => { root.classList.remove("tracing"); root.querySelectorAll(".lit").forEach(x => x.classList.remove("lit")); });
+  });
+  const sc = root.querySelector(".tc-scroll");
+  let drag = null;
+  sc.addEventListener("pointerdown", e => { if (e.target.closest(".node")) return; drag = { x: e.clientX, l: sc.scrollLeft }; sc.classList.add("grab"); });
+  sc.addEventListener("pointermove", e => { if (drag) sc.scrollLeft = drag.l - (e.clientX - drag.x); });
+  ["pointerup", "pointerleave"].forEach(ev => sc.addEventListener(ev, () => { drag = null; sc.classList.remove("grab"); }));
+}
+
+/* ---------- STATUS APPENDIX ---------- */
+function renderStatus() {
+  const ds = pairDuos();
+  const cards = DATA.statuses.map(s => {
+    const v = verdictBy(d => inflictAccess(s.id, d));
+    const cls = [s.locked ? "" : "placeholder", v === "no" ? "gated" : ""].join(" ");
+    return `<div class="node ${cls}" style="--acc:${s.color}" onclick="openStatus('${s.id}')">${v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : ""}
+      <div class="code">${esc(s.code)}</div><div class="n-name">${esc(s.name)}</div><div class="n-sub">${esc(s.dot)}</div></div>`;
+  }).join("");
+  const def = (d, sid) => {
+    const D_ = DATA.duos[d];
+    if (D_.immune.includes(sid)) return '<span class="def immune">Immune</span>';
+    if (D_.resist.includes(sid)) return '<span class="def resist">Resists</span>';
+    if (D_.vuln.includes(sid)) return '<span class="def vuln">Vulnerable</span>';
+    return "";
+  };
+  const row = d => `<tr class="${ds.length ? (ds.includes(d.id) ? "inpair" : "dim") : ""}"><td class="duo" style="color:${d.color}">${sigil(d.id)}${esc(d.name)}</td>
+    ${DATA.statuses.map(s => `<td class="cell" onclick="cycleInflict('${d.id}','${s.id}')">${accMarkHTML(inflictAccess(s.id, d.id))}${def(d.id, s.id)}</td>`).join("")}</tr>`;
+  const unionRow = ds.length > 1 ? `<tr class="union"><td class="duo">Pair (union)</td>${DATA.statuses.map(s => { const v = verdictBy(d => inflictAccess(s.id, d)); return `<td>${accMarkHTML(v)}</td>`; }).join("")}</tr>` : "";
+  return `<div class="tree-head"><div class="kicker">Appendix · gated per Duo</div><h2>Status Effects</h2><p>Not every group can inflict every status — same philosophy as AoE unit and tech access. Survivors are broad but shallow; the Pack is the narrowest. The full matrix is still to be locked.</p></div>
+    <div class="status-grid" style="margin-top:14px">${cards}</div>
+    <div class="sec"><div class="sec-title">Inflict matrix</div>
+      <div class="matrix-wrap"><table class="matrix"><thead><tr><th>Duo</th>${DATA.statuses.map(s => `<th style="color:${s.color}">${esc(s.name)}</th>`).join("")}</tr></thead>
+      <tbody>${unionRow}${EDEN_DUOS.map(row).join("")}</tbody></table></div>
+      <p class="foot" style="text-align:center">Marks = can inflict (★ specialist). Labels underneath = how that Duo takes the effect: Immune · Resists · Vulnerable.${state.editing ? " Click a cell to cycle it." : ""}</p></div>`;
+}
+function cycleInflict(duo, sid) {
+  if (!state.editing) return;
+  const cur = inflictAccess(sid, duo), next = ACC.cycle[(ACC.cycle.indexOf(cur) + 1) % ACC.cycle.length];
+  DATA.duos[duo].inflict[sid] = next; persist(`${DUO[duo].name} · ${STATUS(sid).name}: ${ACC.label[next]}`); refresh();
+}
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+function art(path, icon, color) {
+  return `<div class="build-art short" style="--acc:${color}">${IMG.tag(path, true)}<div class="ph"><span class="ico">${icon}</span><span>Image placeholder — ${esc(IMG.hint(path))}</span></div></div>`;
+}
+function verdictHTML(fn) {
+  if (!PAIR.w1) return "";
+  const ds = pairDuos(), v = union(ds.map(fn));
+  return `<div class="verdict" style="--vc:${ACC.color[v]}"><b style="color:${ACC.color[v]}">${ACC.mark[v]} ${esc(pairLabel())} → ${ACC.label[v]}</b><small>${ds.map(d => `${esc(DUO[d].name)}: ${ACC.label[fn(d)]}`).join(" · ")}</small></div>`;
+}
+function accessRow(fn, onclickFn) {
+  return `<div class="acc-row">${EDEN_DUOS.map(d => { const s = fn(d.id); return `<span class="chip ${s === "no" ? "no" : ""}" style="--c:${d.color}" title="${esc(d.name)}: ${ACC.label[s]}" ${onclickFn ? `onclick="${onclickFn(d.id)}"` : ""}>${accMarkHTML(s)}${esc(d.name)}</span>`; }).join("")}</div>`;
+}
+const statusChip = id => { const s = STATUS(id); return s ? `<button class="xlink" onclick="openStatus('${id}')" style="border-color:${s.color}"><b style="color:${s.color}">${esc(s.code)}</b>${esc(s.name)}</button>` : ""; };
+const gearChip = (kind, id) => {
+  const it = kind === "w" ? WEAPON(id) : ARMOUR(id); if (!it) return "";
+  const v = verdictBy(d => (kind === "w" ? weaponAccess(it, d) : armourAccess(it, d)));
+  return `<button class="xlink ${v === "no" ? "gated" : ""}" onclick="${kind === "w" ? "openWeapon" : "openArmour"}('${id}')">${v ? accMarkHTML(v) : ""}${esc(it.name)}</button>`;
+};
+function troopStats(cat, si) {
+  const base = { Melee: [8, 5, 3, 5], Archer: [7, 2, 1, 5], Grenadier: [10, 3, 2, 4], Support: [2, 3, 1, 5], Siege: [14, 6, 6, 2] }[cat] || [6, 4, 2, 5];
+  return base.map((v, k) => (k === 3 ? v : Math.round(v * (1 + 0.45 * si))));
+}
+function openStage(li, si) {
+  const l = DATA.lines[li], s = l.stages[si], C = DATA.categories[l.cat], base = `lines.${li}`;
+  if (state.tab !== "troops") { state.tab = "troops"; renderAll(); }
+  SFX.play("node", { pitch: 0.95 + si * 0.04 });
+  reopen = () => openStage(li, si);
+  const st = troopStats(l.cat, si), bonus = l.level * 5;
+  openModal(`
+    <div class="m-kicker">${l.cat} · ${esc(l.name)} · Stage ${si + 1} of ${l.stages.length}</div>
+    <h3 class="m-title" style="--acc:${C.color}">${ed(`${base}.stages.${si}.name`, s.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${C.color}">${l.cat}</span><span class="chip">${esc(DATA.classes[s.cls] || s.cls)}</span>${s.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${verdictHTML(d => classAccess(s.cls, d))}
+    ${art(imgPath(s.name, "Troops"), "⚔", C.color)}
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(`${base}.stages.${si}.desc`, s.desc, true)}</p></div>
+    <div class="kv"><div><span>Counters</span><b>${C.counters}</b></div><div><span>Countered by</span><b>${C.by}</b></div><div><span>Trained at</span><b>${esc(C.trainedAt)} <small class="dim">(Warlords of Eden)</small></b></div><div><span>Upkeep</span><b>Food + water (ongoing)</b></div></div>
+    <div class="m-sec"><div class="sec-title">Equipment</div><div class="xlinks">${s.weapon ? gearChip("w", s.weapon) : '<span class="chip">No weapon</span>'}${s.armour ? gearChip("a", s.armour) : '<span class="chip">No armour</span>'}</div>
+      <p class="foot" style="text-align:center">Typical kit for this stage. Teams without that exact gear may substitute (TBD).</p></div>
+    <div class="stats">${["Attack", "Defence", "Armour", "Speed"].map((k, j) => `<div class="stat"><span>${k}</span><b>${st[j]}</b><small>+${bonus}% at Lv ${l.level}</small></div>`).join("")}</div>
+    <div class="m-sec"><div class="sec-title">Global level — ${esc(l.name)}</div>
+      <div class="lvl-big">Level ${l.level} / 10</div>${meter(l.level * 10)}
+      <div class="center-row edit-only" style="margin-top:8px"><button class="mini" onclick="bumpLine(${li},-1)">− Level</button><button class="mini" onclick="bumpLine(${li},1)">+ Level</button></div>
+      <p class="foot">Shared troop type — its level persists across every Duo that fields it. Placeholder rule: +5% to all stats per level.</p></div>
+    <div class="m-sec"><div class="sec-title">Upgrade path</div><div class="path" style="--acc:${C.color}">${l.stages.map((x, j) => `<button type="button" class="path-step ${j === si ? "cur" : ""}" onclick="openStage(${li},${j})">${esc(x.name)}</button>`).join("<i>›</i>")}</div></div>
+    <div class="m-sec"><div class="sec-title">Availability across Duos — ${esc(DATA.classes[s.cls] || s.cls)}</div>${accessRow(d => classAccess(s.cls, d))}
+      <p class="foot" style="text-align:center">Driven by each Duo's weapon-class access (change it on any weapon card in edit mode).</p></div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.lines[${li}].stages[${si}])">${s.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function usedByTroops(kind, id) {
+  const out = [];
+  DATA.lines.forEach((l, li) => l.stages.forEach((s, si) => { if ((kind === "w" ? s.weapon : s.armour) === id) out.push(`<button class="xlink" onclick="openStage(${li},${si})">${esc(s.name)} <small class="dim">· ${esc(l.name)}</small></button>`); }));
+  return out.join("");
+}
+function lineage(list, item, openFn) {
+  const from = (item.from || []).map(f => list.find(x => x.id === f)).filter(Boolean);
+  const to = list.filter(x => (x.from || []).includes(item.id));
+  const b = x => `<button class="xlink" onclick="${openFn}('${x.id}')">${esc(x.name)}</button>`;
+  return `<div class="kv"><div><span>Upgrades from</span><b>${from.map(b).join(" ") || "—"}</b></div><div><span>Upgrades to</span><b>${to.map(b).join(" ") || "—"}</b></div></div>`;
+}
+function cycleItem(kind, id, duo) {
+  if (!state.editing) return;
+  const it = kind === "w" ? WEAPON(id) : ARMOUR(id), fn = kind === "w" ? weaponAccess : armourAccess;
+  const cur = fn(it, duo), next = ACC.cycle[(ACC.cycle.indexOf(cur) + 1) % ACC.cycle.length];
+  it.access = it.access || {}; it.access[duo] = next; persist(`${DUO[duo].name}: ${ACC.label[next]}`); refresh();
+}
+function openWeapon(id) {
+  const w = WEAPON(id), i = DATA.weapons.indexOf(w), base = `weapons.${i}`, color = DATA.weaponLanes[w.col].color;
+  if (state.tab !== "weapons") { state.tab = "weapons"; renderAll(); }
+  SFX.play("node", { pitch: 0.9 + w.row * 0.05 });
+  reopen = () => openWeapon(id);
+  const troops = usedByTroops("w", id);
+  openModal(`
+    <div class="m-kicker">Weapons · ${esc(DATA.weaponLanes[w.col].label)} · ${esc(DATA.weaponBands[w.row].label)}</div>
+    <h3 class="m-title" style="--acc:${color}">${ed(base + ".name", w.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${color}">${esc(w.code)} · ${esc(DATA.classes[w.cls])}</span>${w.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${verdictHTML(d => weaponAccess(w, d))}
+    ${art(imgPath(w.name, "Weapons"), esc(w.code), color)}
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", w.desc || "—", true)}</p></div>
+    <div class="kv"><div><span>Material</span><b>${ed(base + ".material", w.material)}</b></div><div><span>Crafted at</span><b>${ed(base + ".madeAt", w.madeAt)}</b></div></div>
+    <div class="m-sec"><div class="sec-title">Recipe — opens Resources of Eden</div><div class="xlinks">${w.inputs.map(resLink).join("")}</div></div>
+    <div class="m-sec"><div class="sec-title">Status effects inflicted</div><div class="xlinks">${w.status.map(statusChip).join("") || '<span class="dim">None — straight damage</span>'}</div></div>
+    ${lineage(DATA.weapons, w, "openWeapon")}
+    <div class="m-sec"><div class="sec-title">Used by troops</div><div class="xlinks">${troops || '<span class="dim">No shared line uses it yet</span>'}</div></div>
+    <div class="m-sec"><div class="sec-title">Access by Duo</div>${accessRow(d => weaponAccess(w, d), d => `cycleItem('w','${id}','${d}')`)}
+      <p class="foot" style="text-align:center">Defaults to each Duo's ${esc(DATA.classes[w.cls])} access; individual overrides win.${state.editing ? " Click a chip to cycle it." : ""}</p></div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.weapons[${i}])">${w.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function openArmour(id) {
+  const a = ARMOUR(id), i = DATA.armour.indexOf(a), base = `armour.${i}`, color = DATA.armourLanes[a.col].color;
+  if (state.tab !== "armour") { state.tab = "armour"; renderAll(); }
+  SFX.play("node", { pitch: 0.9 + a.row * 0.05 });
+  reopen = () => openArmour(id);
+  const troops = usedByTroops("a", id);
+  openModal(`
+    <div class="m-kicker">Armour · ${esc(DATA.armourLanes[a.col].label)} · ${esc(DATA.armourBands[a.row].label)}</div>
+    <h3 class="m-title" style="--acc:${color}">${ed(base + ".name", a.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${color}">${esc(a.code)} · ${esc(a.type)}</span>${a.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${verdictHTML(d => armourAccess(a, d))}
+    ${art(imgPath(a.name, "Armour"), esc(a.code), color)}
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", a.desc || "—", true)}</p></div>
+    <div class="stats"><div class="stat"><span>Melee armour</span><b>${a.melee}</b><small>placeholder</small></div><div class="stat"><span>Ranged armour</span><b>${a.ranged}</b><small>placeholder</small></div>
+      <div class="stat"><span>Type</span><b style="font-size:1rem">${esc(a.type)}</b></div><div class="stat"><span>Crafted at</span><b style="font-size:.9rem">${ed(base + ".madeAt", a.madeAt)}</b></div></div>
+    <div class="m-sec"><div class="sec-title">Recipe — opens Resources of Eden</div><div class="xlinks">${a.inputs.map(resLink).join("")}</div></div>
+    <div class="m-sec"><div class="sec-title">Resists</div><div class="xlinks">${a.resist.map(statusChip).join("") || '<span class="dim">No special resistance</span>'}</div></div>
+    ${lineage(DATA.armour, a, "openArmour")}
+    <div class="m-sec"><div class="sec-title">Worn by troops</div><div class="xlinks">${troops || '<span class="dim">No shared line uses it yet</span>'}</div></div>
+    <div class="m-sec"><div class="sec-title">Access by Duo</div>${accessRow(d => armourAccess(a, d), d => `cycleItem('a','${id}','${d}')`)}</div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.armour[${i}])">${a.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function openStatus(id) {
+  const s = STATUS(id), i = DATA.statuses.indexOf(s), base = `statuses.${i}`;
+  if (state.tab !== "status") { state.tab = "status"; renderAll(); }
+  SFX.play("node", { pitch: 1.05 });
+  reopen = () => openStatus(id);
+  const ws = DATA.weapons.filter(w => w.status.includes(id)).map(w => gearChip("w", w.id)).join("");
+  const as = DATA.armour.filter(a => a.resist.includes(id)).map(a => gearChip("a", a.id)).join("");
+  const list = key => EDEN_DUOS.filter(d => DATA.duos[d.id][key].includes(id)).map(d => `<span class="chip" style="color:${d.color}">${sigil(d.id)}${esc(d.name)}</span>`).join("") || '<span class="dim">None</span>';
+  openModal(`
+    <div class="m-kicker">Status effect · ${esc(s.dot)}</div>
+    <h3 class="m-title" style="--acc:${s.color}">${ed(base + ".name", s.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${s.color}">${esc(s.code)}</span>${s.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${verdictHTML(d => inflictAccess(id, d))}
+    <div class="m-sec"><div class="sec-title">What it does</div><p>${ed(base + ".desc", s.desc, true)}</p></div>
+    <div class="kv"><div><span>Damage pattern</span><b>${ed(base + ".dot", s.dot)}</b></div><div><span>Counters / cleanse</span><b>${ed(base + ".counter", s.counter, true)}</b></div></div>
+    <div class="m-sec"><div class="sec-title">Who can inflict it</div>${accessRow(d => inflictAccess(id, d), d => `cycleInflict('${d}','${id}')`)}</div>
+    <div class="kv"><div><span>Immune</span><b>${list("immune")}</b></div><div><span>Resist</span><b>${list("resist")}</b></div><div><span>Vulnerable</span><b>${list("vuln")}</b></div><div><span>Resisted by armour</span><b>${as || "—"}</b></div></div>
+    <div class="m-sec"><div class="sec-title">Weapons that inflict it</div><div class="xlinks">${ws || '<span class="dim">Delivered by units / abilities rather than a weapon</span>'}</div></div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.statuses[${i}])">${s.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function openSig(wid) {
+  const w = WARLORD[wid], d = DUO[w.duo], s = DATA.signatures[wid], base = `signatures.${wid}`, isB = s.kind === "building";
+  SFX.play("node", { pitch: 1.08 });
+  reopen = () => openSig(wid);
+  openModal(`
+    <div class="m-kicker">${isB ? "Unique building" : "Unique troop"} · ${esc(w.name)} · ${esc(d.name)}</div>
+    <h3 class="m-title" style="--acc:${d.color}">${ed(base + ".name", s.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${d.color}">${sigil(d.id)}${esc(w.name)} only</span>${s.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${art(imgPath(s.name, isB ? "Buildings" : "Troops"), sigil(d.id), d.color)}
+    <div class="m-sec"><div class="sec-title">Role</div><p>${ed(base + ".role", s.role, true)}</p></div>
+    ${isB ? `<p class="foot" style="text-align:center">Buildings are catalogued in Warlords of Eden.</p><div class="center-row"><a class="xlink out" href="${encodeURI("Warlords of Eden.html")}#${d.id === "droids" ? "hive+hive" : wid + "+" + partner(wid)}/buildings">Open in Warlords of Eden</a></div>`
+      : `<div class="m-sec"><div class="sec-title">Unique level</div><div class="lvl-big">Level ${s.level || 0} / 10</div>${meter((s.level || 0) * 10)}
+      <div class="center-row edit-only" style="margin-top:8px"><button class="mini" onclick="bumpSig('${wid}',-1)">− Level</button><button class="mini" onclick="bumpSig('${wid}',1)">+ Level</button></div>
+      <p class="foot">Unique troops only level by playing ${esc(w.name)}.</p></div>`}
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.signatures['${wid}'])">${s.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function openFaction(did, i) {
+  const u = DATA.faction[did][i], d = DUO[did], base = `faction.${did}.${i}`;
+  SFX.play("node", { pitch: 1.04 });
+  reopen = () => openFaction(did, i);
+  openModal(`
+    <div class="m-kicker">${u.rule ? "Roster rule" : "Faction troop"} · ${esc(d.name)}</div>
+    <h3 class="m-title" style="--acc:${d.color}">${ed(base + ".name", u.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${d.color}">${sigil(d.id)}${esc(d.name)} only</span>${u.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
+    ${u.rule ? "" : art(imgPath(u.name, "Troops"), sigil(d.id), d.color)}
+    <div class="m-sec"><div class="sec-title">${u.rule ? "Rule" : "Role"}</div><p>${ed(base + ".role", u.role, true)}</p></div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.faction['${did}'][${i}])">${u.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
+}
+function bumpLine(li, d) { const l = DATA.lines[li]; l.level = Math.max(0, Math.min(10, l.level + d)); persist(); refresh(); }
+function bumpSig(wid, d) { const s = DATA.signatures[wid]; s.level = Math.max(0, Math.min(10, (s.level || 0) + d)); persist(); refresh(); }
+function toggleLock(obj) { obj.locked = !obj.locked; persist(obj.locked ? "Marked locked" : "Marked placeholder"); refresh(); }
+
+/* ---------- modal, edit mode, toast ---------- */
+function openModal(html) {
+  if (!quiet) SFX.play("modalOpen");
+  const b = $("#modal-body"), keep = quiet ? b.scrollTop : 0;
+  b.innerHTML = html; b.scrollTop = keep;
+  $("#modal").classList.add("open"); applyEditable();
+}
+function closeModal() { const o = $("#modal").classList.contains("open"); $("#modal").classList.remove("open"); reopen = null; if (o) { SFX.play("modalClose"); if (state.editing) renderAll(); } }
+const PLAIN = (() => { const d = document.createElement("div"); try { d.contentEditable = "plaintext-only"; return d.contentEditable === "plaintext-only"; } catch (e) { return false; } })();
+function applyEditable() { $$("[data-edit]").forEach(el => { if (state.editing) { el.setAttribute("contenteditable", PLAIN ? "plaintext-only" : "true"); el.spellcheck = true; } else el.removeAttribute("contenteditable"); }); }
+function toggleEdit() {
+  state.editing = !state.editing;
+  document.body.classList.toggle("editing", state.editing);
+  $("#btn-edit").classList.toggle("active", state.editing);
+  SFX.play("tab", { pitch: state.editing ? 1.15 : 0.88 });
+  refresh(); toast(state.editing ? "Edit mode on" : "Edit mode off");
+}
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1900); }
+document.addEventListener("focusout", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (!el || !state.editing) return;
+  const v = el.innerText.replace(/\u00a0/g, " ").trim();
+  if (getPath(DATA, el.dataset.edit) === v) return;
+  setPath(DATA, el.dataset.edit, v); persist("Saved");
+});
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (el && el.isContentEditable) { if (e.key === "Enter" && !el.hasAttribute("data-ml")) { e.preventDefault(); el.blur(); } if (e.key === "Escape") el.blur(); return; }
+  if (e.key === "Escape") return closeModal();
+  if ($("#modal").classList.contains("open") || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= DATA.tabs.length) go(DATA.tabs[n - 1].id);
+});
+
+/* ---------- UI sounds — procedural Web Audio with a warm room tone; one mute shared across books ---------- */
+const SFX = (() => {
+  let ctx = null, out = null, muted = false;
+  try { muted = (localStorage.getItem("edenCodex.mute") ?? localStorage.getItem("warlordsOfEden.mute")) === "1"; } catch (e) {}
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function ensure() {
+    if (reduce) return Promise.resolve();
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
+      out = ctx.createGain(); out.gain.value = 0.5;
+      const send = ctx.createGain(), dl = ctx.createDelay(0.5), fb = ctx.createGain(), lp = ctx.createBiquadFilter();
+      send.gain.value = 0.22; dl.delayTime.value = 0.09; fb.gain.value = 0.35; lp.type = "lowpass"; lp.frequency.value = 2200;
+      out.connect(comp); out.connect(send); send.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    return ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
+  }
+  document.addEventListener("pointerdown", () => { ensure(); }, { once: true, passive: true });
+  function env(g, t, peak, atk, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + atk); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function tone(f, t, dur, peak, type, f2) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    o.connect(g); g.connect(out); env(g, t, peak, Math.min(0.01, dur / 4), dur); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function pluck(f, t, dur, peak) { tone(f, t, dur, peak, "triangle"); tone(f * 2.003, t, dur * 0.6, peak * 0.25, "sine"); }
+  function hiss(t, dur, peak, type, f1, f2, q) {
+    const n = Math.ceil(ctx.sampleRate * (dur + 0.05)), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = b; fl.type = type; fl.frequency.setValueAtTime(f1, t);
+    if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    fl.Q.value = q || 1;
+    s.connect(fl); fl.connect(g); g.connect(out); env(g, t, peak, Math.min(0.02, dur / 3), dur); s.start(t); s.stop(t + dur + 0.05);
+  }
+  const KIT = {
+    tab: (t, p) => { hiss(t, 0.035, 0.16, "bandpass", 2400 * p, 0, 5); pluck(587 * p, t + 0.005, 0.12, 0.07); },
+    back: t => { pluck(659, t, 0.12, 0.06); pluck(494, t + 0.07, 0.16, 0.06); hiss(t, 0.12, 0.05, "bandpass", 1200, 500, 2); },
+    modalOpen: t => { hiss(t, 0.22, 0.07, "bandpass", 380, 1700, 1.4); tone(92, t, 0.24, 0.16, "sine", 52); pluck(880, t + 0.06, 0.4, 0.03); },
+    picker: t => { hiss(t, 0.2, 0.06, "bandpass", 500, 1900, 1.4); tone(110, t, 0.2, 0.12, "sine", 62); pluck(740, t + 0.05, 0.3, 0.035); pluck(988, t + 0.11, 0.3, 0.025); },
+    modalClose: t => { hiss(t, 0.14, 0.055, "bandpass", 1500, 420, 1.6); tone(330, t, 0.12, 0.045, "sine", 220); },
+    select: (t, p) => { pluck(523 * p, t, 0.22, 0.08); pluck(784 * p, t + 0.065, 0.3, 0.065); },
+    duoLoad: t => { tone(55, t, 0.7, 0.16, "sine"); tone(82.4, t + 0.02, 0.6, 0.08, "sine"); hiss(t, 0.5, 0.07, "lowpass", 180, 900, 0.7); [330, 415, 494, 659].forEach((f, i) => pluck(f, t + 0.12 + i * 0.07, 0.5, 0.04)); },
+    node: (t, p) => { hiss(t, 0.025, 0.08, "highpass", 3200, 0, 0.8); pluck(740 * p, t, 0.14, 0.055); },
+    toggle: (t, p, on) => { if (on) { pluck(523, t, 0.15, 0.06); pluck(784, t + 0.07, 0.2, 0.06); } else { pluck(784, t, 0.15, 0.05); pluck(523, t + 0.07, 0.2, 0.05); } },
+    save: t => [523, 659, 784, 1047].forEach((f, i) => pluck(f, t + i * 0.08, 0.45, 0.055)),
+    shutter: t => { hiss(t, 0.018, 0.14, "bandpass", 3000, 0, 3); hiss(t + 0.06, 0.022, 0.1, "bandpass", 2200, 0, 3); pluck(1175, t + 0.06, 0.08, 0.025); }
+  };
+  function play(kind, opts) {
+    if (muted || reduce || (typeof quiet !== "undefined" && quiet)) return;
+    const fn = KIT[kind];
+    if (!fn) return;
+    ensure().then(() => { if (ctx) fn(ctx.currentTime + 0.005, (opts && opts.pitch) || 1, !muted); }).catch(() => {});
+  }
+  function sync() {
+    const b = document.getElementById("btn-sound");
+    if (!b) return;
+    b.textContent = muted ? "\u{1F507} Muted" : "\u{266A} Sound";
+    b.classList.toggle("active", !muted);
+    b.title = muted ? "UI sounds off — click to enable" : "UI sounds on — click to mute";
+  }
+  function toggleMute() { muted = !muted; try { localStorage.setItem("edenCodex.mute", muted ? "1" : "0"); } catch (e) {} sync(); if (!muted) play("toggle"); }
+  return { play, toggleMute, sync };
+})();
+
+/* ---------- atmosphere particles ---------- */
+const FX = (() => {
+  const cv = $("#fx"), cx = cv.getContext("2d");
+  const N = (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? 0 : 110;
+  let w = 0, h = 0, parts = [], cfg = [], sig = "", raf = 0;
+  const R = (a, b) => a + Math.random() * (b - a);
+  function resize() { const d = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * d; cv.height = h * d; cv.style.width = w + "px"; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); }
+  function make(i, init) {
+    const c = cfg[i % cfg.length], p = { m: c.mode, c: c.color, t: 0, life: R(320, 900), a: R(.3, .85), s: R(1, 2.6), ph: R(0, 6.28), vx: 0, vy: 0, wait: 0 };
+    switch (p.m) {
+      case "embers": p.x = R(0, w); p.y = init ? R(0, h) : h + R(0, 40); p.vx = R(-.2, .2); p.vy = -R(.35, 1.3); break;
+      case "spores": p.x = R(0, w); p.y = R(0, h); p.vx = R(-.15, .15); p.vy = R(-.18, .08); p.s = R(1.5, 4.5); p.a = R(.08, .32); break;
+      case "sparks": { p.x = R(0, w); p.y = R(0, h); const an = R(0, 6.28), sp = R(1.5, 4.5); p.vx = Math.cos(an) * sp; p.vy = Math.sin(an) * sp; p.life = R(16, 46); p.s = R(.8, 1.7); p.wait = R(0, 300); break; }
+      case "dust": p.x = init ? R(0, w) : -R(0, 60); p.y = R(0, h); p.vx = R(.8, 2.6); p.vy = R(-.15, .15); p.a = R(.1, .35); p.s = R(.8, 2); break;
+      case "drip": p.x = R(0, w); p.y = init ? R(0, h) : -R(0, 80); p.vy = R(.6, 1.6); p.s = R(1, 2); p.a = R(.25, .6); break;
+      case "data": p.x = Math.round(R(0, w) / 16) * 16; p.y = init ? R(0, h) : -R(0, 60); p.vy = R(.4, 1.4); p.s = R(1.5, 3); p.a = R(.15, .5); break;
+      default: p.x = R(0, w); p.y = init ? R(0, h) : -R(0, 40); p.vx = R(-.25, .35); p.vy = R(.25, .7); p.a = R(.15, .45); if (Math.random() < .7) p.c = "#bdb5a6";
+    }
+    return p;
+  }
+  function tick() {
+    cx.clearRect(0, 0, w, h);
+    parts.forEach((p, i) => {
+      if (p.wait > 0) { p.wait--; return; }
+      p.t++; p.x += p.vx; p.y += p.vy;
+      if (p.m === "embers" || p.m === "ash") p.x += Math.sin(p.t / 45 + p.ph) * .3;
+      if (p.y < -90 || p.y > h + 90 || p.x < -90 || p.x > w + 90 || p.t > p.life) { parts[i] = make(i, false); return; }
+      const fade = Math.max(0, Math.min(1, p.t / 40, (p.life - p.t) / 40)); let al = p.a * fade;
+      cx.globalCompositeOperation = /embers|sparks|data/.test(p.m) ? "lighter" : "source-over"; cx.fillStyle = cx.strokeStyle = p.c;
+      if (p.m === "sparks") { cx.globalAlpha = al; cx.lineWidth = p.s; cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3); cx.stroke(); return; }
+      if (p.m === "data") { cx.globalAlpha = al; cx.fillRect(p.x, p.y, p.s, p.s * 2.4); return; }
+      if (p.m === "embers") { al *= .65 + .35 * Math.sin(p.t / 6 + p.ph); cx.globalAlpha = al * .18; cx.beginPath(); cx.arc(p.x, p.y, p.s * 3.2, 0, 6.283); cx.fill(); }
+      cx.globalAlpha = al; cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, 6.283); cx.fill();
+    });
+    cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over"; raf = requestAnimationFrame(tick);
+  }
+  resize(); addEventListener("resize", resize);
+  return { set(next) { const s = JSON.stringify(next); if (s === sig) return; sig = s; cfg = next; parts = Array.from({ length: N }, (_, i) => make(i, true)); if (!raf && N) raf = requestAnimationFrame(tick); } };
+})();
+
+/* ==========================================================================
+   START — URL: #pair/tab/open:id  (pair = "all" or warlord1+warlord2)
+   ========================================================================== */
+(function init() {
+  const note = boot();
+  IMG.seed(DATA.meta && DATA.meta.pictures);
+  const parts = decodeURIComponent(location.hash.slice(1)).split("/");
+  let saved = ""; try { saved = localStorage.getItem("edenCodex.pair") || ""; } catch (e) {}
+  readPair(parts[0] ? (parts[0] === "all" ? "" : parts[0]) : saved);
+  if (DATA.tabs.some(t => t.id === parts[1])) state.tab = parts[1];
+  SFX.sync(); renderAll();
+  const open = (parts[2] || "").replace(/^open:/, "");
+  if (open) { quiet = true; if (WEAPON(open)) openWeapon(open); else if (ARMOUR(open)) openArmour(open); else if (STATUS(open)) openStatus(open); quiet = false; }
+  if (note) toast(note);
+})();
+</script>
+</body>
+</html>

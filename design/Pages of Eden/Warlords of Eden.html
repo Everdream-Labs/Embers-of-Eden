@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warlords of Eden — Embers of Eden Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eden-codex.css">
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<div class="app">
+  <aside class="plate warlord" id="col-1" style="--acc:var(--w1)"></aside>
+
+  <main class="plate center" style="--acc:var(--duo-a)">
+    <header class="duo-head">
+      <div class="motif a" id="motif-a"></div>
+      <div class="motif b" id="motif-b"></div>
+      <div class="brandrow"><span class="brand"><b>Warlords</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
+      <div class="head-sigils" id="head-sigils"></div>
+      <div class="kicker" id="duo-kicker"></div>
+      <h1 class="duo-title" id="duo-title"></h1>
+      <div class="duo-sub" id="duo-sub"></div>
+      <div class="motto" id="duo-motto"></div>
+    </header>
+
+    <nav class="navbar">
+      <div class="side"><button class="btn" id="btn-back" onclick="goBack()" title="Back (undo last navigation)">&#9666; Back</button></div>
+      <div class="tabs" id="tabs">
+        <button class="btn" data-tab="profile" style="--tc:#c9a24a" onclick="go('profile')">Team</button>
+        <button class="btn" data-tab="skills" style="--tc:#b07ad6" onclick="go('skills')">Skills</button>
+        <button class="btn" data-tab="tech" style="--tc:#4fb0ff" onclick="go('tech')">Tech</button>
+        <button class="btn" data-tab="buildings" style="--tc:#93b85c" onclick="go('buildings')">Buildings</button>
+      </div>
+      <div class="side">
+        <button class="btn" id="btn-sound" onclick="SFX.toggleMute()" title="Toggle menu UI sounds">&#9836; Sound</button>
+        <button class="btn" onclick="openRoster()" title="Browse all Duos">&#9776; Roster</button>
+        <button class="btn" id="btn-edit" onclick="toggleEdit()" title="Toggle edit mode">&#9998; Edit</button>
+      </div>
+    </nav>
+
+    <div class="editbar">
+      <span>Edit mode — click any dashed field to rewrite it. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+      <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button>
+      <button class="mini" onclick="exportData()">Export JSON</button>
+      <button class="mini" onclick="document.getElementById('import-file').click()">Import JSON</button>
+      <button class="mini" onclick="resetData()">Reset to defaults</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden onchange="importData(this.files[0]);this.value=''">
+    </div>
+
+    <div class="views">
+      <section class="view" id="view-profile"></section>
+      <section class="view" id="view-skills"></section>
+      <section class="view" id="view-tech"></section>
+      <section class="view" id="view-buildings"></section>
+    </div>
+
+    <footer class="legend">
+      <span><i class="dash"></i>Dashed = placeholder / not locked</span>
+      <span><i></i>Solid = locked</span>
+      <span><b style="color:var(--tbd)">&#9733;</b> Stronger</span>
+      <span><b style="color:#4fb0ff">&#9889;</b> Early</span>
+      <span><b style="color:var(--bad)">&#10005;</b> Never available</span>
+      <span><b style="color:var(--tbd)">?</b> Undecided</span>
+      <span class="dim" id="foot-meta">Keys 1–4 switch tabs · Esc closes · ♪ Sound</span>
+    </footer>
+  </main>
+
+  <aside class="plate warlord" id="col-2" style="--acc:var(--w2)"></aside>
+</div>
+
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal plate" id="modal-box">
+    <button class="x" onclick="closeModal()" title="Close">&#10005;</button>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="application/json" id="codex-baked">null</script>
+<script>
+const PRISTINE_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+/* ---------- Pictures: Name.jpg, Name1.jpg, Name2.jpg … — click a picture to cycle the shortlist ---------- */
+const IMG = (() => {
+  const EXT = ["jpg", "png", "webp", "jpeg"];
+  const EMB = window.EDEN_IMAGES || null;
+  const KEY = "edenCodex.pictures";
+  const cache = {};
+  let pick = {};
+  try { pick = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  const stemOf = p => String(p || "").replace(/\.(jpe?g|png|webp)$/i, "");
+  const src = p => (EMB && EMB[p]) || encodeURI(p).replace(/#/g, "%23");
+  const probe = p => new Promise(res => {
+    if (EMB) return res(!!EMB[p]);
+    const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = src(p);
+  });
+  async function at(stem, n) { for (const e of EXT) { const p = `${stem}${n || ""}.${e}`; if (await probe(p)) return p; } return null; }
+  function list(stem) {
+    if (!cache[stem]) cache[stem] = (async () => {
+      const out = [], first = await at(stem, 0);
+      if (first) out.push(first);
+      for (let n = 1; n < 40; n++) { const p = await at(stem, n); if (!p) break; out.push(p); }
+      return out;
+    })();
+    return cache[stem];
+  }
+  function badge(img, i, n) {
+    const host = img.parentNode; if (!host) return;
+    let b = host.querySelector(":scope > .pic-count");
+    if (n < 2) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("span"); b.className = "pic-count"; host.appendChild(b); }
+    b.textContent = `${i + 1} / ${n} · click to cycle`;
+  }
+  async function hydrate(img) {
+    if (img.dataset.ready) return;
+    img.dataset.ready = "1";
+    const stem = img.dataset.stem, paths = await list(stem);
+    if (!paths.length) { img.remove(); return; }
+    const i = (pick[stem] || 0) % paths.length;
+    img.onload = () => { if (img.parentNode) img.parentNode.classList.add("has-img"); };
+    img.src = src(paths[i]);
+    if (img.hasAttribute("data-cycle")) badge(img, i, paths.length);
+  }
+  async function cycle(img) {
+    const stem = img.dataset.stem, paths = await list(stem);
+    const file = stem.split("/").pop();
+    if (paths.length < 2) { toast(`Only one picture — add ${file}1.jpg, ${file}2.jpg… to shortlist more`); return; }
+    const i = ((pick[stem] || 0) + 1) % paths.length;
+    pick[stem] = i;
+    try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch (e) {}
+    document.querySelectorAll(`img[data-stem="${CSS.escape(stem)}"]`).forEach(x => { x.src = src(paths[i]); if (x.hasAttribute("data-cycle")) badge(x, i, paths.length); });
+    SFX.play("shutter");
+    toast(`Picture ${i + 1} of ${paths.length} — ${paths[i].split("/").pop()}`);
+  }
+  document.addEventListener("click", e => {
+    const img = e.target.closest && e.target.closest("img[data-cycle]");
+    if (!img) return;
+    e.stopPropagation(); e.preventDefault();
+    cycle(img);
+  }, true);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches("img[data-stem]")) hydrate(n);
+    n.querySelectorAll("img[data-stem]").forEach(hydrate);
+  }))).observe(document.documentElement, { childList: true, subtree: true });
+  return {
+    tag: (path, cycleIt, alt) => `<img data-stem="${esc(stemOf(path))}"${cycleIt ? " data-cycle" : ""} alt="${esc(alt || "")}">`,
+    hint: path => `add “${path}” — or ${stemOf(path).split("/").pop()}1, 2, 3… to shortlist`,
+    snapshot: () => Object.assign({}, pick),
+    seed: obj => { if (obj) Object.entries(obj).forEach(([k, v]) => { if (!(k in pick)) pick[k] = v; }); }
+  };
+})();
+/* ==========================================================================
+   DATA — single source for the whole codex. Edit here (or via Edit mode +
+   Export JSON) as designs get locked. "(suggestion)" = idea, not agreed.
+   ========================================================================== */
+const DEFAULT_DATA = {
+  meta: {
+    version: 1,
+    updated: "2026-11-01",
+    visionDoc: "Visions_of_Eden.md (1 Nov 2026)",
+    gamePitch: "Embers of Eden is a post-apocalyptic colony-builder RTS: locked isometric camera, regicide-style victory, AoE-style expansion — plus persistent Warlord/duo progression and deep colony identity. Core loop: grow your colony, specialise your people, expand across the map, and kill the other warlords.",
+    defaultDuo: "Default start: Survivors — Viktor & Ayla (father & daughter). Vanilla wasteland pair; broad access, trade lean, minimal penalties. Other Duos unlock via challenge milestones (not defeat-to-unlock).",
+    unlockNote: "Unlock examples: play matches, specific win conditions, milestones (e.g. win as Scientists → unlock Mutants). Once unlocked, Warlords mix freely except Droids (single Warlord, never mixed).",
+    progressionNote: "Personal skill tree per Warlord (XP every game they are played). Full specialised tree per natural Duo — both members contribute (~2× feed rate when playing the natural pair). Mixed pairs: each Warlord still earns personal XP and still feeds their own natural duo tree; plus a Warlord–Warlord Bond bar between those two individuals (light passives, not a full tree). In-match colony tech is separate. All Warlord/duo progression persists on the player profile.",
+    warlordRole: "Warlords are champion units in battle but keep full citizen abilities (build, gather, craft, heal). Killable for the match — tougher than militia, more vulnerable than an AoE King. Droids: solo hive Warlord only.",
+    mixRule: "union",
+    mixRuleNote: "Mixed pairs use a union rule (current default, tweakable): if either Warlord's Duo can use a weapon, status, or troop line, the pair can. Import-only resources stay usable. Buildings the pair cannot construct stay locked. Preview lives in Arms of Eden and Resources of Eden.",
+    gatingNote: "Buildings, troops, tech, weapons, and status effects all follow the same per-Duo gating model (Age of Empires style). Not every group can inflict every status — the full matrix is still to be locked. Survivors = broad access, shallow specialisation. The Pack = narrowest access, compensated by troop variety and animal numbers.",
+    openDiscussion: [
+      "Exact challenge list for unlocking Duos",
+      "Full resource list, production chains, and per-duo unique troops/buildings (→ Resources of Eden)",
+      "Militia identity and differentiation from Templars (with Axel)",
+      "Templars direction — overlap risk with Mutants (heavy melee) and Militia (heavy firearms)",
+      "Final names: Afflicted pair, Pack cousins, Bloodveil sisters, Templars, Nomads",
+      "Bloodveil faction name (still subject to change)",
+      "Afflicted fantasy lock — defensive survivors vs darker plague cult",
+      "Light happiness / population-growth modifiers (if kept)",
+      "Remaining questionnaire sections (maps, resources, combat depth, victory variants)",
+      "Visual briefs for image generation"
+    ]
+  },
+
+  duos: {
+    survivors: {
+      id: "survivors", num: 1, name: "Survivors", status: "core", warlords: ["viktor", "ayla"], sigil: "survivors",
+      theme: { a: "#d0702f", fx: "embers" },
+      motto: "Scavenge. Barter. Endure.",
+      lore: "They were nobody before the world ended — father and daughter, Viktor and Ayla, still walking the ash roads together. Bullets run out; a fair trade buys another tomorrow. No mutations, no doctrine, no machine voice in their heads — just the default pair every new commander learns on: he pushes the fight outward, she holds the walls until dawn.",
+      wayOfLife: "Vanilla wasteland survivors — scavenge by day, barter by firelight. Viktor (attack) and Ayla (defence) are the game's default starting duo; faster, forgiving progression than specialist factions.",
+      pros: ["Default starting Duo — others unlock via challenges", "Trade lean — stronger barter and market returns", "Balanced pair: Viktor (attack) + Ayla (defence)", "Minimal penalties — forgiving for new players", "Full Melee → Guns → Laser progression", "Broad status-effect access — shallow specialisation (system-wide)"],
+      cons: ["No extreme specialisation", "Lower peak power than focused Duos", "No signature damage type"],
+      bondNote: "Natural Survivors tree: both Viktor and Ayla feed it when paired (~2× duo XP vs solo Warlord games). Mixed Bond bar is separate when you pair them with outsiders.",
+      arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: [],
+      treeBranches: ["Bond", "Trade", "Scavenge"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: a fast scavenger / raider unit that feeds the trade lean (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Barter Post — a trade hub that boosts market returns (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "Rough idea: trade-route or salvage bonus (suggestion)." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "Rough idea: Bond-powered pair ability (suggestion)." }],
+      open: ["Personal traits not locked", "Unique troop and building still undefined", "Exact challenge gates for other Duos (Visions doc)"]
+    },
+    hunters: {
+      id: "hunters", num: 2, name: "The Hunters", status: "core", warlords: ["brick", "twig"], sigil: "hunters",
+      theme: { a: "#a3a84e", fx: "ash" },
+      motto: "Live off the land. Waste nothing.",
+      lore: "Brick and Twig were farmers and craftsmen long before they were killers, and they never stopped being either. They live quietly on what the land still gives — stone from the hills, timber from the dead forests — and answer trespass with gunfire, blades and carefully placed explosives. They distrust anything that hums. They will never field a laser.",
+      wayOfLife: "Self-sufficient homesteaders. Brick works stone and the mines; Twig works wood and lumber. Everything is built, mended and reused by hand.",
+      pros: ["Excellent with guns, melee and explosives", "Strong stone + wood economy (Brick & Twig)", "Reliable, hard-hitting mid game"],
+      cons: ["Never gain laser weapons", "Late-game ceiling capped at guns + explosives"],
+      arsenal: { melee: "boost", bow: "yes", gun: "boost", laser: "no", plasma: "no", explosive: "boost" },
+      affinities: ["Explosive"],
+      treeBranches: ["Homestead", "Firearms", "Demolition"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: trapper / sharpshooter who lays snares and charges — never lasers (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Hunting Lodge — food from hunting plus trap crafting (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "Rough idea: hand-loaded ammunition (suggestion)." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "Rough idea: shaped charges (suggestion)." }],
+      open: ["Personal traits not locked"]
+    },
+    scientists: {
+      id: "scientists", num: 3, name: "Scientists", status: "partial", warlords: ["drsomething", "mixy"], sigil: "scientists",
+      theme: { a: "#3fd0c9", fx: "sparks" },
+      motto: "Progress has a body count.",
+      lore: "Somewhere beneath the ruins a laboratory kept its lights on. Dr. Something and Mixy are obsessed lab partners — not lovers, not family — united only by the work. He builds weapons that arc and scream; she keeps the subjects, and him, alive long enough to finish the next trial. Their plasma burns hotter than anyone else's. One failed gene-split did not stay in the lab: it became the first Mutants, and the birth of an entire race.",
+      wayOfLife: "Research above everything. Experimental weapons, electrocution, and plasma on his side; healing, chemistry, and possibly poison on hers. The pair lives for the experiment — and lives with what escaped it.",
+      pros: ["Strongest plasma access in the game", "Electrocution / paralysis weaponry", "Healing support", "Origin story ties directly to the Mutant race"],
+      cons: ["Fragile early game (suggestion)", "Heavy reliance on research timing (suggestion)"],
+      arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "boost", explosive: "yes" },
+      affinities: ["Electricity / Paralysis", "Plasma", "Poison (possible)"],
+      treeBranches: ["Plasma", "Voltage", "Medicine"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: arc trooper with paralysis weapons, or a combat chemist (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Laboratory Annex — plasma research and experiments (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "Rough idea: overcharged capacitors (suggestion)." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "Rough idea: stabilised plasma (suggestion)." }],
+      open: ["Final names — “Dr. Something” is still a placeholder", "Does Mixy's kit include poison?"]
+    },
+    mutants: {
+      id: "mutants", num: 4, name: "Mutants", status: "core", warlords: ["smash", "bash"], sigil: "mutants",
+      theme: { a: "#9bc53d", fx: "spores" },
+      motto: "Two fists. One face.",
+      lore: "Smash and Bash are identical twin brothers — the first out-of-control gene-split from the Scientists' work, and the birth of the mutant race. Same face, same scars, two tempers in one hulking body type. They wade through melee lines that would shred anyone else, poor with weapons, worse with tools, and hungry as a starving army. Sometimes they fight each other.",
+      wayOfLife: "Brute force and appetite. Mirrored traits, unusually strong harmony when the twins lead together — and the occasional twin argument that stops the whole camp.",
+      pros: ["Exceptional melee tanks", "Very strong harmony when paired together", "Mirrored traits keep the pair predictable", "Canonical first Mutants — tied to Scientists' failed experiment"],
+      cons: ["Poor weapon and tool use", "High food consumption", "Occasional twin arguments"],
+      mixNote: "Twin harmony is lost when Smash or Bash is paired with anyone else.",
+      arsenal: { melee: "boost", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: [],
+      treeBranches: ["Brawn", "Harmony", "Appetite"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: hulking mutant brute — huge melee, double rations (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Feeding Pit — food storage that offsets the twins' appetite (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "Rough idea: thick hide (suggestion)." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "Rough idea: twin rage (suggestion)." }],
+      open: ["Same character model — how do players tell Smash and Bash apart in-game?"]
+    },
+    afflicted: {
+      id: "afflicted", num: 5, name: "Afflicted", status: "partial", warlords: ["afflicted1", "afflicted2"], sigil: "afflicted",
+      theme: { a: "#c2c43c", fx: "spores" },
+      motto: "Breathe deep.",
+      lore: "Behind the hazmat suits, the Afflicted move like a couple who learned to survive together in air that kills everyone else. They lean boyfriend/girlfriend as Warlords — poison and disease specialists with a gas-mask aesthetic across the faction. Radiation and poison barely touch them; in zones that shred other groups, they often thrive. Whether they are defensive survivors who weaponised the sickness or something darker is still open.",
+      wayOfLife: "Hazmat-clad poison and disease play. Environmental bonuses in toxic or irradiated zones that hurt other Duos. Strong area denial when the map turns hostile.",
+      pros: ["Poison and disease specialists", "Radiation + poison resistance", "Environmental bonuses in hostile zones", "Vision roster: poison, disease, bleed, psychosis (access TBD per status matrix)"],
+      cons: ["Exact fantasy still open — defensive vs plague cult", "Warlord names not final"],
+      arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: ["Poison", "Disease", "Radiation", "Bleed (TBD)", "Psychosis (TBD)"],
+      treeBranches: ["Toxins", "Contagion", "Masks"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: hazmat sprayer or plague carrier — depends on final fantasy lock.", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Gas Works (defensive) or Plague House (cult) (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "TBD." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "TBD." }],
+      open: ["Lock fantasy — defensive poison users vs psychotic plague cult", "Final Warlord names", "Visual briefs for image generation"]
+    },
+    militia: {
+      id: "militia", num: 6, name: "Militia", status: "partial", warlords: ["militia1", "militia2"], sigil: "militia",
+      theme: { a: "#a4ae74", fx: "ash" },
+      motto: "Hold the line. Then hold it again.",
+      lore: "What's left of an army — or what a brother and sister built to look like one. The Militia march slow and heavy, wrapped in scavenged plate and discipline. They are the hardest wall in the wasteland, and right now the faction with the least soul. They need a story that clearly separates them from Templars (melee knights) and doesn't blur into “another heavy infantry Duo”.",
+      wayOfLife: "Slow, heavily armoured military force — heavy firearms and formation fighting are the likely hook (discussion with Axel ongoing).",
+      pros: ["Heavy armour", "Disciplined formation fighting (suggestion)", "Heavy firearms lean (suggestion — differentiation TBD)"],
+      cons: ["Slow movement", "Weakest identity — needs a personality hook", "Must differentiate from Templars and Mutants (open with Axel)"],
+      arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: [],
+      treeBranches: ["Armour", "Formation", "Command"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: heavy shield-wall infantry (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Bunker / Armoury (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "TBD." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "TBD." }],
+      open: ["Personality hook and story (with Axel)", "Confirm brother & sister Warlords", "Heavy firearms vs Templars overlap"]
+    },
+    bloodveil: {
+      id: "bloodveil", num: 7, name: "Bloodveil", status: "partial", warlords: ["bloodveil1", "bloodveil2"], sigil: "bloodveil",
+      theme: { a: "#c42a42", fx: "drip" },
+      motto: "What bleeds can be blessed.",
+      lore: "Out in the drowned forests and swamps, a hot goth witch cult of women keeps the old rites alive. Two sisters lead them — one brunette, one redhead — usually in agreement, with fierce pushback when they are not. Female troops only. They heal their own, convert the lost, and cut with ritual blades. Blood and poison damage; among the few Duos that can inflict Psychosis. They break easily — so do the minds they break.",
+      wayOfLife: "Female-only coven. Blood + poison damage, conversion, and healing. The sisters split complementary traits roughly 70/30 — blade lean vs rites lean.",
+      pros: ["Female troops only — unique roster rule", "Blood + poison damage", "Conversion of enemy units", "Psychosis infliction (rare)", "Healing", "Complementary 70/30 sister traits"],
+      cons: ["Low hit points", "Fragile if caught without support (suggestion)", "Faction name still subject to change"],
+      mixNote: "The 70/30 sister split only fully works when both sisters lead together (assumption).",
+      arsenal: { melee: "boost", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: ["Bleed", "Poison", "Psychosis"],
+      treeBranches: ["Blood", "Rites", "Conversion"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: coven witch (conversion + healing) and/or a bleed-blade dancer (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Blood Altar — conversion and healing rites (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "TBD." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "TBD." }],
+      open: ["Final faction name (Bloodveil TBD)", "Sister names", "Visual briefs for image generation"]
+    },
+    templars: {
+      id: "templars", num: 8, name: "Templars", status: "partial", warlords: ["templar1", "templar2"], sigil: "templars",
+      theme: { a: "#d6b45e", fx: "ash" },
+      motto: "Steel, scripture, and the long march.",
+      lore: "They found an old faith in the ruins and forged armour around it. The Templars are post-apocalyptic holy knights — under review with Axel because they risk overlapping Mutants (heavy melee) and Militia (heavy firearms). Possible direction: lean more into guns, pull back from pure medieval fantasy. Warlords are possibly two older brothers bound by vows and duty.",
+      wayOfLife: "Religious knights in scavenged plate — direction shifting toward firearms + faith rather than pure medieval melee (discussion ongoing).",
+      pros: ["Holy knight identity", "Durable heavy fighters (suggestion: morale bonuses)", "Possible firearms lean to differentiate from Mutants/Militia"],
+      cons: ["Less flexible at range until identity locks (suggestion)", "Overlap risk with Mutants and Militia — in review"],
+      arsenal: { melee: "boost", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: [],
+      treeBranches: ["Faith", "Steel", "Crusade"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: holy knight in scavenged plate — or gun-toting templar if direction shifts (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Chapel Keep — faith and knight training (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "TBD." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "TBD." }],
+      open: ["Review with Axel — melee vs guns identity", "Warlord names", "Faith / doctrine details"]
+    },
+    pack: {
+      id: "pack", num: 9, name: "The Pack", status: "partial", warlords: ["pack1", "pack2"], sigil: "pack",
+      theme: { a: "#c58a45", fx: "dust" },
+      motto: "HUNT. EAT. MORE.",
+      lore: "The Pack's leaders are cousins — with a running joke that outsiders think they're brother and sister, and they always correct it. The surface is almost comedic; the core is cannibalistic and savage. Primal, not cartoon cavemen. They never learned guns and never needed them. Tech is deliberately stunted: stone → iron only — no brass, steel, or alloy refinement. Research and building upgrades stay limited; troop upgrades expand instead. They breed any animal, including wild map beasts other civs cannot tame. Extreme DPS from attack speed and numbers.",
+      wayOfLife: "Primal savagery with broken speech. Bows only for ranged. Animals class dominates — map predators join them for free. Cannibalistic undertone beneath the joke.",
+      pros: ["Unique Animals troop class", "Breed any animal — including wild map species", "Very strong early game", "Extremely high DPS (attack speed + numbers)", "Map animals become free troops"],
+      cons: ["No guns — bows only", "Narrowest status-effect access (system-wide) — compensated by variety", "Stunted tech: stone → iron only; limited building/research upgrades", "Weak conventional late game (suggestion)"],
+      arsenal: { melee: "boost", bow: "yes", gun: "no", laser: "no", plasma: "no", explosive: "tbd" },
+      affinities: [],
+      treeBranches: ["Beasts", "Frenzy", "Primal"],
+      uniqueTroops: [
+        { name: "Dogs", rough: "Animals class. Rough role: cheap, fast early hunters (suggestion).", level: 0 },
+        { name: "Vultures", rough: "Animals class. Rough role: flying scouts / scavengers (suggestion).", level: 0 },
+        { name: "Lions", rough: "Animals class. Rough role: fast melee predators (suggestion).", level: 0 },
+        { name: "Bears", rough: "Animals class. Rough role: tanky melee (suggestion).", level: 0 },
+        { name: "Elephants", rough: "Animals class. Rough role: heavy trample / siege (suggestion).", level: 0 },
+        { name: "Hippos", rough: "Animals class. Rough role: brutal swamp/river bruisers (suggestion).", level: 0 }
+      ],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Beast Den — breed and house any animal, including wild species other Duos cannot (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "Rough idea: beast taming range (suggestion)." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "Rough idea: alpha beasts (suggestion)." }],
+      open: ["Cousin names", "Explosives — allowed or not?", "Visual briefs for image generation"]
+    },
+    ashen: {
+      id: "ashen", num: 10, name: "Ashen", status: "core", warlords: ["blowtorch", "vesper"], sigil: "ashen",
+      theme: { a: "#ff5a1f", fx: "embers" },
+      motto: "Everything burns beautifully.",
+      lore: "Gothic arsonists and intellectual bandits. Blowtorch treats fire as art; Vesper watches it burn with cold eyes and studies the people who survive it. Together they wield fire, psychosis, slavery, and trade — dark tools as mechanics, not constant moral quizzes. Tone peaks brutal when you play Ashen.",
+      wayOfLife: "Fire as art, psychology as control. Strong traders; discounted citizens (slower production). POW slavery and forced measures when starving are mechanical options in the vision doc.",
+      pros: ["Reduced fire damage taken", "Psychosis and psychological control", "Good traders", "Discounted citizen production", "Slavery / dark economy tools (mechanical)"],
+      cons: ["Discounted citizens are slower to produce", "One of the most brutal playstyles"],
+      arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: ["Fire", "Psychosis"],
+      treeBranches: ["Pyre", "Psyche", "Commerce"],
+      uniqueTroops: [{ name: "Unique Troop – Placeholder", rough: "Rough idea: flame trooper / arsonist (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Pyre Gallery — fire as art; fear and morale effects (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "Rough idea: accelerants (suggestion)." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "Rough idea: broken will (suggestion)." }],
+      open: ["Personal traits not locked"]
+    },
+    nomads: {
+      id: "nomads", num: 11, name: "Nomads", status: "partial", warlords: ["nomad1", "nomad2"], sigil: "nomads",
+      theme: { a: "#d7a85e", fx: "dust" },
+      motto: "The road is the kingdom.",
+      lore: "Western Mojave Fallout cowboy energy — dust, sun, and engines that don't quit. The Nomads can move their Town Centre or spin up multiple settlements early. Warlords lean toward an old mother and her son, but names and faces are not locked. They ride vehicles nobody else can build and may carry a global unit movement speed bonus (suggestion).",
+      wayOfLife: "Mobile empire: relocate Town Centre, multiple early colonies, vehicle troops, high mobility. Cowboy wasteland aesthetic.",
+      pros: ["Can move Town Centre (concept)", "Multiple Town Centres / early satellites", "High mobility", "Unique vehicle troops", "Possible global movement speed bonus (suggestion)"],
+      cons: ["Warlord names and exact ages not final", "Weaker static defence (suggestion)"],
+      arsenal: { melee: "yes", bow: "yes", gun: "yes", laser: "yes", plasma: "tbd", explosive: "yes" },
+      affinities: [],
+      treeBranches: ["Roads", "Colonies", "Vehicles"],
+      uniqueTroops: [{ name: "Vehicle Troops – Placeholder", rough: "Unique vehicle troops (agreed concept). Rough idea: buggies, war rigs, mobile platforms (suggestion).", level: 0 }],
+      uniqueBuilding: { name: "Unique Building – Placeholder", rough: "Rough idea: Caravan Yard — vehicle depot / mobile staging (suggestion).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "TBD." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "TBD." }],
+      open: ["Final Warlord names", "Confirm mother + son pairing", "Visual briefs — cowboy / Mojave look"]
+    },
+    droids: {
+      id: "droids", num: 12, name: "Droids", status: "core", warlords: ["hive"], sigil: "droids",
+      theme: { a: "#4fb0ff", fx: "data" },
+      motto: "WE ARE ONE. WE DO NOT HUNGER.",
+      lore: "Droid 0001 is the face of the faction — humanoid, Tesla-bot / Terminator / Cyberpunk in silhouette. Arms can open into weapons; capable in both melee and ranged. Behind the shell is one hive mind that speaks as “we”, building lesser chassis to fight in its name. No food — only materials, and plenty of them. Immune to Poison, Bleeding, and Psychosis; still vulnerable to Electricity / Paralysis. Other factions reposition Warlords to stay alive; Droids must defend the Data Centre.",
+      wayOfLife: "Single hive-mind Warlord (Droid 0001). Data Centre replaces Town Centre — destroy it to eliminate them. First Data Centre cannot be moved or rebuilt; late game a second can be built, and both must fall. No food economy; chassis-based troops.",
+      pros: ["No food required", "Early lasers and plasma", "Strong melee and ranged chassis", "Immune to Poison, Bleed, Psychosis", "Multiple droid chassis (light, heavy…)"],
+      cons: ["Higher material costs", "Never mixes with other Warlords", "Vulnerable to Electricity / Paralysis", "Must defend Data Centre — unique elimination rules", "Possible swamp terrain restriction"],
+      arsenal: { melee: "yes", bow: "tbd", gun: "yes", laser: "early", plasma: "early", explosive: "tbd" },
+      affinities: ["Laser", "Plasma"],
+      treeBranches: ["Chassis", "Energy", "Network"],
+      uniqueTroops: [
+        { name: "Light Chassis", rough: "Fast, fragile droid frame — melee or ranged modules (concept).", level: 0 },
+        { name: "Heavy Chassis", rough: "Slow, armoured droid frame (concept).", level: 0 },
+        { name: "Chassis – Placeholder", rough: "Further chassis types TBD.", level: 0 }
+      ],
+      uniqueBuilding: { name: "Data Centre", rough: "Replaces Town Centre for Droids. Destroying it eliminates the faction. The first Data Centre cannot be moved or rebuilt; a second may be built late game — both must be destroyed to wipe them.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder (second site — TBD)"] },
+      uniqueTech: [{ name: "Unique Research I – Placeholder", tier: 2, rough: "TBD." }, { name: "Unique Research II – Placeholder", tier: 3, rough: "TBD." }],
+      open: ["Swamp terrain restriction — confirm", "Do Droids field any shared human troop lines?"]
+    },
+    open: {
+      id: "open", num: 13, name: "Open Slot", status: "reserved", warlords: [], sigil: "open",
+      theme: { a: "#8a8478", fx: "ash" },
+      motto: "Reserved.", lore: "Left open for future discussion with co-developer Axel.", wayOfLife: "", pros: [], cons: [],
+      arsenal: {}, affinities: [], treeBranches: [], uniqueTroops: [], uniqueBuilding: { name: "—", rough: "", upgrades: [] }, uniqueTech: [], open: []
+    }
+  },
+
+  warlords: {
+    viktor: { id: "viktor", name: "Viktor", duo: "survivors", epithet: "The Vanguard", color: "#6f95bf", portrait: "Images/Warlords/Viktor.jpg", named: true,
+      signature: { kind: "troop", name: "Viktor’s Raider – TBD", rough: "Personal unique troop. Attack-leaning scavenger (placeholder)." },
+      personality: "Ayla's father — scarred, weathered, stubborn. Leads from the front with an attack bias; would rather take the fight to the wastes than wait at the gate. The default Warlord many commanders learn first.",
+      tags: ["Father", "Attack bias", "Trade lean", "Default start"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – attack bias (e.g. offensive troop bonus).", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – trade / barter related.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – passive, not yet designed.", locked: false }] },
+    ayla: { id: "ayla", name: "Ayla", duo: "survivors", epithet: "The Bulwark", color: "#9a6bb8", portrait: "Images/Warlords/Ayla.jpg", named: true,
+      signature: { kind: "troop", name: "Ayla’s Warden – TBD", rough: "Personal unique troop. Defensive hold-the-line unit (placeholder)." },
+      personality: "Viktor's daughter — guarded, sharp-eyed, unshakeable. Defence bias: walls, watchfulness, keeping the camp breathing until morning. Paired with her father as the vanilla starting duo.",
+      tags: ["Daughter", "Defence bias", "Trade lean", "Default start"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – defence bias (e.g. defensive troop bonus).", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – trade / support related.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – passive, not yet designed.", locked: false }] },
+    brick: { id: "brick", name: "Brick", duo: "hunters", epithet: "The Quarryman", color: "#a8998a", portrait: "Images/Warlords/Brick.jpg", named: true,
+      personality: "Few words, heavy hands. Brick reads stone like other men read maps — mining, masonry and the occasional well-placed charge.",
+      tags: ["Stone / Mining", "Explosives", "Quiet"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – melee / explosives bias.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – stone & mining efficiency.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – passive.", locked: false }] },
+    twig: { id: "twig", name: "Twig", duo: "hunters", epithet: "The Woodsman", color: "#86a957", portrait: "Images/Warlords/Twig.jpg", named: true,
+      personality: "Patient and grounded. Twig knows every tree worth cutting and every one worth leaving — and never misses a shot.",
+      tags: ["Wood / Lumber", "Guns", "Patient"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – gun / marksman bias.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – wood & lumber efficiency.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – passive.", locked: false }] },
+    drsomething: { id: "drsomething", name: "Dr. Something", duo: "scientists", epithet: "The Arc Doctor", color: "#45cbe0", portrait: "Images/Warlords/Dr Something.jpg", named: false,
+      personality: "Brilliant, unstable, delighted by voltage — obsessed with his lab partner Mixy and the work, not romance or blood ties. He builds weapons that should not work, and makes them work. The gene-split that birthed the Mutants still haunts the lab.",
+      tags: ["Lab partner", "Weapons", "Plasma", "Mutant origin"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – electrocution / paralysis weapons.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – plasma research.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – passive.", locked: false }] },
+    mixy: { id: "mixy", name: "Mixy", duo: "scientists", epithet: "The Field Medic", color: "#b9e05c", portrait: "Images/Warlords/Mixy.jpg", named: true,
+      personality: "Clinical and quietly unsettling — Dr. Something's obsessed lab partner, not family and not a lover. She keeps subjects and the doctor alive long enough to finish the experiment, and knows exactly how much it takes to stop them.",
+      tags: ["Lab partner", "Healing", "Chemistry", "Mutant origin"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – healing support.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – chemistry / possible poison.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – passive.", locked: false }] },
+    smash: { id: "smash", name: "Smash", duo: "mutants", epithet: "Twin of Bash", color: "#9bc53d", portrait: "Images/Warlords/Smash.jpg", named: true,
+      personality: "Identical twin to Bash — first of the Scientists' failed gene-splits, and the birth of the mutant race. Hits first, thinks later — if at all.",
+      tags: ["Identical twin", "First Mutant", "Melee tank", "Hungry"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – melee power (mirrored with Bash).", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – poor tool use (penalty).", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – twin harmony.", locked: false }] },
+    bash: { id: "bash", name: "Bash", duo: "mutants", epithet: "Twin of Smash", color: "#cbb640", portrait: "Images/Warlords/Bash.jpg", named: true,
+      personality: "Identical twin to Smash — same origin, same scars, a slower temper and harder to stop once angered.",
+      tags: ["Identical twin", "First Mutant", "Melee tank", "Hungry"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – durability (mirrored with Smash).", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – poor tool use (penalty).", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – twin harmony.", locked: false }] },
+    afflicted1: { id: "afflicted1", name: "Afflicted I", duo: "afflicted", epithet: "Placeholder name", color: "#c2c43c", portrait: null, named: false,
+      personality: "Placeholder name — hazmat-clad Warlord in a boyfriend/girlfriend pair. Poison and radiation roll off the suit; hostile zones are home turf. Final fantasy (defensive vs cult) still open.",
+      tags: ["Hazmat", "Poison", "Radiation", "Boyfriend/girlfriend pair"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    afflicted2: { id: "afflicted2", name: "Afflicted II", duo: "afflicted", epithet: "Placeholder name", color: "#7f9c3c", portrait: null, named: false,
+      personality: "Placeholder name — the other half of the Afflicted couple. Disease and toxins are tools; the map's dead zones are an advantage. Identity lock pending.",
+      tags: ["Hazmat", "Disease", "Environmental", "Boyfriend/girlfriend pair"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    militia1: { id: "militia1", name: "Militia Brother", duo: "militia", epithet: "Placeholder name", color: "#94a06c", portrait: null, named: false,
+      personality: "Placeholder — heavy-armour commander. Possibly the brother of a brother & sister pair.",
+      tags: ["Heavy armour", "TBD"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    militia2: { id: "militia2", name: "Militia Sister", duo: "militia", epithet: "Placeholder name", color: "#b0a77c", portrait: null, named: false,
+      personality: "Placeholder — heavy-armour commander. Possibly the sister of a brother & sister pair.",
+      tags: ["Heavy armour", "TBD"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    bloodveil1: { id: "bloodveil1", name: "Brunette Sister", duo: "bloodveil", epithet: "Placeholder name", color: "#c42a42", portrait: null, named: false,
+      personality: "Placeholder name — brunette sister of the coven. Hot goth witch energy. Usually agrees with her redheaded sister; pushes back hard when she doesn't. Leans ~70% blade / bleed, ~30% rites.",
+      tags: ["Brunette", "Bleed", "Goth cult", "70 / 30"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – bleed lean.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    bloodveil2: { id: "bloodveil2", name: "Redhead Sister", duo: "bloodveil", epithet: "Placeholder name", color: "#8e3a7c", portrait: null, named: false,
+      personality: "Placeholder name — redheaded sister of the coven. Conversion, healing, poison, and Psychosis — among the few who can break minds. ~70% rites, ~30% blade.",
+      tags: ["Redhead", "Psychosis", "Conversion", "30 / 70"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – conversion / healing lean.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    templar1: { id: "templar1", name: "Templar I", duo: "templars", epithet: "Placeholder name", color: "#d6b45e", portrait: null, named: false,
+      personality: "Placeholder name — possibly the older of two brother Warlords. Holy knight under review: may lean guns over pure medieval melee (Axel discussion).",
+      tags: ["Older brother?", "Holy knight", "In review"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    templar2: { id: "templar2", name: "Templar II", duo: "templars", epithet: "Placeholder name", color: "#cfc6ae", portrait: null, named: false,
+      personality: "Placeholder name — possibly the younger brother. Faith and firearms over chivalric fantasy until identity locks with Axel.",
+      tags: ["Younger brother?", "Faith", "In review"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    pack1: { id: "pack1", name: "Pack Cousin I", duo: "pack", epithet: "Placeholder name", color: "#c58a45", portrait: null, named: false,
+      personality: "Placeholder name — cousin co-leader of the Pack (not siblings; they correct anyone who says otherwise). Comedic surface, cannibal savage core. Primal, not caveman.",
+      tags: ["Cousin", "Primal", "Cannibal undertone"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – animals.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – stunted tech.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    pack2: { id: "pack2", name: "Pack Cousin II", duo: "pack", epithet: "Placeholder name", color: "#965f3c", portrait: null, named: false,
+      personality: "Placeholder name — the other cousin. Beasts answer him; stone-and-iron tech only. Breeds anything, including wild map animals.",
+      tags: ["Cousin", "Animals", "Stone → iron only"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – animals.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    blowtorch: { id: "blowtorch", name: "Blowtorch", duo: "ashen", epithet: "The Artist of Fire", color: "#ff6a2a", portrait: "Images/Warlords/Blowtorch.jpg", named: true,
+      personality: "Energetic, restless, brilliant with a flame. Not reckless — just intense. Every blaze is a composition.",
+      tags: ["Fire", "Arsonist", "Restless"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – fire mastery.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – explosives / accelerants.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    vesper: { id: "vesper", name: "Vesper", duo: "ashen", epithet: "The Cold Mind", color: "#9da3c2", portrait: "Images/Warlords/Vesper.jpg", named: true,
+      personality: "Cold, apathetic and terrifyingly observant. Vesper reads people, finds the crack, and leans on it until they break.",
+      tags: ["Psychology", "Slave control", "Trader"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – psychological control.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – slave economy / trade.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    nomad1: { id: "nomad1", name: "Nomad Mother", duo: "nomads", epithet: "Placeholder name", color: "#d7a85e", portrait: null, named: false,
+      personality: "Placeholder name — leaning old mother in a Mojave cowboy duo. Moves the camp, plants flags, keeps the road kingdom together.",
+      tags: ["Mother (lean)", "Mobility", "Cowboy vibe"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    nomad2: { id: "nomad2", name: "Nomad Son", duo: "nomads", epithet: "Placeholder name", color: "#46bcac", portrait: null, named: false,
+      personality: "Placeholder name — leaning son to the old mother. Vehicles, scouts, and the fast fight on the dust road.",
+      tags: ["Son (lean)", "Vehicles", "Cowboy vibe"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder.", locked: false }] },
+    hive: { id: "hive", name: "Droid 0001", duo: "droids", epithet: "One Mind, Many Shells", color: "#4fb0ff", portrait: "Images/Warlords/Hive.jpg", named: true,
+      signature: { kind: "building", name: "Data Centre", rough: "This Warlord’s signature is the Data Centre, not a personal troop. Destroying it eliminates the Droids." },
+      personality: "The humanoid face of the hive — Tesla-bot / Terminator silhouette. Arms open into weapons; strong in melee and at range. Speaks as “we”. Immune to poison, bleed, and psychosis; electricity and paralysis still hurt. The Data Centre must survive or the network dies.",
+      tags: ["Hive mind", "Data Centre", "No food", "Status immunities"],
+      traits: [{ type: "Troop", name: "Trait 1", desc: "Placeholder – droid chassis.", locked: false }, { type: "Technology", name: "Trait 2", desc: "Placeholder – early energy weapons.", locked: false }, { type: "Passive", name: "Trait 3", desc: "Placeholder – no food, higher material cost.", locked: false }] }
+  },
+
+  /* Shared troop lines are browsed in Arms of Eden.html. This copy stays so older saves still load. */
+  troops: [
+    { id: "infantry", cat: "Melee", name: "Infantry Line", level: 3, desc: "Core frontline. Militia → Champion style upgrade path.", stages: [
+      { name: "Scrapper", weapon: "melee", desc: "Placeholder – cheap scrap-blade militia." },
+      { name: "Brawler", weapon: "melee", desc: "Placeholder – sturdier melee infantry." },
+      { name: "Enforcer", weapon: "melee", desc: "Placeholder – armoured line infantry." },
+      { name: "Champion", weapon: "melee", desc: "Placeholder – elite melee. Top of the line." } ] },
+    { id: "polearm", cat: "Melee", name: "Polearm Line", level: 1, desc: "Reach weapons that hold a line.", stages: [
+      { name: "Spiker", weapon: "melee", desc: "Placeholder – sharpened rebar on a pole." },
+      { name: "Pikeman", weapon: "melee", desc: "Placeholder – disciplined reach infantry." },
+      { name: "Halberdier", weapon: "melee", desc: "Placeholder – elite polearm." } ] },
+    { id: "bow", cat: "Archer", name: "Bow Line", level: 2, desc: "Quiet ranged line. The Pack's only ranged option.", stages: [
+      { name: "Slinger", weapon: "bow", desc: "Placeholder – stones and scrap." },
+      { name: "Bowman", weapon: "bow", desc: "Placeholder – basic archer." },
+      { name: "Longbowman", weapon: "bow", desc: "Placeholder – elite archer." } ] },
+    { id: "firearm", cat: "Archer", name: "Firearm Line", level: 1, desc: "Follows the Guns → Laser weapon progression.", stages: [
+      { name: "Pipe Gunner", weapon: "gun", desc: "Placeholder – improvised firearm." },
+      { name: "Rifleman", weapon: "gun", desc: "Placeholder – reliable rifles." },
+      { name: "Marksman", weapon: "gun", desc: "Placeholder – elite marksman." },
+      { name: "Laser Marksman", weapon: "laser", desc: "Placeholder – energy-weapon marksman. Not available to The Hunters or The Pack." } ] },
+    { id: "grenadier", cat: "Grenadier", name: "Grenadier Line", level: 1, desc: "Thrown explosives.", stages: [
+      { name: "Bomb Thrower", weapon: "explosive", desc: "Placeholder – pipe bombs and molotovs." },
+      { name: "Grenadier", weapon: "explosive", desc: "Placeholder – proper grenades." },
+      { name: "Demolitionist", weapon: "explosive", desc: "Placeholder – elite explosives expert." } ] },
+    { id: "launcher", cat: "Grenadier", name: "Launcher Line", level: 0, desc: "Heavy indirect fire.", stages: [
+      { name: "Mortar Crew", weapon: "explosive", desc: "Placeholder – scrap mortar team." },
+      { name: "Rocketeer", weapon: "explosive", desc: "Placeholder – rocket launchers." },
+      { name: "Plasma Lobber", weapon: "plasma", desc: "Placeholder – plasma artillery. Scientists get a stronger version." } ] }
+  ],
+
+  tech: [
+    { cat: "Economy", tier: 1, name: "Hand Carts", desc: "Workers carry more resources per trip." },
+    { cat: "Economy", tier: 1, name: "Sharpened Axes", desc: "Faster wood gathering." },
+    { cat: "Economy", tier: 2, name: "Deep Shaft Mining", desc: "Higher stone, ore and metal yield." },
+    { cat: "Economy", tier: 2, name: "Crop Rotation", desc: "Farms produce more food over time." },
+    { cat: "Economy", tier: 3, name: "Caravan Logistics", desc: "Better trade returns. Synergy with trade-leaning Duos (Survivors, Ashen)." },
+    { cat: "Military", tier: 1, name: "Forging", desc: "Melee damage increase." },
+    { cat: "Military", tier: 1, name: "Scrap Armour", desc: "Infantry armour increase." },
+    { cat: "Military", tier: 2, name: "Hardened Ammunition", desc: "Ranged penetration increase." },
+    { cat: "Military", tier: 2, name: "Blast Furnace", desc: "Significant melee and gun damage increase." },
+    { cat: "Military", tier: 3, name: "Plate Barding", desc: "Heavy armour. Especially valuable for Militia and Templars." },
+    { cat: "Military", tier: 3, name: "Conscription", desc: "Faster training at military buildings." },
+    { cat: "Wasteland", tier: 1, name: "Herbal Medicine", desc: "Better healing and basic poison resistance." },
+    { cat: "Wasteland", tier: 1, name: "Fireproofing", desc: "Fire resistance for units and structures." },
+    { cat: "Wasteland", tier: 2, name: "Chemistry", desc: "Advanced explosives and early chemical weapons." },
+    { cat: "Wasteland", tier: 2, name: "Antitoxins", desc: "Resistance to poison, disease and bleed." },
+    { cat: "Wasteland", tier: 3, name: "Radiation Shielding", desc: "Units and buildings resist radiation zones." },
+    { cat: "Wasteland", tier: 3, name: "Advanced Optics", desc: "Vision range and energy-weapon accuracy." },
+    { cat: "Arsenal", tier: 1, name: "Firearms", gate: "gun", desc: "Unlocks gun troops and upgrades. The Pack never research this." },
+    { cat: "Arsenal", tier: 1, name: "Explosives", gate: "explosive", desc: "Unlocks explosive troops and the Explosive damage type." },
+    { cat: "Arsenal", tier: 2, name: "Laser Weapons", gate: "laser", desc: "Energy weapons. Never available to The Hunters or The Pack. Droids start early." },
+    { cat: "Arsenal", tier: 3, name: "Plasma Weapons", gate: "plasma", desc: "Top-end energy weapons. Scientists get a stronger version; Droids start early." }
+  ],
+
+  buildings: [
+    { cat: "Core", icon: "♜", name: "Town Centre", desc: "Heart of the settlement — citizens, resource drop-off, progression (placeholder). Nomads can run several.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Housing", icon: "⌂", name: "House", desc: "Provides population capacity.", upgrades: ["Upgrade I – Placeholder"] },
+    { cat: "Resource", icon: "♣", name: "Lumber Camp", desc: "Wood gathering and drop-off.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Resource", icon: "▲", name: "Quarry / Mine", desc: "Stone and ore gathering.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Resource", icon: "✿", name: "Farm", desc: "Food production.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Resource", icon: "⚙", name: "Scrapyard", desc: "Metal and salvage gathering (suggestion).", image: "Scrapyard.jpg", upgrades: ["Upgrade I – Placeholder"] },
+    { cat: "Resource", icon: "⚖", name: "Market", desc: "Trading hub (suggestion — trade matters to Survivors and Ashen).", upgrades: ["Upgrade I – Placeholder"] },
+    { cat: "Military", icon: "⚔", name: "Barracks", desc: "Trains the Melee lines.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Military", icon: "➶", name: "Range", desc: "Trains the Archer lines (bows and firearms).", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Military", icon: "✹", name: "Munitions Workshop", desc: "Trains the Grenadier lines.", upgrades: ["Upgrade I – Placeholder", "Upgrade II – Placeholder"] },
+    { cat: "Research", icon: "⚗", name: "School / Lab", desc: "Researches the Tech tree.", upgrades: ["Upgrade I – Placeholder"] },
+    { cat: "Defence", icon: "▦", name: "Walls & Gates", desc: "Static defence (suggestion).", upgrades: ["Upgrade I – Placeholder"] },
+    { cat: "Defence", icon: "♖", name: "Watchtower", desc: "Vision and ranged defence (suggestion).", upgrades: ["Upgrade I – Placeholder"] }
+  ],
+
+  bonds: {},
+  trees: {}
+};
+/* Signature per Warlord — usually one unique troop, sometimes a unique building. Kept in step with Arms of Eden. */
+Object.entries({
+  viktor: ["troop", "Wasteland Raider", "Fast raider that loots resources on kills (suggestion)."],
+  ayla: ["troop", "Gate Warden", "Shield defender — bonus while holding walls and gates (suggestion)."],
+  brick: ["troop", "Sapper", "Explosive charges against walls and buildings; mining bonus (suggestion)."],
+  twig: ["troop", "Trapper", "Marksman who lays snares that slow and bleed (suggestion)."],
+  drsomething: ["troop", "Arc Trooper", "Paralysis weapon that stuns groups (suggestion)."],
+  mixy: ["building", "Field Infirmary", "Heals nearby units and cleanses status effects (suggestion)."],
+  smash: ["troop", "Mutant Brute", "Huge melee damage — double rations (suggestion)."],
+  bash: ["troop", "Thickhide", "Tank brute that soaks damage for the line (suggestion)."],
+  afflicted1: ["troop", "Hazmat Sprayer", "Poison clouds; immune to its own toxins (suggestion)."],
+  afflicted2: ["troop", "Plague Carrier", "Spreads disease between enemy units (suggestion)."],
+  militia1: ["troop", "Shield-wall Trooper", "Heavy-armour formation infantry (suggestion)."],
+  militia2: ["troop", "Heavy Gunner", "Heavy-firearm suppression — the Militia's gun identity vs the Templars (suggestion)."],
+  bloodveil1: ["troop", "Bleed Dancer", "Female blade dancer — stacking bleed (suggestion)."],
+  bloodveil2: ["troop", "Coven Witch", "Female caster — conversion and psychosis (suggestion)."],
+  templar1: ["troop", "Holy Knight", "Heavy knight in scavenged plate (suggestion)."],
+  templar2: ["troop", "Gun Templar", "Faith and firearms — the guns direction under review (suggestion)."],
+  pack1: ["troop", "Ravager", "Cannibal berserker with extreme attack speed (suggestion)."],
+  pack2: ["troop", "Beastmaster", "Handler that commands and buffs animal packs (suggestion)."],
+  blowtorch: ["troop", "Flame Trooper", "Flamethrower infantry — burning (suggestion)."],
+  vesper: ["building", "Breaking Pens", "Psychological control of POWs and slaves (suggestion)."],
+  nomad1: ["building", "Waystation", "Relocatable outpost and satellite-colony hub (suggestion)."],
+  nomad2: ["troop", "War Buggy", "Fast vehicle raider (suggestion)."],
+  hive: ["building", "Data Centre", "Replaces the Town Centre. Destroying it eliminates the Droids. The first cannot be moved or rebuilt; a late second one means both must fall."]
+}).forEach(([id, [kind, name, rough]]) => { DEFAULT_DATA.warlords[id].signature = { kind, name, rough, locked: false }; });
+/* Palette — the Duo colour is the shared team theme; each Warlord adds a personal accent that sits inside it.
+   Mixed pairs adopt the two Warlord accents. Documented in Data/Warlords_of_Eden.md. */
+Object.entries({
+  survivors: ["#8b9096", "Gunmetal Grey", "Salvage, practicality and no allegiance — the colour of whatever still works."],
+  hunters: ["#a3a84e", "Olive Drab", "Field, forest and homestead — people who live off the land."],
+  scientists: ["#3fd0c9", "Lab Teal", "Sterile light and humming equipment."],
+  mutants: ["#9bc53d", "Toxic Green", "The vat they came out of."],
+  afflicted: ["#c2c43c", "Hazard Yellow", "Warning tape, radiation signs, gas-mask filters."],
+  militia: ["#a4ae74", "Khaki", "Uniforms, sandbags and drill yards."],
+  bloodveil: ["#c42a42", "Blood Crimson", "Ritual blood and candlelit swamps."],
+  templars: ["#d6b45e", "Reliquary Gold", "Gilded relics and old faith."],
+  pack: ["#c58a45", "Rust Hide", "Tanned skins, dried blood and dust."],
+  ashen: ["#ff5a1f", "Pyre Orange", "Fire as an art form."],
+  nomads: ["#d7a85e", "Mojave Sand", "Open desert roads and sun-bleached canvas."],
+  droids: ["#4fb0ff", "Signal Blue", "Status LEDs and cold data streams."]
+}).forEach(([id, [a, name, note]]) => Object.assign(DEFAULT_DATA.duos[id].theme, { a, name, note }));
+Object.entries({
+  viktor: ["#5b8fd1", "Steel Blue", "Cold steel of the frontline — stubborn, dependable, attack-first."],
+  ayla: ["#9a6bb8", "Dusk Violet", "The night watch — guarded, sharp-eyed, holds the walls until dawn."],
+  brick: ["#b8875a", "Quarry Ochre", "Stone dust, clay and blasting powder."],
+  twig: ["#6faa45", "Moss Green", "Living timber and a patient marksman's cover."],
+  drsomething: ["#4f9dff", "Arc Blue", "Voltage, plasma and instability."],
+  mixy: ["#7fe3a4", "Reagent Mint", "Antiseptic — and the toxins in the next vial over."],
+  smash: ["#e2552f", "Rage Red", "Hits first, thinks later."],
+  bash: ["#d9a23a", "Bruise Amber", "Slower temper, harder to stop."],
+  afflicted1: ["#a8e04a", "Rad Lime", "Irradiated ground that feels like home."],
+  afflicted2: ["#4fb39a", "Fever Teal", "Disease, rot and the quiet spread."],
+  militia1: ["#7f94a6", "Gun-Metal Blue", "Heavy armour and heavier firearms."],
+  militia2: ["#c9a24a", "Brass", "Shell casings, medals and command."],
+  bloodveil1: ["#8e3a7c", "Bruised Plum", "The brunette blade — bleed and ritual violence."],
+  bloodveil2: ["#e8643a", "Copper Flame", "The redhead's rites — conversion and psychosis."],
+  templar1: ["#e2d9c3", "Bone Ivory", "The elder brother — vows, plate and scripture."],
+  templar2: ["#b8433a", "Crusader Red", "Faith carried with a rifle."],
+  pack1: ["#b0412e", "Raw Flesh", "Cannibal savagery under the joke."],
+  pack2: ["#d8c08a", "Bleached Bone", "The one the beasts answer to."],
+  blowtorch: ["#ffb02e", "Flame Gold", "Restless, brilliant, every blaze a composition."],
+  vesper: ["#9da3c2", "Cold Ash", "Apathetic, observant — the cold mind behind the fire."],
+  nomad1: ["#b8693a", "Saddle Rust", "Worn leather and old roads."],
+  nomad2: ["#3fbfae", "Desert Turquoise", "Mojave jewellery and open sky."],
+  hive: ["#bfeaff", "Core White", "One mind, many shells."]
+}).forEach(([id, [color, colorName, colorNote]]) => Object.assign(DEFAULT_DATA.warlords[id], { color, colorName, colorNote }));
+DEFAULT_DATA.buildings.forEach(b => { if (b.image === "Scrapyard.jpg") b.image = "Images/Buildings/Scrapyard.jpg"; });
+DEFAULT_DATA.warlords.hive.portrait = "Images/Warlords/Droid 0001.jpg";
+DEFAULT_DATA.meta.dataRev = "factory-2026-11-01c";
+DEFAULT_DATA.meta.mixRuleNote = "Mixed pairs use a union rule (current default, tweakable item by item): if either Warlord's Duo can use a weapon, status, troop line, tool or resource, the pair can. Import-only stays import-only unless the other side can produce it. Buildings the pair cannot construct stay locked. Preview it in Arms of Eden and Resources of Eden.";
+/* ==========================================================================
+   APP
+   ========================================================================== */
+const STORE_KEY = "warlordsOfEden.v2";
+const LEGACY_KEYS = ["warlordsOfEden.data.v1", "pagesOfEden.data.v1"];
+const clone = o => (typeof structuredClone === "function" ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
+let fileRev = "factory", bootNote = "";
+let DATA = loadData();
+
+function readBaked() { try { const t = document.getElementById("codex-baked").textContent.trim(); return t && t !== "null" ? JSON.parse(t) : null; } catch (e) { return null; } }
+function loadData() {
+  const file = readBaked() || clone(DEFAULT_DATA);
+  fileRev = (file.meta && file.meta.dataRev) || "factory";
+  let data = file;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.basedOn === fileRev && s.data) { data = s.data; bootNote = "Loaded your browser edits"; }
+      else { localStorage.setItem(STORE_KEY + ".archived", raw); localStorage.removeItem(STORE_KEY); bootNote = "This file was updated — older browser edits archived"; }
+    }
+    LEGACY_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v) { localStorage.setItem(k + ".archived", v); localStorage.removeItem(k); bootNote = bootNote || "Older browser edits archived — this file has newer content"; } });
+  } catch (e) {}
+  data.trees = data.trees || {}; data.bonds = data.bonds || {};
+  return data;
+}
+function saveData() { try { localStorage.setItem(STORE_KEY, JSON.stringify({ basedOn: fileRev, data: DATA })); } catch (e) {} }
+async function saveHtml() {
+  const re = /(<script type="application\/json" id="codex-baked">)[\s\S]*?(<\/script>)/;
+  const now = new Date();
+  DATA.meta.dataRev = "save-" + now.toISOString(); DATA.meta.updated = now.toISOString().slice(0, 10); DATA.meta.pictures = IMG.snapshot();
+  const html = PRISTINE_HTML.replace(re, (m, a, b) => a + JSON.stringify(DATA).replace(/</g, "\\u003c") + b);
+  let done = false;
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({ suggestedName: "Warlords of Eden.html", types: [{ description: "HTML page", accept: { "text/html": [".html"] } }] });
+      const w = await h.createWritable(); await w.write(html); await w.close(); done = true;
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (!done) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = "Warlords of Eden.html"; a.click(); }
+  fileRev = DATA.meta.dataRev; saveData(); SFX.play("save");
+  toast(done ? "Saved into the HTML file" : "Downloaded — replace the old HTML with it");
+}
+
+const state = { w1: "viktor", w2: "ayla", tab: "profile", skillView: "duo", editing: false };
+const navHistory = [];
+let reopen = null;
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pad = n => String(n).padStart(2, "0");
+const roman = n => ["", "I", "II", "III", "IV", "V", "VI"][n] || String(n);
+const W = id => DATA.warlords[id];
+const D = id => DATA.duos[id];
+const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
+const suggClass = s => (/\((suggestion|assumption)\)/i.test(s) ? " sugg" : "");
+const theName = d => (/^the /i.test(d.name) ? d.name : "the " + d.name);
+function partnerOf(id) { const d = D(W(id).duo); return d.warlords.find(x => x !== id) || id; }
+function setPath(obj, path, val) {
+  const ks = path.split(".");
+  let o = obj;
+  for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; }
+  o[ks[ks.length - 1]] = val;
+}
+
+const SIGILS = {
+  survivors: '<circle cx="32" cy="32" r="27"/><path d="M32 13c6 9 12 14 12 23a12 12 0 0 1-24 0c0-6 3-10 6-15 2 4 3 6 6 8 0-6-2-10 0-16z"/>',
+  hunters: '<circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="4"/><path d="M32 4v16M32 44v16M4 32h16M44 32h16"/>',
+  scientists: '<ellipse cx="32" cy="32" rx="27" ry="10"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  mutants: '<circle cx="24" cy="32" r="16"/><circle cx="40" cy="32" r="16"/><path d="M32 19v26"/>',
+  afflicted: '<path d="M32 7c12 0 20 8 20 20 0 8-4 14-10 18v7H22v-7c-6-4-10-10-10-18C12 15 20 7 32 7z"/><circle cx="24" cy="27" r="5"/><circle cx="40" cy="27" r="5"/><circle cx="32" cy="45" r="4"/>',
+  militia: '<path d="M10 10h44"/><path d="M12 20l20 11 20-11M12 32l20 11 20-11M12 44l20 11 20-11"/>',
+  bloodveil: '<path d="M32 5C24 19 15 29 15 40a17 17 0 0 0 34 0C49 29 40 19 32 5z"/><path d="M24 41a8 8 0 0 0 8 8"/>',
+  templars: '<path d="M32 5v54M13 22h38"/><path d="M26 5h12M26 59h12M13 16v12M51 16v12"/>',
+  pack: '<path d="M13 9c10 14 12 30 8 47M30 5c8 16 8 34 2 54M47 9c6 14 6 30 0 47"/>',
+  ashen: '<path d="M32 4c10 14 18 20 18 34a18 18 0 0 1-36 0c0-10 6-14 8-22 4 6 6 8 8 10 2-8 0-14 2-22z"/><path d="M32 40c4 4 6 6 6 10a6 6 0 0 1-12 0c0-4 2-6 6-10z"/>',
+  nomads: '<circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="6"/><path d="M32 6v20M32 38v20M6 32h20M38 32h20M14 14l14 14M36 36l14 14M50 14L36 28M28 36L14 50"/>',
+  droids: '<path d="M32 4l24 14v28L32 60 8 46V18z"/><circle cx="32" cy="32" r="10"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
+  open: '<circle cx="32" cy="32" r="26" stroke-dasharray="6 6"/><path d="M24 25a8 8 0 1 1 12 7c-3 2-4 3-4 7"/><circle cx="32" cy="46" r="1.6" fill="currentColor"/>'
+};
+const sigil = id => `<svg class="sig" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${SIGILS[id] || SIGILS.open}</svg>`;
+
+const FLAG_ART = {
+  survivors: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M11 8h16l-2.5 6 2.5 6-2.5 6 2.5 6H11z" fill="currentColor" opacity=".28"/><path d="M11 8h16v5H11z" fill="currentColor" opacity=".72"/><path d="M11 19h16v4H11z" fill="currentColor" opacity=".45"/>',
+  hunters: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><rect x="11" y="8" width="15" height="28" rx="1" fill="currentColor" opacity=".22"/><circle cx="18.5" cy="22" r="6" stroke="currentColor" stroke-width="1.8" opacity=".65"/><path d="M18.5 10v24M11 22h15" stroke="currentColor" stroke-width="1.2" opacity=".45"/>',
+  scientists: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".18"/><path d="M11 8h16v5H11z M11 17h16v3H11z M11 24h16v3H11z M11 31h16v5H11z" fill="currentColor" opacity=".55"/>',
+  mutants: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".2"/><circle cx="15.5" cy="22" r="5" fill="currentColor" opacity=".5"/><circle cx="22.5" cy="22" r="5" fill="currentColor" opacity=".5"/>',
+  afflicted: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".16"/><path d="M11 14h16v3H11z M11 22h16v3H11z M11 30h16v3H11z" fill="currentColor" opacity=".42"/><circle cx="19" cy="22" r="3" fill="currentColor" opacity=".55"/>',
+  militia: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".18"/><path d="M13 12h12M13 18h12M13 24h12M13 30h12" stroke="currentColor" stroke-width="2" opacity=".5"/>',
+  bloodveil: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M19 9c-5 8-8 13-8 19a8 8 0 0 0 16 0c0-6-3-11-8-19z" fill="currentColor" opacity=".38"/><path d="M15 30a4 4 0 0 0 8 0" stroke="currentColor" stroke-width="1.6" opacity=".55"/>',
+  templars: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".2"/><path d="M19 11v22M13 17h12M13 25h12" stroke="currentColor" stroke-width="1.8" opacity=".55"/>',
+  pack: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".18"/><path d="M13 10c4 6 5 12 3 18M19 8c3 7 3 14 0 22M25 10c-4 6-5 12-3 18" stroke="currentColor" stroke-width="1.6" opacity=".55"/>',
+  ashen: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".16"/><path d="M19 10c4 5 6 9 6 14a6 6 0 0 1-12 0c0-5 2-9 6-14z" fill="currentColor" opacity=".55"/>',
+  nomads: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".18"/><circle cx="19" cy="22" r="7" stroke="currentColor" stroke-width="1.4" opacity=".45"/><circle cx="19" cy="22" r="2" fill="currentColor" opacity=".6"/>',
+  droids: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2"/><path d="M19 8l10 6v12l-10 6-10-6V14z" fill="currentColor" fill-opacity=".22" stroke="currentColor" stroke-width="1.2" stroke-opacity=".55"/><circle cx="19" cy="22" r="3" fill="currentColor" opacity=".5"/>',
+  open: '<path d="M8 5v37" stroke="currentColor" stroke-width="2.2" stroke-dasharray="3 3"/><path d="M11 8h16v28H11z" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 3" fill="currentColor" opacity=".12"/>'
+};
+const flag = (duoId, color) => `<svg class="flag" viewBox="0 0 38 44" aria-hidden="true" style="color:${color}">${FLAG_ART[duoId] || FLAG_ART.open}</svg>`;
+const duoCrest = d => `<span class="crest" style="color:${d.theme.a}">${sigil(d.sigil)}${flag(d.id, d.theme.a)}</span>`;
+const warlordAccent = w => w.color || D(w.duo).theme.a;
+
+const WEAPONS = [["melee", "Melee"], ["bow", "Bows"], ["gun", "Guns"], ["laser", "Laser"], ["plasma", "Plasma"], ["explosive", "Explosives"]];
+const WEAPON_NAME = Object.fromEntries(WEAPONS);
+const ARS_MARK = { yes: "✓", no: "✕", boost: "★", early: "⚡", tbd: "?" };
+const ARS_TITLE = { yes: "Available", no: "Never available", boost: "Stronger than baseline", early: "Early access", tbd: "Not decided" };
+const TYPE_ICON = { Troop: "⚔", Technology: "⚙", Passive: "◈" };
+const STATUS = { core: "Core identity", partial: "Partially defined", open: "Open", reserved: "Reserved" };
+const CATS = {
+  Melee: { color: "#d6573b", counters: "Grenadier", by: "Archer" },
+  Archer: { color: "#93b85c", counters: "Melee", by: "Grenadier" },
+  Grenadier: { color: "#e2a73b", counters: "Archer", by: "Melee" }
+};
+const TECH_CATS = [["Economy", "#c9a24a"], ["Military", "#d6573b"], ["Wasteland", "#93b85c"], ["Arsenal", "#4fb0ff"], ["Unique", "#b07ad6"]];
+const BUILD_CATS = ["Core", "Housing", "Resource", "Military", "Research", "Defence"];
+
+function pairInfo() {
+  const w1 = W(state.w1), w2 = W(state.w2);
+  const hive = w1.id === "hive";
+  const natural = !hive && w1.duo === w2.duo;
+  return { w1, w2, d1: D(w1.duo), d2: D(w2.duo), hive, natural, mixed: !hive && !natural };
+}
+function sides() { const p = pairInfo(); return p.mixed ? [p.d1, p.d2] : [p.d1]; }
+function ars(d, weapon) { return (d.arsenal && d.arsenal[weapon]) || "tbd"; }
+function blocked(weapon) { return !!weapon && sides().every(d => ars(d, weapon) === "no"); }
+function partBlocked(weapon) { return !!weapon && sides().some(d => ars(d, weapon) === "no"); }
+function availMarks(weapon) {
+  if (!weapon || sides().every(d => ars(d, weapon) === "yes")) return "";
+  return sides().map(d => { const s = ars(d, weapon); return `<span class="am" style="--c:${s === "no" ? "var(--bad)" : d.theme.a}" title="${esc(d.name)}: ${ARS_TITLE[s]}">${ARS_MARK[s]}</span>`; }).join("");
+}
+function availabilityAll(weapon) {
+  return `<div class="avail">${Object.values(DATA.duos).filter(d => d.warlords.length).map(d => {
+    const s = ars(d, weapon);
+    return `<span class="chip ${s === "no" ? "no" : ""}" style="--c:${d.theme.a};color:${s === "no" ? "var(--ink-faint)" : "var(--ink)"}" title="${ARS_TITLE[s]}"><b style="color:${s === "no" ? "var(--bad)" : s === "tbd" ? "var(--tbd)" : d.theme.a}">${ARS_MARK[s]}</b>${esc(d.name)}</span>`;
+  }).join("")}</div>`;
+}
+const meter = pct => `<div class="meter"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
+const statusBadge = locked => (locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>');
+
+/* ==========================================================================
+   UI SOUNDS — procedural Web Audio (no external files; stays self-contained)
+   ========================================================================== */
+/* ---------- UI sounds — procedural Web Audio with a warm room tone; one mute shared across books ---------- */
+const SFX = (() => {
+  let ctx = null, out = null, muted = false;
+  try { muted = (localStorage.getItem("edenCodex.mute") ?? localStorage.getItem("warlordsOfEden.mute")) === "1"; } catch (e) {}
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function ensure() {
+    if (reduce) return Promise.resolve();
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
+      out = ctx.createGain(); out.gain.value = 0.5;
+      const send = ctx.createGain(), dl = ctx.createDelay(0.5), fb = ctx.createGain(), lp = ctx.createBiquadFilter();
+      send.gain.value = 0.22; dl.delayTime.value = 0.09; fb.gain.value = 0.35; lp.type = "lowpass"; lp.frequency.value = 2200;
+      out.connect(comp); out.connect(send); send.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    return ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
+  }
+  document.addEventListener("pointerdown", () => { ensure(); }, { once: true, passive: true });
+  function env(g, t, peak, atk, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + atk); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function tone(f, t, dur, peak, type, f2) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    o.connect(g); g.connect(out); env(g, t, peak, Math.min(0.01, dur / 4), dur); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function pluck(f, t, dur, peak) { tone(f, t, dur, peak, "triangle"); tone(f * 2.003, t, dur * 0.6, peak * 0.25, "sine"); }
+  function hiss(t, dur, peak, type, f1, f2, q) {
+    const n = Math.ceil(ctx.sampleRate * (dur + 0.05)), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = b; fl.type = type; fl.frequency.setValueAtTime(f1, t);
+    if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    fl.Q.value = q || 1;
+    s.connect(fl); fl.connect(g); g.connect(out); env(g, t, peak, Math.min(0.02, dur / 3), dur); s.start(t); s.stop(t + dur + 0.05);
+  }
+  const KIT = {
+    tab: (t, p) => { hiss(t, 0.035, 0.16, "bandpass", 2400 * p, 0, 5); pluck(587 * p, t + 0.005, 0.12, 0.07); },
+    back: t => { pluck(659, t, 0.12, 0.06); pluck(494, t + 0.07, 0.16, 0.06); hiss(t, 0.12, 0.05, "bandpass", 1200, 500, 2); },
+    modalOpen: t => { hiss(t, 0.22, 0.07, "bandpass", 380, 1700, 1.4); tone(92, t, 0.24, 0.16, "sine", 52); pluck(880, t + 0.06, 0.4, 0.03); },
+    picker: t => { hiss(t, 0.2, 0.06, "bandpass", 500, 1900, 1.4); tone(110, t, 0.2, 0.12, "sine", 62); pluck(740, t + 0.05, 0.3, 0.035); pluck(988, t + 0.11, 0.3, 0.025); },
+    modalClose: t => { hiss(t, 0.14, 0.055, "bandpass", 1500, 420, 1.6); tone(330, t, 0.12, 0.045, "sine", 220); },
+    select: (t, p) => { pluck(523 * p, t, 0.22, 0.08); pluck(784 * p, t + 0.065, 0.3, 0.065); },
+    duoLoad: t => { tone(55, t, 0.7, 0.16, "sine"); tone(82.4, t + 0.02, 0.6, 0.08, "sine"); hiss(t, 0.5, 0.07, "lowpass", 180, 900, 0.7); [330, 415, 494, 659].forEach((f, i) => pluck(f, t + 0.12 + i * 0.07, 0.5, 0.04)); },
+    node: (t, p) => { hiss(t, 0.025, 0.08, "highpass", 3200, 0, 0.8); pluck(740 * p, t, 0.14, 0.055); },
+    toggle: (t, p, on) => { if (on) { pluck(523, t, 0.15, 0.06); pluck(784, t + 0.07, 0.2, 0.06); } else { pluck(784, t, 0.15, 0.05); pluck(523, t + 0.07, 0.2, 0.05); } },
+    save: t => [523, 659, 784, 1047].forEach((f, i) => pluck(f, t + i * 0.08, 0.45, 0.055)),
+    shutter: t => { hiss(t, 0.018, 0.14, "bandpass", 3000, 0, 3); hiss(t + 0.06, 0.022, 0.1, "bandpass", 2200, 0, 3); pluck(1175, t + 0.06, 0.08, 0.025); }
+  };
+  function play(kind, opts) {
+    if (muted || reduce || (typeof quiet !== "undefined" && quiet)) return;
+    const fn = KIT[kind];
+    if (!fn) return;
+    ensure().then(() => { if (ctx) fn(ctx.currentTime + 0.005, (opts && opts.pitch) || 1, !muted); }).catch(() => {});
+  }
+  function sync() {
+    const b = document.getElementById("btn-sound");
+    if (!b) return;
+    b.textContent = muted ? "\u{1F507} Muted" : "\u{266A} Sound";
+    b.classList.toggle("active", !muted);
+    b.title = muted ? "UI sounds off — click to enable" : "UI sounds on — click to mute";
+  }
+  function toggleMute() { muted = !muted; try { localStorage.setItem("edenCodex.mute", muted ? "1" : "0"); } catch (e) {} sync(); if (!muted) play("toggle"); }
+  return { play, toggleMute, sync };
+})();
+
+/* ==========================================================================
+   NAVIGATION + STATE
+   ========================================================================== */
+function commit(next) {
+  navHistory.push({ w1: state.w1, w2: state.w2, tab: state.tab, skillView: state.skillView });
+  if (navHistory.length > 60) navHistory.shift();
+  Object.assign(state, next);
+  renderAll();
+}
+function goBack() {
+  const s = navHistory.pop();
+  if (s) { SFX.play("back"); Object.assign(state, s); renderAll(); }
+}
+function go(tab, extra) {
+  if (tab === state.tab && !extra) return;
+  SFX.play("tab", { pitch: 1 + ["profile", "skills", "tech", "buildings"].indexOf(tab) * 0.06 });
+  commit(Object.assign({ tab }, extra || {}));
+}
+function loadDuo(id) {
+  const d = D(id); if (!d || !d.warlords.length) return;
+  closeModal(true);
+  SFX.play("duoLoad");
+  commit({ w1: d.warlords[0], w2: d.warlords[1] || d.warlords[0] });
+}
+function choose(slot, id) {
+  const p = pairInfo();
+  let w1 = state.w1, w2 = state.w2;
+  if (id === "hive") { w1 = w2 = "hive"; }
+  else if (p.hive) { if (slot === 1) { w1 = id; w2 = partnerOf(id); } else { w2 = id; w1 = partnerOf(id); } }
+  else if (slot === 1) { w1 = id; } else { w2 = id; }
+  closeModal(true);
+  const mixed = id !== "hive" && W(w1).duo !== W(w2).duo;
+  SFX.play(mixed ? "duoLoad" : "select", { pitch: mixed ? 0.92 : 1 });
+  commit({ w1, w2 });
+}
+
+function renderAll() {
+  applyTheme();
+  renderHeader();
+  const fm = $("#foot-meta");
+  if (fm && DATA.meta) fm.textContent = `Updated ${DATA.meta.updated || "—"} · Keys 1–4 switch tabs · Esc closes · ♪ Sound`;
+  const TAB_COLORS = { profile: "#c9a24a", skills: "#b07ad6", tech: "#4fb0ff", buildings: "#93b85c" };
+  document.documentElement.style.setProperty("--tab", TAB_COLORS[state.tab] || "#c9a24a");
+  const pairLink = state.w1 === "hive" ? "hive+hive" : `${state.w1}+${state.w2}`;
+  $("#codex-nav").innerHTML = [["Visions", "Visions of Eden.html", ""], ["Warlords", "", ""], ["Arms", "Arms of Eden.html", "#" + pairLink + "/troops"], ["Resources", "Resources of Eden.html", "#" + pairLink + "/resources"]]
+    .map(([l, f, h]) => f ? `<a href="${encodeURI(f)}${h}">${l}</a>` : `<a class="cur" href="#">${l}</a>`).join("");
+  renderWarlord(1);
+  renderWarlord(2);
+  document.querySelectorAll("#tabs .btn").forEach(b => b.classList.toggle("active", b.dataset.tab === state.tab));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + state.tab));
+  if (state.tab === "troops") state.tab = "profile";
+  ({ profile: renderProfile, skills: renderSkills, tech: renderTech, buildings: renderBuildings })[state.tab]();
+  $("#btn-back").disabled = navHistory.length === 0;
+  try { history.replaceState(null, "", `#${state.w1}+${state.w2}/${state.tab}`); } catch (e) {}
+  applyEditable();
+}
+
+function applyTheme() {
+  const p = pairInfo();
+  const r = document.documentElement.style;
+  const a1 = p.w1.color, a2 = p.hive ? p.w1.color : p.w2.color;
+  r.setProperty("--duo-a", p.mixed ? a1 : p.d1.theme.a);
+  r.setProperty("--duo-b", p.mixed ? a2 : p.d1.theme.a);
+  r.setProperty("--w1", a1);
+  r.setProperty("--w2", a2);
+  FX.set([{ mode: p.d1.theme.fx, color: a1 }, { mode: p.d2.theme.fx, color: a2 }]);
+}
+
+/* ==========================================================================
+   HEADER + WARLORD COLUMNS
+   ========================================================================== */
+function renderHeader() {
+  const p = pairInfo(), { w1, w2, d1, d2 } = p;
+  $("#motif-a").dataset.m = d1.id;
+  $("#motif-b").dataset.m = d2.id;
+  let sig, kicker, title, sub, motto;
+  if (p.hive) {
+    sig = duoCrest(d1);
+    kicker = `Duo No. ${pad(d1.num)} · Hive Mind · Never mixes`;
+    title = ed(`duos.${d1.id}.name`, d1.name);
+    sub = `<span class="s1">${esc(w1.name)}</span> — single Warlord`;
+    motto = ed(`duos.${d1.id}.motto`, d1.motto);
+  } else if (p.natural) {
+    sig = duoCrest(d1);
+    kicker = `Natural Duo · No. ${pad(d1.num)} · ${STATUS[d1.status]}`;
+    title = ed(`duos.${d1.id}.name`, d1.name);
+    sub = `<span style="color:var(--w1-t)">${esc(w1.name)}</span> &amp; <span style="color:var(--w2-t)">${esc(w2.name)}</span>`;
+    motto = ed(`duos.${d1.id}.motto`, d1.motto);
+  } else {
+    sig = `${duoCrest(d1)}<span class="xsep">✕</span>${duoCrest(d2)}`;
+    kicker = "Mixed Pairing · Mixed Bond Tree";
+    title = `<span class="t1">${esc(w1.name)}</span> <span class="amp">&amp;</span> <span class="t2">${esc(w2.name)}</span>`;
+    sub = `<span class="s1">${esc(d1.name)}</span> &amp; <span class="s2">${esc(d2.name)}</span>`;
+    motto = "Two banners. One fire.";
+  }
+  $("#head-sigils").innerHTML = sig;
+  $("#duo-kicker").textContent = kicker;
+  $("#duo-title").innerHTML = title;
+  $("#duo-sub").innerHTML = sub;
+  $("#duo-motto").innerHTML = motto;
+}
+
+const portraitPath = w => w.portrait || `Images/Warlords/${w.name.replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+function portraitHTML(w, d) {
+  return `<div class="portrait-fallback">${sigil(d.sigil)}<em>Portrait pending — ${esc(IMG.hint(portraitPath(w)))}</em></div>${IMG.tag(portraitPath(w), true, w.name)}<div class="grade"></div><div class="scan"></div>`;
+}
+
+function renderWarlord(slot) {
+  const p = pairInfo();
+  const col = $("#col-" + slot);
+  if (p.hive && slot === 2) {
+    col.innerHTML = `<div class="slot-tag">Warlord II</div><div class="void">${sigil("droids")}<h3>No Second Signal</h3>
+      <p>The Hive commands alone. Droids never mix with other Warlords.</p>
+      <button class="btn" style="--acc:#4fb0ff" onclick="openPicker(2)">⇄ Break the link</button></div>`;
+    return;
+  }
+  const w = slot === 1 ? p.w1 : p.w2;
+  const d = D(w.duo);
+  col.style.setProperty("--duo", d.theme.a);
+  col.innerHTML = `
+    <div class="slot-tag">Warlord ${slot === 1 ? "I" : "II"}</div>
+    <div class="scroll">
+      <div class="portrait">${portraitHTML(w, d)}</div>
+      <div class="nameplate">
+        <h2>${ed(`warlords.${w.id}.name`, w.name)}${w.named ? "" : ' <span class="badge-ph">Name TBD</span>'}</h2>
+        <button class="duo-chip" style="--chip:${d.theme.a}" onclick="loadDuo('${d.id}')" title="Load the ${esc(d.name)} natural Duo">${sigil(d.sigil)}${flag(d.id, d.theme.a)}${esc(d.name)}</button>
+      </div>
+      <div class="w-body">
+        <div class="sec">
+          <div class="sec-title">Profile</div>
+          <p class="personality">${ed(`warlords.${w.id}.personality`, w.personality, true)}</p>
+          <div class="tags">${w.tags.map((t, i) => `<span class="chip">${ed(`warlords.${w.id}.tags.${i}`, t)}</span>`).join("")}</div>
+        </div>
+        <div class="sec">
+          <div class="sec-title">${warlordSignature(w).kind === "building" ? "Unique Building" : "Unique Troop"}</div>
+          ${signatureCardHTML(w)}
+        </div>
+        <div class="sec">
+          <div class="sec-title">Personal Traits</div>
+          ${w.traits.map((t, i) => `
+            <div class="trait ${t.locked ? "" : "ph"}">
+              <div class="t-ico">${TYPE_ICON[t.type] || "◈"}</div>
+              <div>
+                <div class="t-top"><b>${ed(`warlords.${w.id}.traits.${i}.name`, t.name)}</b><span class="t-type">${esc(t.type)}</span>${statusBadge(t.locked)}</div>
+                <div class="t-desc">${ed(`warlords.${w.id}.traits.${i}.desc`, t.desc, true)}</div>
+                <button class="mini edit-only" onclick="toggleTraitLock('${w.id}',${i})">${t.locked ? "Mark placeholder" : "Mark locked"}</button>
+              </div>
+            </div>`).join("")}
+          <p class="foot" style="text-align:center">Aim: one Troop, one Technology and one Passive trait.</p>
+          <div class="center-row" style="margin:16px 0 4px"><button class="btn" style="--acc:var(--w${slot})" onclick="openPicker(${slot})">⇄ Switch Warlord</button></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ==========================================================================
+   PROFILE TAB
+   ========================================================================== */
+function globalDesignHTML() {
+  const m = DATA.meta;
+  if (!m) return "";
+  let html = "";
+  if (m.gamePitch) {
+    html += `<div class="sec"><div class="sec-title">Game pitch <span class="badge-draft">Visions</span></div><p class="dim" style="margin:0;font-size:.9rem">${ed("meta.gamePitch", m.gamePitch, true)}</p></div>`;
+  }
+  if (m.defaultDuo || m.unlockNote) {
+    html += `<div class="sec"><div class="sec-title">Start &amp; unlocks</div>
+      ${m.defaultDuo ? `<p class="dim" style="margin:0 0 8px;font-size:.88rem">${ed("meta.defaultDuo", m.defaultDuo, true)}</p>` : ""}
+      ${m.unlockNote ? `<p class="dim" style="margin:0;font-size:.88rem">${ed("meta.unlockNote", m.unlockNote, true)}</p>` : ""}</div>`;
+  }
+  if (m.progressionNote || m.warlordRole) {
+    html += `<div class="sec"><div class="sec-title">Progression &amp; Warlords</div>
+      ${m.progressionNote ? `<p class="dim" style="margin:0 0 8px;font-size:.88rem">${ed("meta.progressionNote", m.progressionNote, true)}</p>` : ""}
+      ${m.warlordRole ? `<p class="dim" style="margin:0;font-size:.88rem">${ed("meta.warlordRole", m.warlordRole, true)}</p>` : ""}</div>`;
+  }
+  if (m.mixRuleNote) {
+    html += `<div class="sec"><div class="sec-title">Mixed pair rule</div><p class="dim" style="margin:0;font-size:.88rem">${ed("meta.mixRuleNote", m.mixRuleNote, true)}</p></div>`;
+  }
+  if (m.openDiscussion && m.openDiscussion.length) {
+    html += `<div class="sec"><div class="sec-title">Still open — Axel &amp; team</div><ul class="openq">${m.openDiscussion.map((q, i) => `<li>${ed(`meta.openDiscussion.${i}`, q)}</li>`).join("")}</ul></div>`;
+  }
+  return html;
+}
+
+function renderProfile() {
+  const p = pairInfo();
+  const left = p.mixed ? mixedLoreHTML(p) : duoLoreHTML(p.d1);
+  const right = (p.mixed ? mixedPairHTML(p) : duoPairHTML(p)) + globalDesignHTML();
+  $("#view-profile").innerHTML = `<div class="split"><div>${left}</div><div class="rule"></div><div>${right}</div></div>`;
+}
+
+function arsenalHTML(d) {
+  return `<div class="arsenal">${WEAPONS.map(([k, l]) => { const s = ars(d, k); return `<span class="ars ars-${s}" title="${ARS_TITLE[s]}"><b>${ARS_MARK[s]}</b>${l}</span>`; }).join("")}</div>`;
+}
+function affinityHTML(d) {
+  return d.affinities.length ? `<div class="tags" style="justify-content:flex-start">${d.affinities.map(a => `<span class="chip" style="border-color:${d.theme.a}">${esc(a)}</span>`).join("")}</div>` : '<p class="dim" style="margin:0;font-size:.88rem">None defined yet.</p>';
+}
+function warlordSignature(w) {
+  if (w.signature) return w.signature;
+  return { kind: "troop", name: "Unique troop – TBD", rough: "Placeholder — usually one unique troop per Warlord. Some Warlords get a unique building instead of a troop. Catalogue and gates: Arms of Eden." };
+}
+const sigImage = s => `Images/${s.kind === "building" ? "Buildings" : "Troops"}/${s.name.replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+function signatureCardHTML(w) {
+  const s = warlordSignature(w), d = D(w.duo);
+  return `<div class="node unique ${s.locked ? "" : "placeholder"}" style="--acc:${d.theme.a};padding:0;overflow:hidden" onclick="openSignature('${w.id}')">
+    <div class="build-art short" style="--acc:${w.color};margin:0;border:0;height:110px">${IMG.tag(sigImage(s), true, s.name)}<div class="ph"><span class="ico">${sigil(d.sigil)}</span><span>Image placeholder</span></div></div>
+    <div style="padding:10px 12px"><div class="n-name">${esc(s.name)}</div><div class="n-sub">${esc(s.rough)}</div></div></div>`;
+}
+function openSignature(wid) {
+  const w = W(wid), s = warlordSignature(w), d = D(w.duo), base = `warlords.${wid}.signature`, isB = s.kind === "building";
+  SFX.play("node", { pitch: 1.06 });
+  reopen = () => openSignature(wid);
+  const armsHref = `${encodeURI("Arms of Eden.html")}#${wid === "hive" ? "hive+hive" : wid + "+" + partnerOf(wid)}/troops`;
+  openModal(`
+    <div class="m-kicker">${isB ? "Unique building" : "Unique troop"} · ${esc(w.name)} · ${esc(d.name)}</div>
+    <h3 class="m-title" style="--acc:${d.theme.a}">${ed(base + ".name", s.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${d.theme.a}">${sigil(d.sigil)}${esc(w.name)} only</span>${statusBadge(s.locked)}</div>
+    ${buildingArtHTML({ image: sigImage(s), name: s.name, icon: isB ? "⌂" : "⚔" }, d.theme.a)}
+    <div class="m-sec"><div class="sec-title">Role</div><p>${ed(base + ".rough", s.rough, true)}</p></div>
+    <p class="foot" style="text-align:center">Usually one signature per Warlord — a unique troop, or sometimes a unique building. ${isB ? "Also listed on the Buildings tab." : "Stats, gear and gates live in Arms of Eden."}</p>
+    <div class="m-foot">${isB ? `<button class="btn" onclick="closeModal(true);go('buildings')">Open Buildings tab</button>` : `<a class="btn" href="${armsHref}">Open in Arms of Eden ↗</a>`}
+      <button class="mini edit-only" onclick="toggleLock(W('${wid}').signature)">${s.locked ? "Mark placeholder" : "Mark locked"}</button></div>`, false, false);
+}
+function signaturesHTML(d) {
+  const rows = (d.warlords || []).map(id => {
+    const w = W(id), s = warlordSignature(w);
+    return `<button class="sigrow" onclick="openSignature('${id}')"><span class="k">${esc(w.name)}</span><span>${s.kind === "building" ? "Building" : "Troop"} · ${esc(s.name)}</span><span class="go">VIEW ›</span></button>`;
+  }).join("");
+  return `<div class="sigs">${rows}
+    <p class="foot" style="text-align:left">Signatures sit on each Warlord column. Shared troop lines, faction units (Pack animals, Droid chassis, Nomad vehicles), weapons and status effects live in <a href="${encodeURI("Arms of Eden.html")}#${state.w1}+${state.w2}/troops" style="color:var(--duo-a-t)">Arms of Eden ↗</a>. Mixed pairs use a <b>union</b> rule.</p>
+    <button class="sigrow" onclick="go('buildings')"><span class="k">Unique Building</span><span>${esc(d.uniqueBuilding.name)}</span><span class="go">VIEW ›</span></button>
+    <button class="sigrow" onclick="go('skills',{skillView:'duo'})"><span class="k">Bond Tree</span><span>${d.treeBranches.map(esc).join(" · ")}</span><span class="go">VIEW ›</span></button>
+  </div>`;
+}
+
+/* Colour swatch — becomes a live colour picker in edit mode; saves into the codex data. */
+function swatchHTML(color, title, sub, path) {
+  const pick = path && state.editing
+    ? `<input type="color" value="${esc(color)}" title="Pick a colour" oninput="previewColour('${path}',this.value)" onchange="saveColour('${path}',this.value)">`
+    : "<i></i>";
+  return `<div class="swatch${path && state.editing ? " editable" : ""}" style="--sw:${color}">${pick}<span><b>${esc(title)}</b><small>${esc(sub)}</small><code>${esc(color)}</code></span></div>`;
+}
+function previewColour(path, value) { setPath(DATA, path, value); applyTheme(); }
+function saveColour(path, value) { setPath(DATA, path, value); persist("Colour saved"); renderAll(); }
+/* Draft banners drawn from the palette — placeholders until the real flag art exists. */
+function bannerSVG(kind, d, a1, a2) {
+  const p = d.theme.a, s = SIGILS[d.sigil] || SIGILS.open;
+  const mark = (x, y, size) => `<g transform="translate(${x},${y}) scale(${size / 64})" fill="none" stroke="#f3eee2" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">${s}</g>`;
+  if (kind === "flag") return `<svg viewBox="0 0 150 100" class="banner-svg"><rect x="0" y="0" width="150" height="100" fill="${p}"/><rect x="0" y="0" width="150" height="16" fill="${a1}"/><rect x="0" y="84" width="150" height="16" fill="${a2}"/><circle cx="75" cy="50" r="27" fill="rgba(0,0,0,.35)" stroke="#f3eee2" stroke-opacity=".5"/>${mark(51, 26, 48)}</svg>`;
+  if (kind === "horizontal") return `<svg viewBox="0 0 240 70" class="banner-svg"><rect x="0" y="0" width="240" height="70" fill="${p}"/><rect x="0" y="0" width="240" height="9" fill="${a1}"/><rect x="0" y="61" width="240" height="9" fill="${a2}"/><rect x="0" y="0" width="14" height="70" fill="${a1}" opacity=".8"/><rect x="226" y="0" width="14" height="70" fill="${a2}" opacity=".8"/>${mark(102, 17, 36)}</svg>`;
+  return `<svg viewBox="0 0 70 170" class="banner-svg"><path d="M0 0H70V170L35 140L0 170Z" fill="${p}"/><path d="M0 0H12V160L0 170Z" fill="${a1}"/><path d="M58 0H70V170L58 160Z" fill="${a2}"/><rect x="0" y="0" width="70" height="10" fill="#1a1612" opacity=".5"/>${mark(15, 34, 40)}</svg>`;
+}
+function bannerPaletteHTML(d) {
+  const safe = d.name.replace(/^The /, "").replace(/[\/\\:*?"<>|]/g, "-");
+  const ws = d.warlords.map(W);
+  const a1 = ws[0] ? ws[0].color : d.theme.a, a2 = ws[1] ? ws[1].color : a1;
+  const slot = (path, ph, label, cls) => `<div class="build-art short banner-slot ${cls || ""}" style="--acc:${d.theme.a}">${IMG.tag(path, true, label)}<div class="ph" title="${esc(IMG.hint(path))}"><span class="ico">${ph}</span><span>${label}<br><small>${esc(path.split("/").pop())}</small></span></div></div>`;
+  return `<div class="sec"><div class="sec-title">Flags, banners &amp; palette</div>
+    <div class="banner-grid">
+      ${slot(`Images/Flags/${safe} Colony Flag.jpg`, bannerSVG("flag", d, a1, a2), "Colony flag", "b-flag")}
+      ${slot(`Images/Banners/${safe} Horizontal.jpg`, bannerSVG("horizontal", d, a1, a2), "Horizontal banner", "b-horizontal")}
+      ${slot(`Images/Banners/${safe} Vertical Sash.jpg`, bannerSVG("vertical", d, a1, a2), "Vertical sash", "b-vertical")}
+      ${slot(`Images/Logos/${safe}.jpg`, sigil(d.sigil), "Tribe logo", "b-logo")}
+    </div>
+    <div class="swatches" style="margin-top:10px">
+      ${swatchHTML(d.theme.a, `${d.name} · ${d.theme.name || "Duo colour"}`, d.theme.note || "Shared team theme.", `duos.${d.id}.theme.a`)}
+      ${ws.map(w => swatchHTML(w.color, `${w.name} · ${w.colorName || "Accent"}`, w.colorNote || "Personal accent.", `warlords.${w.id}.color`)).join("")}
+    </div>
+    <p class="foot">Every flag and banner uses the Duo primary colour plus both Warlord accents. ${state.editing ? "Click a swatch to pick a new colour — it applies live and saves with the codex." : "Turn on Edit to tweak colours with a picker."} Colour changes reach Arms and Resources at the next sync.</p></div>`;
+}
+
+function duoLoreHTML(d) {
+  return `
+    <div class="sec">
+      <div class="sec-title">Lore &amp; Way of Life <span class="badge-draft">Draft</span></div>
+      <p class="lore">${ed(`duos.${d.id}.lore`, d.lore, true)}</p>
+      <div class="wol"><div class="wol-label">Way of life</div>${ed(`duos.${d.id}.wayOfLife`, d.wayOfLife, true)}</div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Arsenal</div>
+      ${arsenalHTML(d)}
+      <p class="foot">${esc((DATA.meta && DATA.meta.gatingNote) || "Buildings, troops, tech, weapons, and status effects follow per-Duo gating. Not every group inflicts every status.")}</p>
+    </div>
+    <div class="sec"><div class="sec-title">Damage Affinities</div>${affinityHTML(d)}</div>
+    <div class="sec"><div class="sec-title">Signatures</div>${signaturesHTML(d)}</div>
+    ${bannerPaletteHTML(d)}
+    ${d.open.length ? `<div class="sec"><div class="sec-title">Open Questions</div><ul class="openq">${d.open.map((q, i) => `<li>${ed(`duos.${d.id}.open.${i}`, q)}</li>`).join("")}</ul>
+      <div class="center-row edit-only" style="margin-top:6px"><button class="mini" onclick="addPoint('${d.id}','open','New open question')">+ Add question</button></div></div>` : ""}`;
+}
+
+function bondHTML(p) {
+  if (p.hive) return `<div class="bond"><div class="bond-kicker">Bond</div><div class="bond-big">None — one mind</div><p class="foot">Droid 0001 has no partner and no Bond tree. Defend the Data Centre — destroying it eliminates the Droids.</p></div>`;
+  if (p.natural) return `<div class="bond"><div class="bond-kicker">Natural Duo tree</div><div class="bond-big">Full specialised Bond tree</div>
+      <div class="pips">${"<div class='pip on'></div>".repeat(5)}</div>
+      <p class="foot">${esc(p.d1.bondNote || "Both Warlords feed this tree when paired (~2× duo XP). Personal trees still gain XP separately.")}</p></div>`;
+  const key = [p.w1.id, p.w2.id].sort().join("|");
+  const lv = DATA.bonds[key] || 0;
+  return `<div class="bond"><div class="bond-kicker">Pair Bond — ${esc(p.w1.name)} &amp; ${esc(p.w2.name)}</div>
+    <div class="bond-big">Level ${lv} / 5</div>
+    <div class="pips">${[1, 2, 3, 4, 5].map(n => `<div class="pip ${lv >= n ? "on" : ""}"></div>`).join("")}</div>
+    <div class="center-row edit-only"><button class="mini" onclick="bumpBond('${key}',-1)">− Bond</button><button class="mini" onclick="bumpBond('${key}',1)">+ Bond</button></div>
+    <ul class="passives">${[1, 3, 5].map(n => `<li class="${lv >= n ? "on" : ""}"><b>Bond ${n}</b>Pair Passive — Placeholder</li>`).join("")}</ul>
+    <p class="foot">Warlord–Warlord Bond (mixed pairs only): light passives, not a full skill tree. Each Warlord still earns personal XP and feeds their natural duo tree.</p></div>`;
+}
+
+function prosConsHTML(d, editable) {
+  const li = (cls, arr, key) => arr.map((x, i) => `<li class="${cls}${suggClass(x)}">${editable ? ed(`duos.${d.id}.${key}.${i}`, x) : esc(x)}</li>`).join("");
+  return `<ul class="pc">${li("pro", d.pros, "pros")}${editable ? `<li class="addrow edit-only"><button class="mini" onclick="addPoint('${d.id}','pros','New strength')">+ Add strength</button></li>` : ""}</ul>
+    <div class="sub-title">Weaknesses</div>
+    <ul class="pc">${li("con", d.cons, "cons")}${editable ? `<li class="addrow edit-only"><button class="mini" onclick="addPoint('${d.id}','cons','New weakness')">+ Add weakness</button></li>` : ""}</ul>`;
+}
+
+function duoPairHTML(p) {
+  const d = p.d1;
+  return `
+    <div class="sec"><div class="sec-title">${p.hive ? "Hive Profile" : "Matched Duo Strengths"}</div>${prosConsHTML(d, true)}</div>
+    <div class="sec"><div class="sec-title">Bond</div>${bondHTML(p)}</div>
+    <div class="sec"><div class="sec-title">Skill Trees in Play</div><div class="trees-list">
+      <button class="sigrow" onclick="go('skills',{skillView:'w1'})"><span class="k">Personal</span><span>${esc(p.w1.name)} — personal tree</span><span class="go">OPEN ›</span></button>
+      ${p.hive ? "" : `<button class="sigrow" onclick="go('skills',{skillView:'w2'})"><span class="k">Personal</span><span>${esc(p.w2.name)} — personal tree</span><span class="go">OPEN ›</span></button>`}
+      <button class="sigrow" onclick="go('skills',{skillView:'duo'})"><span class="k">${p.hive ? "Hive" : "Natural Duo"}</span><span>${esc(d.name)} — ${p.hive ? "hive" : "specialised Bond"} tree</span><span class="go">OPEN ›</span></button>
+    </div></div>
+    <div class="sec"><div class="sec-title">Troop Access</div>
+      <p class="dim" style="margin:0;font-size:.9rem">All shared troop lines (subject to the Arsenal) plus each Warlord's signature. Shared lines keep their global level; unique troops only level while playing their Warlord. Warlords fight as champions but can still build, gather, and craft. <a href="${encodeURI("Arms of Eden.html")}#${p.w1.id}+${p.w2.id}/troops" style="color:var(--duo-a-t)">Open Arms of Eden ↗</a></p></div>`;
+}
+
+function mixedLoreHTML(p) {
+  const { w1, w2, d1, d2 } = p;
+  const half = d => `<div class="mix-half" style="--c:${d.theme.a}"><h5>${sigil(d.sigil)}${esc(d.name)}</h5>${esc(d.wayOfLife)}</div>`;
+  return `
+    <div class="sec">
+      <div class="sec-title">Lore &amp; Way of Life <span class="badge-ph">Mixed — not written</span></div>
+      <p class="lore">A pact of necessity. ${esc(w1.name)} of ${esc(theName(d1))} and ${esc(w2.name)} of ${esc(theName(d2))} share a camp, a cause and very little else.</p>
+      <p class="dim" style="font-size:.9rem;margin:0">Mixed lore isn't written yet. Each Warlord keeps their personal traits, and the pair uses the shared <b style="color:var(--ink)">${esc(d1.name)} × ${esc(d2.name)}</b> Mixed Bond tree.</p>
+      <div class="mix-halves">${half(d1)}${half(d2)}</div>
+    </div>
+    <div class="sec"><div class="sec-title">Mixed palette</div><div class="swatches">
+      ${swatchHTML(w1.color, `${w1.name} · ${w1.colorName || "Accent"}`, `Brings ${d1.name}: ${w1.colorNote || ""}`)}
+      ${swatchHTML(w2.color, `${w2.name} · ${w2.colorName || "Accent"}`, `Brings ${d2.name}: ${w2.colorNote || ""}`)}</div>
+      <p class="foot">A mixed pair adopts the two Warlord accents as its theme.</p></div>
+    <div class="sec"><div class="sec-title">Arsenal — ${esc(d1.name)}</div>${arsenalHTML(d1)}</div>
+    <div class="sec"><div class="sec-title">Arsenal — ${esc(d2.name)}</div>${arsenalHTML(d2)}
+      <p class="foot">Union rule: the pair can use any weapon class either side can. Preview it in <a href="${encodeURI("Arms of Eden.html")}#${w1.id}+${w2.id}/weapons" style="color:var(--duo-a-t)">Arms of Eden ↗</a>.</p></div>
+    <div class="sec"><div class="sec-title">Damage Affinities</div>${affinityHTML({ affinities: [...new Set([...d1.affinities, ...d2.affinities])], theme: d1.theme })}</div>`;
+}
+
+function mixedPairHTML(p) {
+  const { w1, w2, d1, d2 } = p;
+  const pros = [
+    "Flexibility — draws on two Duo identities",
+    `${w1.name}'s personal traits apply in full`,
+    `${w2.name}'s personal traits apply in full`,
+    `Softened strengths from both sides: “${d1.pros[0]}” and “${d2.pros[0]}” (exact values TBD)`
+  ];
+  const cons = [
+    "No specialised Natural Bond tree — uses the shared Mixed tree",
+    "Loses the specialised edge of a natural Duo",
+    `Bond starts from zero for ${w1.name} & ${w2.name}`
+  ];
+  [d1, d2].forEach(d => { if (d.mixNote) cons.push(d.mixNote); });
+  const nos = [];
+  [d1, d2].forEach(d => WEAPONS.forEach(([k, l]) => { if (ars(d, k) === "no") nos.push(`${d.name}: no ${l}`); }));
+  if (nos.length) pros.push(`Union rule covers gaps (${nos.join(", ")}) — the other side brings it`);
+  return `
+    <div class="sec"><div class="sec-title">Pairing Analysis</div>
+      <ul class="pc">${pros.map(x => `<li class="pro">${esc(x)}</li>`).join("")}</ul>
+      <div class="sub-title">Weaknesses</div>
+      <ul class="pc">${cons.map(x => `<li class="con${suggClass(x)}">${esc(x)}</li>`).join("")}</ul>
+      <p class="foot">Auto-generated from both Duos — the pros/cons rules for mixed pairs are still being designed.</p>
+    </div>
+    <div class="sec"><div class="sec-title">Bond</div>${bondHTML(p)}</div>
+    <div class="sec"><div class="sec-title">Skill Trees in Play</div><div class="trees-list">
+      <button class="sigrow" onclick="go('skills',{skillView:'w1'})"><span class="k">Personal</span><span>${esc(w1.name)} — personal tree</span><span class="go">OPEN ›</span></button>
+      <button class="sigrow" onclick="go('skills',{skillView:'w2'})"><span class="k">Personal</span><span>${esc(w2.name)} — personal tree</span><span class="go">OPEN ›</span></button>
+      <button class="sigrow" onclick="go('skills',{skillView:'duo'})"><span class="k">Mixed</span><span>${esc(d1.name)} × ${esc(d2.name)} — shared Mixed tree</span><span class="go">OPEN ›</span></button>
+    </div></div>
+    <div class="sec"><div class="sec-title">Troop Access</div>
+      <p class="dim" style="margin:0;font-size:.9rem">Shared troop lines keep their global levels. Each Warlord brings their own signature — ${esc(warlordSignature(w1).name)} and ${esc(warlordSignature(w2).name)}. <a href="${encodeURI("Arms of Eden.html")}#${w1.id}+${w2.id}/troops" style="color:var(--duo-a-t)">See this pair in Arms of Eden ↗</a></p></div>`;
+}
+
+/* ==========================================================================
+   SKILLS TAB
+   ========================================================================== */
+function treeMeta(view) {
+  const p = pairInfo();
+  if (view === "w1" || view === "w2") {
+    const w = view === "w1" ? p.w1 : p.w2;
+    return { key: "w-" + w.id, kicker: `${D(w.duo).name} · Personal tree`, title: `${w.name} — Personal Skill Tree`,
+      note: "Branches follow the personal trait plan: Troop, Technology, Passive.", branches: ["Troop", "Technology", "Passive"],
+      colors: [warlordAccent(w), warlordAccent(w), warlordAccent(w)], hints: w.traits.map(t => t.desc.replace(/^Placeholder\s*[–-]\s*/i, "")), extraCap: false };
+  }
+  if (p.mixed) {
+    const [a, b] = [p.d1, p.d2].sort((x, y) => x.id.localeCompare(y.id));
+    const combos = a.warlords.length * b.warlords.length;
+    return { key: `m-${a.id}+${b.id}`, kicker: "Mixed Bond tree", title: `${a.name} × ${b.name} — Mixed Bond Tree`,
+      note: `Shared by every ${a.name} × ${b.name} pairing (${combos} combinations), whichever Warlords are chosen.`,
+      branches: [`${a.name} Edge`, "Flexibility", `${b.name} Edge`], colors: [a.theme.a, "#bdb5a6", b.theme.a], hints: ["", "", ""], extraCap: false };
+  }
+  const d = p.d1;
+  return { key: "d-" + d.id, kicker: p.hive ? "Hive tree" : "Natural Duo tree", title: `${d.name} — ${p.hive ? "Hive" : "Natural Duo"} Tree`,
+    note: p.hive ? "The Hive's single, unmixable tree." : "The full specialised Bond tree — only available to the matched pair.",
+    branches: d.treeBranches, colors: [d.theme.a, d.theme.a, d.theme.a], hints: ["", "", ""], extraCap: true };
+}
+
+function getTree(meta) {
+  if (DATA.trees[meta.key]) return DATA.trees[meta.key];
+  const nodes = []; let n = 0;
+  const mk = (branch, tier, req, hint) => {
+    n++;
+    const node = { id: "n" + n, name: `Skill Node ${pad(n)}`, branch, tier, req,
+      desc: "Placeholder – not locked." + (hint ? ` Branch direction: ${hint}` : ""),
+      requirements: "Placeholder", effects: "Placeholder", cost: "Placeholder", locked: false };
+    nodes.push(node); return node.id;
+  };
+  const tops = [];
+  for (let b = 0; b < 3; b++) {
+    const a = mk(b, 1, [], meta.hints[b]);
+    const x = mk(b, 2, [a], meta.hints[b]);
+    const y = mk(b, 2, [a], meta.hints[b]);
+    tops.push(mk(b, 3, [x, y], meta.hints[b]));
+  }
+  const cap = mk(-1, 4, tops, "capstone");
+  if (meta.extraCap) mk(-1, 5, [cap], "ultimate Bond ability");
+  DATA.trees[meta.key] = { nodes };
+  return DATA.trees[meta.key];
+}
+
+function renderSkills() {
+  const p = pairInfo();
+  if (p.hive && state.skillView === "w2") state.skillView = "duo";
+  const meta = treeMeta(state.skillView);
+  const tree = getTree(meta);
+  const btns = [["w1", p.w1.name + " — Personal"], ["duo", p.mixed ? "Mixed Bond Tree" : p.hive ? "Hive Tree" : "Natural Duo Tree"]];
+  if (!p.hive) btns.push(["w2", p.w2.name + " — Personal"]);
+  const nodeHTML = (nd) => {
+    const i = tree.nodes.indexOf(nd);
+    const color = nd.branch < 0 ? "var(--duo-a)" : meta.colors[nd.branch];
+    const sub = nd.branch < 0 ? (nd.tier === 5 ? "Ultimate" : "Capstone") : meta.branches[nd.branch];
+    return `<div class="node ${nd.locked ? "" : "placeholder"}" style="--acc:${color}" data-id="${nd.id}" data-req="${nd.req.join(",")}" data-color="${color}" onclick="openSkill('${meta.key}',${i})">
+      <div class="n-tier">${roman(nd.tier)}</div><div class="n-name">${esc(nd.name)}</div><div class="n-sub">${esc(sub)}</div></div>`;
+  };
+  let rows = `<div class="tree-row"><div></div>${meta.branches.map((b, i) => `<div class="branch-head" style="--bc:${meta.colors[i]}">${esc(b)}</div>`).join("")}</div>`;
+  for (let t = 1; t <= 3; t++) {
+    rows += `<div class="tree-row"><div class="tier-tag">${roman(t)}</div>${[0, 1, 2].map(b => `<div class="cell">${tree.nodes.filter(nd => nd.tier === t && nd.branch === b).map(nodeHTML).join("")}</div>`).join("")}</div>`;
+  }
+  [4, 5].forEach(t => {
+    const caps = tree.nodes.filter(nd => nd.tier === t);
+    if (caps.length) rows += `<div class="tree-row"><div class="tier-tag">${roman(t)}</div><div class="cell span">${caps.map(nodeHTML).join("")}</div></div>`;
+  });
+  $("#view-skills").innerHTML = `
+    <div class="subnav">${btns.map(([v, l]) => `<button class="btn ${state.skillView === v ? "active" : ""}" onclick="setSkillView('${v}')">${esc(l)}</button>`).join("")}</div>
+    <div class="tree-head"><div class="kicker">${esc(meta.kicker)}</div><h2>${esc(meta.title)}</h2><p>${esc(meta.note)}</p></div>
+    <div class="tree-scroll"><div class="tree" id="tree"><svg class="links"></svg>${rows}</div></div>
+    <p class="foot" style="text-align:center">Click any node for details. All nodes are placeholders until marked locked.</p>`;
+  requestAnimationFrame(drawLinks);
+}
+function setSkillView(v) { if (v !== state.skillView) { SFX.play("tab", { pitch: 1.08 }); commit({ skillView: v }); } }
+
+function drawLinks() {
+  const tree = $("#tree");
+  if (!tree || !tree.offsetParent) return;
+  const svg = tree.querySelector("svg.links");
+  const tr = tree.getBoundingClientRect();
+  svg.setAttribute("width", tree.scrollWidth);
+  svg.setAttribute("height", tree.scrollHeight);
+  let paths = "";
+  tree.querySelectorAll(".node[data-req]").forEach(el => {
+    const reqs = el.dataset.req.split(",").filter(Boolean);
+    const r = el.getBoundingClientRect();
+    const x2 = r.left + r.width / 2 - tr.left, y2 = r.top - tr.top;
+    reqs.forEach(id => {
+      const pn = tree.querySelector(`.node[data-id="${id}"]`);
+      if (!pn) return;
+      const pr = pn.getBoundingClientRect();
+      const x1 = pr.left + pr.width / 2 - tr.left, y1 = pr.bottom - tr.top, my = (y1 + y2) / 2;
+      paths += `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" stroke="${pn.dataset.color}"/>`;
+    });
+  });
+  svg.innerHTML = paths;
+}
+
+function openSkill(key, i) {
+  SFX.play("node");
+  const meta = treeMeta(state.skillView);
+  const tree = DATA.trees[key], n = tree.nodes[i], base = `trees.${key}.nodes.${i}`;
+  const prereq = n.req.map(id => (tree.nodes.find(x => x.id === id) || {}).name).filter(Boolean).join(", ");
+  const color = n.branch < 0 ? "var(--duo-a)" : meta.colors[n.branch];
+  reopen = () => openSkill(key, i);
+  openModal(`
+    <div class="m-kicker">${esc(meta.title)}</div>
+    <h3 class="m-title" style="--acc:${color}">${ed(base + ".name", n.name)}</h3>
+    <div class="m-tags"><span class="chip">${esc(n.branch < 0 ? (n.tier === 5 ? "Ultimate" : "Capstone") : meta.branches[n.branch])}</span><span class="chip">Tier ${roman(n.tier)}</span>${statusBadge(n.locked)}</div>
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", n.desc, true)}</p></div>
+    <div class="kv">
+      <div><span>Prerequisites</span><b>${esc(prereq || "None — entry node")}</b></div>
+      <div><span>Requirements</span><b>${ed(base + ".requirements", n.requirements, true)}</b></div>
+      <div><span>Effects</span><b>${ed(base + ".effects", n.effects, true)}</b></div>
+      <div><span>Cost</span><b>${ed(base + ".cost", n.cost)}</b></div>
+    </div>
+    <div class="m-foot"><span class="foot" style="margin:0">${n.locked ? "Locked design." : "Placeholder – not locked."}</span>
+      <button class="mini edit-only" onclick="toggleLock(DATA.trees['${key}'].nodes[${i}])">${n.locked ? "Mark placeholder" : "Mark locked"}</button></div>`, false, false);
+}
+
+/* ==========================================================================
+   TECH TAB
+   ========================================================================== */
+function renderTech() {
+  const ss = sides();
+  const techNode = (t, i) => {
+    const out = blocked(t.gate), part = !out && partBlocked(t.gate);
+    return `<div class="node ${t.locked ? "" : "placeholder"} ${out ? "out" : ""} ${part ? "part" : ""}" style="--acc:${TECH_CATS.find(c => c[0] === t.cat)[1]}" onclick="openTech(${i})">
+      <div class="n-name">${esc(t.name)}</div><div class="n-sub">${t.gate ? WEAPON_NAME[t.gate] + availMarks(t.gate) : t.cat}</div>${out ? '<div class="n-out">Unavailable</div>' : ""}</div>`;
+  };
+  const uniqueNodes = tier => ss.flatMap(d => d.uniqueTech.map((u, j) => (u.tier === tier ? `<div class="node unique ${u.locked ? "" : "placeholder"}" style="--acc:${d.theme.a}" onclick="openUTech('${d.id}',${j})">
+      <div class="n-name">${esc(u.name)}</div><div class="n-sub">${esc(d.name)}</div></div>` : ""))).join("");
+  let html = `<div class="tech-grid"><div></div>${TECH_CATS.map(([c, col]) => `<div class="th" style="--cc:${col}">${c}</div>`).join("")}`;
+  for (let tier = 1; tier <= 3; tier++) {
+    html += `<div class="tier-tag" style="align-self:center">${roman(tier)}</div>`;
+    TECH_CATS.forEach(([c]) => {
+      const inner = c === "Unique" ? uniqueNodes(tier) : DATA.tech.map((t, i) => (t.cat === c && t.tier === tier ? techNode(t, i) : "")).join("");
+      html += `<div class="cell">${inner || '<span class="empty">—</span>'}</div>`;
+    });
+  }
+  html += "</div>";
+  $("#view-tech").innerHTML = `
+    <div class="tree-head"><div class="kicker">Researched at the School / Lab</div><h2>Tech &amp; Research</h2>
+      <p>Shared core research plus Duo-specific limits and exclusive techs. Arsenal techs are gated by each Duo's weapon access.</p></div>
+    <div class="tech-scroll" style="margin-top:14px">${html}</div>
+    <p class="foot" style="text-align:center">Tier I Basic · Tier II Advanced · Tier III Elite. Every tech is a placeholder until marked locked.</p>`;
+}
+
+function openTech(i) {
+  SFX.play("node");
+  const t = DATA.tech[i], col = TECH_CATS.find(c => c[0] === t.cat)[1];
+  reopen = () => openTech(i);
+  openModal(`
+    <div class="m-kicker">${t.cat} · Tier ${roman(t.tier)}</div>
+    <h3 class="m-title" style="--acc:${col}">${ed(`tech.${i}.name`, t.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${col}">${t.cat}</span><span class="chip">Tier ${roman(t.tier)}</span>${statusBadge(t.locked)}</div>
+    ${buildingArtHTML({ name: t.name, icon: "⚙" }, col, "Tech", "Research art placeholder")}
+    <div class="m-sec"><div class="sec-title">Effect</div><p>${ed(`tech.${i}.desc`, t.desc, true)}</p></div>
+    <div class="kv"><div><span>Researched at</span><b>School / Lab</b></div><div><span>Cost</span><b>Placeholder</b></div></div>
+    <div class="m-sec"><div class="sec-title">Availability across Duos</div>
+      ${t.gate ? availabilityAll(t.gate) : '<p class="dim" style="text-align:center">Shared core research — available to every Duo (per-Duo limits TBD).</p>'}</div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.tech[${i}])">${t.locked ? "Mark placeholder" : "Mark locked"}</button></div>`, false, false);
+}
+
+function openUTech(did, j) {
+  SFX.play("node", { pitch: 1.05 });
+  const d = D(did), u = d.uniqueTech[j], base = `duos.${did}.uniqueTech.${j}`;
+  reopen = () => openUTech(did, j);
+  openModal(`
+    <div class="m-kicker">Unique Research · ${esc(d.name)} · Tier ${roman(u.tier)}</div>
+    <h3 class="m-title" style="--acc:${d.theme.a}">${ed(base + ".name", u.name)}</h3>
+    <div class="m-tags"><span class="chip" style="color:${d.theme.a}">${sigil(d.sigil)}${esc(d.name)} only</span>${statusBadge(u.locked)}</div>
+    ${buildingArtHTML({ name: u.name, icon: "⚙" }, d.theme.a, "Tech", "Research art placeholder")}
+    <div class="m-sec"><div class="sec-title">Concept</div><p>${ed(base + ".rough", u.rough, true)}</p></div>
+    <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(D('${did}').uniqueTech[${j}])">${u.locked ? "Mark placeholder" : "Mark locked"}</button></div>`, false, false);
+}
+
+/* ==========================================================================
+   BUILDINGS TAB
+   ========================================================================== */
+function renderBuildings() {
+  const ss = sides();
+  const groups = BUILD_CATS.map(cat => {
+    const items = DATA.buildings.map((b, i) => (b.cat === cat ? `<div class="node ${b.locked ? "" : "placeholder"}" onclick="openBuilding(${i})">
+        <div class="ico">${b.icon}</div><div class="n-name">${esc(b.name)}</div><div class="n-sub">${esc(b.cat)}</div></div>` : "")).join("");
+    return items ? `<div class="sec"><div class="sec-title">${cat}</div><div class="bgrid">${items}</div></div>` : "";
+  }).join("");
+  const pw = pairInfo();
+  const sigNames = new Set();
+  const sigB = [...new Set([pw.w1.id, pw.w2.id])].map(id => W(id)).filter(w => warlordSignature(w).kind === "building").map(w => {
+    const s = warlordSignature(w), d = D(w.duo); sigNames.add(s.name);
+    return `<div class="node unique ${s.locked ? "" : "placeholder"}" style="--acc:${d.theme.a}" onclick="openSignature('${w.id}')">
+      <div class="ico">${sigil(d.sigil)}</div><div class="n-name">${esc(s.name)}</div><div class="n-sub">${esc(w.name)} · Warlord signature</div></div>`;
+  }).join("");
+  const unique = ss.filter(d => !sigNames.has(d.uniqueBuilding.name)).map(d => `<div class="node unique ${d.uniqueBuilding.locked ? "" : "placeholder"}" style="--acc:${d.theme.a}" onclick="openUBuilding('${d.id}')">
+      <div class="ico">${sigil(d.sigil)}</div><div class="n-name">${esc(d.uniqueBuilding.name)}</div><div class="n-sub">${esc(d.name)} · Duo unique</div></div>`).join("");
+  $("#view-buildings").innerHTML = `
+    <div class="tree-head"><div class="kicker">Shared, Age of Empires style</div><h2>Buildings</h2>
+      <p>Buildings do not level across Duos. Most are shared; each Duo has a unique building, and some Warlords bring a signature building instead of a troop.</p></div>
+    <div style="margin-top:18px">${groups}
+      <div class="sec"><div class="sec-title">Unique buildings — this pair</div><div class="bgrid">${sigB}${unique}</div>
+      <p class="foot" style="text-align:center">If a pair cannot construct a building, it stays locked even when the resources exist (Resources of Eden shows import-only materials).</p></div></div>`;
+}
+
+function buildingArtHTML(b, color, folder, label) {
+  const path = b.image || `Images/${folder || "Buildings"}/${String(b.name).replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+  return `<div class="build-art" style="--acc:${color}">${IMG.tag(path, true, b.name)}<div class="ph"><span class="ico">${b.icon || "◫"}</span><span>${esc(label || "Building art placeholder")} — ${esc(IMG.hint(path))}</span></div></div>`;
+}
+function buildingModal(title, kicker, b, base, color, extra) {
+  return `
+    <div class="m-kicker">${kicker}</div>
+    <h3 class="m-title" style="--acc:${color}">${ed(base + ".name", b.name)}</h3>
+    <div class="m-tags">${extra}${statusBadge(b.locked)}</div>
+    ${buildingArtHTML(b, color)}
+    <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + (b.rough !== undefined ? ".rough" : ".desc"), b.rough !== undefined ? b.rough : b.desc, true)}</p></div>
+    <div class="m-sec"><div class="sec-title">Upgrades</div><ul class="upg">${(b.upgrades || []).map((u, k) => `<li>${ed(`${base}.upgrades.${k}`, u)}</li>`).join("")}</ul>
+      <div class="center-row edit-only"><button class="mini" onclick="addUpgrade('${base}')">+ Add upgrade</button></div></div>
+    <p class="foot" style="text-align:center">Buildings do not carry levels across Duos.</p>`;
+}
+function openBuilding(i) {
+  SFX.play("node", { pitch: 0.98 });
+  const b = DATA.buildings[i];
+  reopen = () => openBuilding(i);
+  openModal(buildingModal(b.name, `${b.cat} · Shared building`, b, `buildings.${i}`, "var(--duo-a)", `<span class="chip">${b.icon} ${b.cat}</span>`) +
+    `<div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.buildings[${i}])">${b.locked ? "Mark placeholder" : "Mark locked"}</button></div>`, false, false);
+}
+function openUBuilding(did) {
+  SFX.play("node", { pitch: 1.02 });
+  const d = D(did), b = d.uniqueBuilding;
+  reopen = () => openUBuilding(did);
+  openModal(buildingModal(b.name, `Unique Building · ${esc(d.name)}`, b, `duos.${did}.uniqueBuilding`, d.theme.a, `<span class="chip" style="color:${d.theme.a}">${sigil(d.sigil)}${esc(d.name)} only</span>`) +
+    `<div class="m-foot"><button class="mini edit-only" onclick="toggleLock(D('${did}').uniqueBuilding)">${b.locked ? "Mark placeholder" : "Mark locked"}</button></div>`, false, false);
+}
+
+/* ==========================================================================
+   PICKER + ROSTER
+   ========================================================================== */
+function openPicker(slot) {
+  SFX.play("picker");
+  const p = pairInfo();
+  const cur = slot === 1 ? state.w1 : state.w2;
+  const other = slot === 1 ? state.w2 : state.w1;
+  const pick = id => {
+    const w = W(id), d = D(w.duo);
+    const isCur = id === cur && !(p.hive && slot === 2);
+    const isOther = !p.hive && id === other;
+    const natural = !p.hive && id !== other && W(other).duo === w.duo;
+    let badge = "", cls = "";
+    if (isCur) badge = "Current";
+    else if (id === "hive") badge = "Never mixes";
+    else if (natural) { badge = "Natural match"; cls = "nat"; }
+    else if (isOther) badge = "In other slot";
+    else if (!p.hive) { badge = "Forms mixed pair"; cls = "mix"; }
+    return `<button class="pick ${isCur ? "cur" : ""}" ${isOther ? "disabled" : ""} onclick="choose(${slot},'${id}')">
+      <span class="thumb" style="border-left:3px solid ${w.color}">${sigil(d.sigil)}${IMG.tag(portraitPath(w))}</span>
+      <span><b>${esc(w.name)}</b>${badge ? `<em class="pb ${cls}">${badge}</em>` : ""}</span></button>`;
+  };
+  reopen = null;
+  openModal(`
+    <div class="m-kicker">Warlord ${slot === 1 ? "I" : "II"} · Switch</div>
+    <h3 class="m-title">Choose a Warlord</h3>
+    <p class="m-hint">Pick from a different Duo to form a mixed pair. Natural partners are marked. Droids never mix.</p>
+    <div class="pick-groups">${Object.values(DATA.duos).filter(d => d.warlords.length).map(d => `<div class="pick-group" style="--c:${d.theme.a}">
+      <div class="group-head" style="margin-bottom:4px">${sigil(d.sigil)}${esc(d.name)}</div>${d.warlords.map(pick).join("")}</div>`).join("")}</div>
+    ${p.mixed ? `<div class="m-foot"><button class="btn" onclick="choose(${slot},'${partnerOf(other)}')">Restore natural partner for ${esc(W(other).name)}</button></div>` : ""}`, true, false);
+}
+
+function openRoster() {
+  SFX.play("picker");
+  const p = pairInfo();
+  reopen = null;
+  openModal(`
+    <div class="m-kicker">${Object.keys(DATA.duos).length} Duos · as of ${esc(DATA.meta.updated)}</div>
+    <h3 class="m-title">The Roster</h3>
+    <p class="m-hint">Load any natural Duo. Mix Warlords afterwards with “Switch Warlord”.</p>
+    <div class="roster">${Object.values(DATA.duos).map(d => {
+      const names = d.warlords.map(id => `<b style="color:${W(id).color}">${esc(W(id).name)}</b>`).join(" &amp; ") || "—";
+      const cur = !p.mixed && p.d1.id === d.id;
+      return `<button class="rcard ${cur ? "cur" : ""}" style="--c:${d.theme.a}" ${d.warlords.length ? `onclick="loadDuo('${d.id}')"` : "disabled"}>
+        <span class="num">No. ${pad(d.num)}</span><span class="st">${d.status === "core" ? '<span class="badge-lock">Core</span>' : `<span class="badge-ph">${STATUS[d.status]}</span>`}</span>
+        <span class="crest">${sigil(d.sigil)}${flag(d.id, d.theme.a)}</span><h4>${esc(d.name)}</h4><div class="who">${names}</div><p>${esc(d.motto)}</p></button>`;
+    }).join("")}</div>`, true, false);
+}
+
+/* ==========================================================================
+   MODAL + EDIT MODE
+   ========================================================================== */
+function openModal(html, wide, sfx) {
+  if (sfx !== false) SFX.play(sfx || "modalOpen");
+  $("#modal-box").classList.toggle("wide", !!wide);
+  $("#modal-body").innerHTML = html;
+  $("#modal-body").scrollTop = 0;
+  $("#modal").classList.add("open");
+  applyEditable();
+}
+function closeModal(silent) {
+  const open = $("#modal").classList.contains("open");
+  $("#modal").classList.remove("open");
+  reopen = null;
+  if (open && !silent) SFX.play("modalClose");
+  if (open && state.editing && !silent) renderAll();
+}
+
+const PLAIN = (() => { const d = document.createElement("div"); try { d.contentEditable = "plaintext-only"; return d.contentEditable === "plaintext-only"; } catch (e) { return false; } })();
+function applyEditable() {
+  document.querySelectorAll("[data-edit]").forEach(el => {
+    if (state.editing) { el.setAttribute("contenteditable", PLAIN ? "plaintext-only" : "true"); el.spellcheck = true; }
+    else el.removeAttribute("contenteditable");
+  });
+}
+function toggleEdit() {
+  state.editing = !state.editing;
+  document.body.classList.toggle("editing", state.editing);
+  $("#btn-edit").classList.toggle("active", state.editing);
+  SFX.play("tab", { pitch: state.editing ? 1.15 : 0.88 });
+  renderAll();
+  toast(state.editing ? "Edit mode on" : "Edit mode off");
+}
+function persist(msg) { saveData(); if (msg) toast(msg); }
+function refresh() { if (reopen) reopen(); else renderAll(); }
+function toggleLock(obj) { obj.locked = !obj.locked; persist(obj.locked ? "Marked locked" : "Marked placeholder"); refresh(); }
+function toggleTraitLock(wid, i) { toggleLock(W(wid).traits[i]); }
+function addPoint(did, key, text) { D(did)[key].push(text); persist("Added"); renderAll(); }
+function addUpgrade(base) {
+  let o = DATA; base.split(".").forEach(k => (o = o[k]));
+  (o.upgrades = o.upgrades || []).push("New upgrade – Placeholder"); persist("Added"); refresh();
+}
+function bumpBond(key, d) { DATA.bonds[key] = Math.max(0, Math.min(5, (DATA.bonds[key] || 0) + d)); persist(); renderAll(); }
+function bumpLine(li, d) { const l = DATA.troops[li]; l.level = Math.max(0, Math.min(10, l.level + d)); persist(); renderAll(); refresh(); }
+function bumpUnique(did, i, d) { const t = D(did).uniqueTroops[i]; t.level = Math.max(0, Math.min(10, (t.level || 0) + d)); persist(); renderAll(); refresh(); }
+
+document.addEventListener("focusout", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (!el || !state.editing) return;
+  setPath(DATA, el.dataset.edit, el.innerText.replace(/\u00a0/g, " ").trim());
+  persist("Saved");
+});
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (el && el.isContentEditable) {
+    if (e.key === "Enter" && !el.hasAttribute("data-ml")) { e.preventDefault(); el.blur(); }
+    if (e.key === "Escape") el.blur();
+    return;
+  }
+  if (e.key === "Escape") return closeModal();
+  if ($("#modal").classList.contains("open") || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const tabs = ["profile", "skills", "tech", "buildings"];
+  if (e.key >= "1" && e.key <= "4") go(tabs[+e.key - 1]);
+});
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "warlords-of-eden-data.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  toast("Exported warlords-of-eden-data.json");
+}
+function importData(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d.duos || !d.warlords) throw new Error("bad file");
+      d.trees = d.trees || {}; d.bonds = d.bonds || {}; d.meta = d.meta || clone(DEFAULT_DATA.meta);
+      DATA = d; persist("Imported"); renderAll();
+    } catch (err) { toast("Import failed — not a Warlords of Eden file"); }
+  };
+  r.readAsText(file);
+}
+function resetData() {
+  if (!confirm("Discard this browser's edits and go back to the content saved in this HTML file?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  DATA = readBaked() || clone(DEFAULT_DATA); DATA.trees = DATA.trees || {}; DATA.bonds = DATA.bonds || {};
+  renderAll(); toast("Back to the file version");
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+/* ==========================================================================
+   ATMOSPHERE — per-Duo particles (embers, ash, spores, sparks, dust, drips, data)
+   ========================================================================== */
+const FX = (() => {
+  const cv = document.getElementById("fx"), cx = cv.getContext("2d");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const N = reduce ? 0 : 130;
+  let w = 0, h = 0, parts = [], cfg = [], sig = "", raf = 0;
+  const R = (a, b) => a + Math.random() * (b - a);
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    w = innerWidth; h = innerHeight;
+    cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + "px"; cv.style.height = h + "px";
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function make(i, initial) {
+    const c = cfg[i % cfg.length], m = c.mode;
+    const p = { m, c: c.color, t: 0, life: R(320, 900), a: R(.3, .85), s: R(1, 2.6), ph: R(0, 6.28), wait: 0, vx: 0, vy: 0 };
+    switch (m) {
+      case "embers": p.x = R(0, w); p.y = initial ? R(0, h) : h + R(0, 40); p.vx = R(-.2, .2); p.vy = -R(.35, 1.3); break;
+      case "ash": p.x = R(0, w); p.y = initial ? R(0, h) : -R(0, 40); p.vx = R(-.25, .35); p.vy = R(.25, .7); p.a = R(.15, .45); if (Math.random() < .7) p.c = "#bdb5a6"; break;
+      case "spores": p.x = R(0, w); p.y = R(0, h); p.vx = R(-.15, .15); p.vy = R(-.18, .08); p.s = R(1.5, 4.5); p.a = R(.08, .32); break;
+      case "sparks": { p.x = R(0, w); p.y = R(0, h); const an = R(0, 6.28), sp = R(1.5, 4.5); p.vx = Math.cos(an) * sp; p.vy = Math.sin(an) * sp; p.life = R(16, 46); p.s = R(.8, 1.7); p.a = R(.5, 1); p.wait = initial ? R(0, 400) : R(0, 260); break; }
+      case "dust": p.x = initial ? R(0, w) : -R(0, 60); p.y = R(0, h); p.vx = R(.8, 2.6); p.vy = R(-.15, .15); p.a = R(.1, .35); p.s = R(.8, 2); break;
+      case "drip": p.x = R(0, w); p.y = initial ? R(0, h) : -R(0, 80); p.vy = R(.6, 1.6); p.s = R(1, 2); p.len = R(6, 16); p.a = R(.25, .6); break;
+      case "data": p.x = Math.round(R(0, w) / 16) * 16; p.y = initial ? R(0, h) : -R(0, 60); p.vy = R(.4, 1.4); p.s = R(1.5, 3); p.a = R(.15, .5); break;
+    }
+    return p;
+  }
+  function tick() {
+    cx.clearRect(0, 0, w, h);
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
+      if (p.wait > 0) { p.wait--; continue; }
+      p.t++; p.x += p.vx; p.y += p.vy;
+      if (p.m === "embers") p.x += Math.sin(p.t / 40 + p.ph) * .35;
+      if (p.m === "ash") p.x += Math.sin(p.t / 60 + p.ph) * .3;
+      if (p.m === "spores") { p.vx = (p.vx + R(-.02, .02)) * .98; p.vy = (p.vy + R(-.02, .02)) * .98; }
+      if (p.m === "drip") p.vy += .012;
+      if (p.y < -90 || p.y > h + 90 || p.x < -90 || p.x > w + 90 || p.t > p.life) { parts[i] = make(i, false); continue; }
+      const fade = Math.max(0, Math.min(1, p.t / 40, (p.life - p.t) / 40));
+      let al = p.a * fade;
+      cx.globalCompositeOperation = (p.m === "embers" || p.m === "sparks" || p.m === "data") ? "lighter" : "source-over";
+      cx.fillStyle = cx.strokeStyle = p.c;
+      if (p.m === "embers") {
+        al *= .65 + .35 * Math.sin(p.t / 6 + p.ph);
+        cx.globalAlpha = al * .18; cx.beginPath(); cx.arc(p.x, p.y, p.s * 3.2, 0, 6.283); cx.fill();
+        cx.globalAlpha = al; cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, 6.283); cx.fill();
+      } else if (p.m === "sparks") {
+        cx.globalAlpha = al; cx.lineWidth = p.s; cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3); cx.stroke();
+      } else if (p.m === "drip") {
+        cx.globalAlpha = al; cx.lineWidth = p.s; cx.beginPath(); cx.moveTo(p.x, p.y - p.len); cx.lineTo(p.x, p.y); cx.stroke();
+        cx.beginPath(); cx.arc(p.x, p.y, p.s * .9, 0, 6.283); cx.fill();
+      } else if (p.m === "data") {
+        cx.globalAlpha = al * (.6 + .4 * Math.sin(p.t / 4 + p.ph)); cx.fillRect(p.x, p.y, p.s, p.s * 2.4);
+      } else {
+        cx.globalAlpha = al; cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, 6.283); cx.fill();
+      }
+    }
+    cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over";
+    raf = requestAnimationFrame(tick);
+  }
+  resize();
+  addEventListener("resize", () => { resize(); drawLinks(); });
+  document.addEventListener("visibilitychange", () => { cancelAnimationFrame(raf); if (!document.hidden && N) raf = requestAnimationFrame(tick); });
+  return {
+    set(next) {
+      const s = JSON.stringify(next);
+      if (s === sig) return;
+      sig = s; cfg = next;
+      parts = Array.from({ length: N }, (_, i) => make(i, true));
+      if (!raf && N) raf = requestAnimationFrame(tick);
+    }
+  };
+})();
+
+/* ==========================================================================
+   START — reads #warlord1+warlord2/tab from the URL if present
+   ========================================================================== */
+(function init() {
+  const m = decodeURIComponent(location.hash.slice(1)).match(/^([\w]+)\+([\w]+)(?:\/(\w+))?$/);
+  if (m && W(m[1]) && W(m[2])) {
+    const bothHive = m[1] === "hive" && m[2] === "hive";
+    const noHive = m[1] !== "hive" && m[2] !== "hive";
+    if (bothHive || (noHive && m[1] !== m[2])) { state.w1 = m[1]; state.w2 = m[2]; }
+    if (["profile", "skills", "tech", "buildings"].includes(m[3])) state.tab = m[3];
+    if (m[3] === "troops") state.tab = "profile";
+  }
+  IMG.seed(DATA.meta && DATA.meta.pictures);
+  SFX.sync();
+  renderAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawLinks);
+  if (bootNote) toast(bootNote);
+})();
+</script>
+</body>
+</html>

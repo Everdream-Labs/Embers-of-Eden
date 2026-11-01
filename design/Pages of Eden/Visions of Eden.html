@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visions of Eden — Embers of Eden Codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eden-codex.css">
+<style>
+.v-hero{margin:4px auto 18px;max-width:980px}
+.v-intro{max-width:820px;margin:6px auto 0;text-align:center;color:var(--ink);font-size:.98rem}
+.vcard .addrow{text-align:center;margin-top:6px}
+.vlink{color:color-mix(in srgb,var(--tab) 70%,#fff)}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+<div class="app book">
+  <main class="plate center" style="--acc:var(--tab)">
+    <header class="duo-head">
+      <div class="brandrow"><span class="brand"><b>Visions</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
+      <div class="kicker" id="book-kicker">Living overview · not a rules matrix</div>
+      <h1 class="duo-title">Embers of Eden</h1>
+      <div class="motto">Grow the colony. Specialise your people. Kill the other warlords.</div>
+    </header>
+    <nav class="navbar">
+      <div class="side"><button class="btn" id="btn-sound" onclick="SFX.toggleMute()">&#9836; Sound</button></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="side"><button class="btn" id="btn-edit" onclick="toggleEdit()" title="Toggle edit mode">&#9998; Edit</button></div>
+    </nav>
+    <div class="editbar" id="editbar"></div>
+    <div class="views"><section class="view active" id="view"></section></div>
+    <footer class="legend"><span class="dim" id="foot-meta"></span></footer>
+  </main>
+</div>
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal plate" id="modal-box"><button class="x" onclick="closeModal()">&#10005;</button><div class="modal-body" id="modal-body"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="application/json" id="codex-baked">null</script>
+<script>
+const PRISTINE_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+/* ---------- Pictures: Name.jpg, Name1.jpg, Name2.jpg … — click a picture to cycle the shortlist ---------- */
+const IMG = (() => {
+  const EXT = ["jpg", "png", "webp", "jpeg"];
+  const EMB = window.EDEN_IMAGES || null;
+  const KEY = "edenCodex.pictures";
+  const cache = {};
+  let pick = {};
+  try { pick = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  const stemOf = p => String(p || "").replace(/\.(jpe?g|png|webp)$/i, "");
+  const src = p => (EMB && EMB[p]) || encodeURI(p).replace(/#/g, "%23");
+  const probe = p => new Promise(res => {
+    if (EMB) return res(!!EMB[p]);
+    const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = src(p);
+  });
+  async function at(stem, n) { for (const e of EXT) { const p = `${stem}${n || ""}.${e}`; if (await probe(p)) return p; } return null; }
+  function list(stem) {
+    if (!cache[stem]) cache[stem] = (async () => {
+      const out = [], first = await at(stem, 0);
+      if (first) out.push(first);
+      for (let n = 1; n < 40; n++) { const p = await at(stem, n); if (!p) break; out.push(p); }
+      return out;
+    })();
+    return cache[stem];
+  }
+  function badge(img, i, n) {
+    const host = img.parentNode; if (!host) return;
+    let b = host.querySelector(":scope > .pic-count");
+    if (n < 2) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("span"); b.className = "pic-count"; host.appendChild(b); }
+    b.textContent = `${i + 1} / ${n} · click to cycle`;
+  }
+  async function hydrate(img) {
+    if (img.dataset.ready) return;
+    img.dataset.ready = "1";
+    const stem = img.dataset.stem, paths = await list(stem);
+    if (!paths.length) { img.remove(); return; }
+    const i = (pick[stem] || 0) % paths.length;
+    img.onload = () => { if (img.parentNode) img.parentNode.classList.add("has-img"); };
+    img.src = src(paths[i]);
+    if (img.hasAttribute("data-cycle")) badge(img, i, paths.length);
+  }
+  async function cycle(img) {
+    const stem = img.dataset.stem, paths = await list(stem);
+    const file = stem.split("/").pop();
+    if (paths.length < 2) { toast(`Only one picture — add ${file}1.jpg, ${file}2.jpg… to shortlist more`); return; }
+    const i = ((pick[stem] || 0) + 1) % paths.length;
+    pick[stem] = i;
+    try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch (e) {}
+    document.querySelectorAll(`img[data-stem="${CSS.escape(stem)}"]`).forEach(x => { x.src = src(paths[i]); if (x.hasAttribute("data-cycle")) badge(x, i, paths.length); });
+    SFX.play("shutter");
+    toast(`Picture ${i + 1} of ${paths.length} — ${paths[i].split("/").pop()}`);
+  }
+  document.addEventListener("click", e => {
+    const img = e.target.closest && e.target.closest("img[data-cycle]");
+    if (!img) return;
+    e.stopPropagation(); e.preventDefault();
+    cycle(img);
+  }, true);
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches("img[data-stem]")) hydrate(n);
+    n.querySelectorAll("img[data-stem]").forEach(hydrate);
+  }))).observe(document.documentElement, { childList: true, subtree: true });
+  return {
+    tag: (path, cycleIt, alt) => `<img data-stem="${esc(stemOf(path))}"${cycleIt ? " data-cycle" : ""} alt="${esc(alt || "")}">`,
+    hint: path => `add “${path}” — or ${stemOf(path).split("/").pop()}1, 2, 3… to shortlist`,
+    snapshot: () => Object.assign({}, pick),
+    seed: obj => { if (obj) Object.entries(obj).forEach(([k, v]) => { if (!(k in pick)) pick[k] = v; }); }
+  };
+})();
+/* ==========================================================================
+   DATA — mirrors Data/Visions_of_Eden.md (the source of truth). Sync batches
+   from the markdown into here; edit in the page for quick tweaks.
+   ========================================================================== */
+const DEFAULT_DATA = {
+  meta: { dataRev: "factory-2026-11-01", updated: "2026-11-01", source: "Data/Visions_of_Eden.md" },
+  tabs: [
+    { id: "overview", label: "Overview", color: "#d0702f", kicker: "What the game is", title: "Colony-builder RTS",
+      intro: "Embers of Eden is a post-apocalyptic colony-builder RTS. Players expand a survivor colony across large, themed maps, manage population and resources, and ultimately eliminate rival warlords.",
+      art: { path: "Images/Visions/Overview.jpg", icon: "♨", label: "Key art placeholder" },
+      sections: [
+        { h: "Pitch", p: "Draws heavily from Age of Empires while adding deeper colony identity, family / specialisation systems and persistent hero progression.",
+          list: ["Locked isometric camera", "Regicide-style victory", "Map control and tech progression", "Relic-style objectives"] },
+        { h: "Core loop", p: "Grow your colony, specialise your people, expand across the map, and kill the other warlords." },
+        { h: "Core fantasy & tone", list: ["Raw, methodical and often brutal", "Grit baseline 6–7, with peaks to 10", "Tone is delivered mostly through the duo you play: unique buildings, troops, skills, edicts and playstyle", "Dark options (slavery of POWs, forced measures when starving) are mechanical tools, not constant moral dilemmas", "Minimal cutscenes — lore is drip-fed through gameplay, warlord identities and the world"] },
+        { h: "What it is not", list: ["Not a Stardew Valley-style farming sim", "Not cozy survival craft", "Not a narrative adventure — those early concepts are fully superseded"], links: [["See retired ideas", "#retired"]] },
+        { h: "Known open points", list: ["Exact challenge list for unlocking duos", "Full resource list, production chains, and per-duo unique troops / buildings", "Light happiness / population-growth modifier details (if kept)", "Remaining questionnaire sections — maps, resources, combat depth, victory variants", "Final names and trait details for several warlords"] },
+        { h: "The Pages of Eden", p: "Four linked books document every design decision. This one stays broad; the others hold the gameplay detail.",
+          list: ["Warlords of Eden — duos, warlords, skills, tech, buildings", "Arms of Eden — troops, weapons, armour, status effects (filterable by team)", "Resources of Eden — resources, produce, tools & equipment (filterable by team)"],
+          links: [["Warlords of Eden", "Warlords of Eden.html"], ["Arms of Eden", "Arms of Eden.html"], ["Resources of Eden", "Resources of Eden.html"]] }
+      ] },
+    { id: "modes", label: "Modes", color: "#c9a24a", kicker: "Victory & game modes", title: "Regicide first",
+      intro: "Kill the opponent's warlord(s) to win. Every other mode branches from this default.",
+      sections: [
+        { h: "Primary victory", p: "Regicide — kill the opponent's warlord(s). Warlords are champion units that die only for the current match." },
+        { h: "Alternate victories of interest", list: ["% map control", "Wonder / economic victory", "Relic victory", "Survival", "Destroy a key building", "Territory control thresholds"] },
+        { h: "Solo", list: ["Control both warlords of your duo as independent units", "Offline capable", "Speed controls: Pause / ×2 / ×3 / unlockable ×4"] },
+        { h: "Multiplayer", list: ["Individual colonies", "Up to roughly 8–10 players", "No drop-in", "Disconnect → colony goes rogue (defensive NPC) after 30 minutes"] },
+        { h: "Duos", list: ["Two players share one colony", "Each player is locked to one specific warlord for the entire match"] },
+        { h: "Match length & meta", list: ["Target full-map length: 5–10 hours", "Shorter, smaller modes will exist", "Post-match: detailed score screen saved into a personal library of past games"] }
+      ] },
+    { id: "warlords", label: "Warlords", color: "#b07ad6", kicker: "Warlords, duos & mixing", title: "A duo, not a race",
+      intro: "Players don't pick a single race in the classic sense. They play a duo of warlords — with one exception.",
+      art: { path: "Images/Visions/Warlords.jpg", icon: "⚔", label: "Warlord line-up placeholder" },
+      sections: [
+        { h: "Default duo", p: "Survivors — Viktor & Ayla, father and daughter. Vanilla wasteland survivors: broad, new-player friendly, faster progression, minimal penalties. Viktor leans attack, Ayla leans defence." },
+        { h: "Unlocking", list: ["Other duos unlock via challenges: play matches, specific win conditions, milestones", "Examples: “enlist 1000 slaves”, “win as Scientists to unlock Mutants”", "Not pure defeat-to-unlock (Smash Bros style)", "Once unlocked, individual warlords can be freely mixed — except Droids", "Target at launch: roughly 12 duos plus one open slot"] },
+        { h: "Progression (clarified 30 Oct)", list: ["Each warlord has a full personal skill tree and gains XP every game they are played", "Each natural duo has a full specialised tree; both members feed it (~2× rate when the natural pair plays)", "Mixed pair: each warlord still earns personal XP and feeds their own natural duo tree", "Mixed pair also grows a light Warlord–Warlord Bond bar — small passives (e.g. +1% damage together), not a full tree", "Colony tech tree remains per match", "All warlord and duo progression persists on the player profile"] },
+        { h: "Leaders in combat", list: ["Champion-level units that keep full citizen abilities: build, gather, craft, heal", "They only die for the current game", "Strong but killable by a focused group — more vulnerable than an AoE King"] },
+        { h: "Droids exception", p: "The Droids are a single hive-mind warlord (Droid 0001). They never mix with any other warlord and only ever play solo. Their Data Centre replaces the Town Centre as their elimination building." },
+        { h: "Mixed pair rule", p: "Union rule (current default, tweakable item by item): if either warlord's duo can use a weapon, status, troop line, tool or resource, the pair can. Import-only stays import-only unless the other side can produce it. Buildings the pair cannot construct stay locked.",
+          links: [["Preview in Arms of Eden", "Arms of Eden.html"], ["Preview in Resources of Eden", "Resources of Eden.html"]] },
+        { h: "Duo identities at a glance", list: ["1 · Survivors (Viktor & Ayla) — vanilla, trade lean", "2 · The Hunters (Brick & Twig) — stone + wood specialists", "3 · Scientists — plasma, electricity, healing / poison", "4 · Mutants — melee tanks, high food, strong matched harmony", "5 · Afflicted — poison, disease, bleed, psychosis", "6 · Militia — slow, heavily armoured military", "7 · Bloodveil — witchy swamp / forest cult, conversion, bleed, low HP", "8 · Templars — post-apoc religious knights (in review)", "9 · The Pack — primal, strong early game, unique animal troops", "10 · Ashen (Blowtorch & Vesper) — fire, psychology, slavery, trading", "11 · Nomads — mobility, multiple Town Centres, vehicles", "12 · Droids — synthetic hive mind, single warlord, never mixed", "13 · Open slot"],
+          links: [["Open Warlords of Eden", "Warlords of Eden.html"]] }
+      ] },
+    { id: "world", label: "World", color: "#93b85c", kicker: "Map features", title: "Huge, themed, semi-random",
+      intro: "Maps are big on purpose: fewer early clashes, longer economic games, and land you build around.",
+      art: { path: "Images/Visions/World.jpg", icon: "◭", label: "Map concept placeholder" },
+      sections: [
+        { h: "Scale", list: ["Up to roughly 4× a classic Age of Empires Giant map for full 10-player games", "Should feel expansive — other groups are rare to meet early", "Smaller maps supported (preferred for fewer players)", "First prototype will be tiny and simple", "Large size is intentional: less early aggression, longer economic games (5–10 hours)"] },
+        { h: "Generation & biomes", list: ["Semi-random generation around consistent spawn points", "Essential starting resources near every spawn (AoE style)", "Distinct biomes / regions affect what can be grown or built — build to the land's strengths", "No deteriorating fertility", "Each civ has pros and cons in certain biomes (detailed per duo)"] },
+        { h: "Building & territory", list: ["Build nearly anywhere, with soft constraints (some buildings may need foundations)", "Outposts and resource camps are allowed", "Territory = line of sight + land claim around buildings (AoE style)", "Map-control percentage is a possible future victory condition"] },
+        { h: "Terrain", list: ["Swamp / marsh movement penalties for some civs", "Roads and tracks boost movement", "Impassable cliffs", "Fishable water"] },
+        { h: "Neutral tribes", list: ["Range from a campfire and a couple of people up to a small walled outpost", "They do not expand over time", "Trade with, ignore, enslave or destroy them — options and reactions depend on your warlords"] },
+        { h: "Fog & relics", list: ["Standard fog options: fog / discovery / line of sight / see-all", "Relics (religious and historical artifacts) are freshly placed each game — mechanics still open"] }
+      ] },
+    { id: "combat", label: "Combat", color: "#d6573b", kicker: "Combat & military", title: "AoE combat, higher unit value",
+      intro: "Age of Empires-style fighting, but every soldier costs more to equip and to keep fed.",
+      sections: [
+        { h: "Roles & upkeep", list: ["Civilian and military units are separate", "Military units need crafted or bought weapons, armour etc. to train", "Ongoing food + water upkeep for all units — no upfront food cost to produce", "Large idle armies are expensive"] },
+        { h: "Life & death", list: ["Units die at 0 HP — no wounded state for now", "Psychosis is a special alive-but-controlled state", "Healing: AoE Monk-style support units restore HP and can cleanse certain status effects"] },
+        { h: "Army & control", list: ["Army size AoE-like: low hundreds in a large late-game force", "Individual unit value higher than classic AoE", "Simple formations, patrol with waypoints, possible flee command", "Multi-select, control groups and hotkeys"] },
+        { h: "Siege", p: "Siege matters — and not every civ is equally good at it." },
+        { h: "Status effects", list: ["Bleeding — medium damage over time", "Burning — short, intense damage over time", "Poison — long damage over time", "Paralysed — electricity (possibly duo-exclusive)", "Psychosis — temporary conversion, AoE monk-style", "Gated per duo: not every group can inflict every status"], links: [["Status appendix in Arms of Eden", "Arms of Eden.html#all/status"]] },
+        { h: "Damage types", p: "Melee, guns, laser, plasma (Scientists stronger here), explosive, fire and more." }
+      ] },
+    { id: "economy", label: "Economy", color: "#5fb3c4", kicker: "Population & economy", title: "Endzone chains, AoE scale",
+      intro: "Classic RTS population with Endzone-style scrappy buildings and multi-step production chains.",
+      art: { path: "Images/Visions/Economy.jpg", icon: "⚙", label: "Settlement concept placeholder" },
+      sections: [
+        { h: "Population", list: ["Classic RTS scale — up to roughly 500", "Families-as-micromanagement is dropped", "Each new settler costs more and takes longer; optional Radio / TV Broadcast Centre for recruitment", "Military and civilian roles divided (classic AoE)"] },
+        { h: "Look & feel", p: "Endzone influence: scrappy post-apocalyptic buildings that upgrade visually and functionally, multi-step refinement and production chains." },
+        { h: "Resources by era", list: ["Early: Food, Water, Wood, Stone, Silver, Scrap, Cloth, Herbs, Charcoal, Leather, Clay, Salt, Berries, Milk, Eggs, Fish", "Mid: Tin, Copper, Coal, Bricks, Rare Components, Glass, Fertiliser, Medicine, Alcohol, Sulphur, Gunpowder, Paper, Nails, Wire, Mechanical Parts, Smoked / Preserved Food, Tools, Bronze — Gold unlocks here", "Late: Iron, Steel, Electronics, Fuel, Concrete, Special Alloys (some civ-specific), Gems, Jewellery, Gold Ingots → Pure Gold Ingots, Rare Scrap"],
+          links: [["Full trees in Resources of Eden", "Resources of Eden.html"]] },
+        { h: "Material tiers", p: "Stone → Bronze → Iron → Steel → Hardened Steel — for tools, melee weapons and armour." },
+        { h: "Production chains", list: ["Buildings with assigned workers — e.g. Smelter → ingots → Blacksmith / Armourer → weapons, tools, armour", "Building upgrades cost gold + resources + sometimes finished goods, then take time", "Tool quality gates gathering (iron axe = softwood, steel axe = hardwood)", "Mining tiers gated by technology: stone → tin → copper → iron → coal → gold", "Some trees need higher woodworking tech to harvest"] },
+        { h: "Scrap & special alloys", list: ["Scrap: generic wasteland material for construction and crafting, from ruins or dismantling", "Rare Scrap can be sorted from normal Scrap mid / late game", "Special Alloys are civ-limited (Scientists, Militia, etc.) — Hardened Steel, Titanium, Stainless Steel", "Other players may import alloys but not produce them — this encourages trade"] },
+        { h: "Farms & food", list: ["Farms and pastures are a building plus an attached crop or animal; placement and land quality matter", "Cotton → Cloth; Leather is a pasture by-product; Cloth and Leather are distinct and combinable", "Raw eating is possible; a Kitchen combines ingredients into higher-yield meals", "Civ-flavoured animals and recipes — the Pack can use human meat; the Hunters excel at export", "Late foods can give minor bonuses; Droids ignore food entirely", "Food quality tiers (2–3) under consideration"] },
+        { h: "Ages & research", list: ["Advance an age by collecting a checklist of resources", "Each Town Hall / age upgrade needs goods from the previous age plus newer, rarer ones", "Some requirements can be warlord-specific (e.g. Bloodveil sacrifices)", "University-style research buildings with assigned workers unlock most non-standard buildings, upgrades and blueprints"] },
+        { h: "Currency & trade", list: ["Dedicated currency for trade; Silver and Gold are the primary money and slowly rise in price", "Player ↔ player: trade carts (goods or gold)", "Player ↔ neutral tribe: usually goods for goods", "Optional global / off-map market: supply and demand from the match economy plus light world-narrative events", "Enemy / Neutral / Ally treaty system"] },
+        { h: "Other systems", list: ["Per-player global stockpile, even across a spread-out colony", "Happiness as a simple production-bonus scale; entertainment buildings later", "No seasons at launch (~15% chance later)", "True scarcity is late — self-sustaining farms, orchards and tree farms expected by then; mines may get late extensions"] }
+      ] },
+    { id: "retired", label: "Retired", color: "#8a8478", kicker: "Explicitly not the vision anymore", title: "Retired ideas",
+      intro: "Kept visible so superseded concepts don't creep back into design docs or prompts.",
+      sections: [
+        { h: "Dropped", list: ["Stardew Valley-style cozy farming / relationship sim", "Oasis-at-the-base-of-a-volcano as the fixed setting", "Hope / Dread meters", "Heavy narrative campaigns or frequent cutscenes", "Pure defeat-to-unlock (Smash Bros style) for warlords", "Complex Sims-style relationship simulation between warlords", "Small “3–7 families” population management", "Civilians that suit up for combat and then return to civilian jobs"] }
+      ] }
+  ]
+};
+
+/* ==========================================================================
+   APP
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
+const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
+const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["arms", "Arms", "Arms of Eden.html"], ["resources", "Resources", "Resources of Eden.html"]];
+
+const STORE_KEY = "visionsOfEden.v1";
+const state = { tab: "overview", editing: false };
+let DATA = null, fileRev = "factory", reopen = null, quiet = false;
+
+/* ---------- persistence: browser edits + Save into HTML ---------- */
+function readBaked() { try { const t = $("#codex-baked").textContent.trim(); return t && t !== "null" ? JSON.parse(t) : null; } catch (e) { return null; } }
+function boot() {
+  const file = readBaked() || clone(DEFAULT_DATA);
+  fileRev = (file.meta && file.meta.dataRev) || "factory";
+  DATA = file;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.basedOn === fileRev && s.data) { DATA = s.data; return "Loaded your browser edits"; }
+      localStorage.setItem(STORE_KEY + ".archived", raw); localStorage.removeItem(STORE_KEY);
+      return "This file was updated — older browser edits archived";
+    }
+  } catch (e) {}
+  return "";
+}
+function persist(msg) { try { localStorage.setItem(STORE_KEY, JSON.stringify({ basedOn: fileRev, data: DATA })); } catch (e) {} if (msg) toast(msg); }
+async function saveHtml() {
+  const re = /(<script type="application\/json" id="codex-baked">)[\s\S]*?(<\/script>)/;
+  const now = new Date();
+  DATA.meta.dataRev = "save-" + now.toISOString(); DATA.meta.updated = now.toISOString().slice(0, 10); DATA.meta.pictures = IMG.snapshot();
+  const html = PRISTINE_HTML.replace(re, (m, a, b) => a + JSON.stringify(DATA).replace(/</g, "\\u003c") + b);
+  let done = false;
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({ suggestedName: "Visions of Eden.html", types: [{ description: "HTML page", accept: { "text/html": [".html"] } }] });
+      const w = await h.createWritable(); await w.write(html); await w.close(); done = true;
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (!done) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = "Visions of Eden.html"; a.click(); }
+  fileRev = DATA.meta.dataRev; persist(); SFX.play("save");
+  toast(done ? "Saved into the HTML file" : "Downloaded — replace the old HTML with it");
+}
+function exportData() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" })); a.download = "visions-of-eden-data.json"; a.click(); toast("Exported visions-of-eden-data.json"); }
+function importData(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d.tabs) throw 0; DATA = d; persist("Imported"); renderAll(); } catch (e) { toast("Import failed — not a Visions of Eden file"); } };
+  r.readAsText(file);
+}
+function resetData() {
+  if (!confirm("Discard this browser's edits and go back to the content saved in this HTML file?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  DATA = readBaked() || clone(DEFAULT_DATA); renderAll(); toast("Back to the file version");
+}
+
+/* ---------- render ---------- */
+function T() { return DATA.tabs.find(t => t.id === state.tab) || DATA.tabs[0]; }
+function go(id) {
+  if (id === state.tab || !DATA.tabs.some(t => t.id === id)) return;
+  SFX.play("tab", { pitch: 1 + DATA.tabs.findIndex(t => t.id === id) * 0.06 }); state.tab = id; renderAll(); $(".views").scrollTop = 0;
+}
+function linkHTML([label, href]) {
+  if (href.startsWith("#")) return `<button class="xlink" onclick="go('${href.slice(1)}')">${esc(label)}</button>`;
+  return `<a class="xlink out" href="${encodeURI(href).replace(/%23/g, "#")}">${esc(label)}</a>`;
+}
+function renderAll() {
+  const t = T(), ti = DATA.tabs.indexOf(t);
+  document.documentElement.style.setProperty("--tab", t.color);
+  document.documentElement.style.setProperty("--duo-a", t.color);
+  document.documentElement.style.setProperty("--duo-b", "#5a4a3a");
+  $("#codex-nav").innerHTML = BOOKS.map(([id, l, f]) => `<a class="${id === "visions" ? "cur" : ""}" href="${encodeURI(f)}">${l}</a>`).join("");
+  $("#tabs").innerHTML = DATA.tabs.map((x, i) => `<button class="btn ${x.id === t.id ? "active" : ""}" style="--tc:${x.color}" onclick="go('${x.id}')" title="Key ${i + 1}">${esc(x.label)}</button>`).join("");
+  const base = `tabs.${ti}`;
+  const cards = t.sections.map((s, si) => {
+    const sb = `${base}.sections.${si}`;
+    return `<div class="vcard">
+      <h3>${ed(sb + ".h", s.h)}</h3>
+      ${s.p != null ? `<p>${ed(sb + ".p", s.p, true)}</p>` : ""}
+      ${s.list ? `<ul>${s.list.map((li, k) => `<li>${ed(`${sb}.list.${k}`, li, true)}</li>`).join("")}</ul>
+        <div class="addrow edit-only"><button class="mini" onclick="addItem(${ti},${si})">+ Add point</button></div>` : ""}
+      ${s.links ? `<div class="xlinks center-row">${s.links.map(linkHTML).join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+  $("#view").innerHTML = `
+    <div class="tree-head"><div class="kicker">${ed(base + ".kicker", t.kicker)}</div><h2>${ed(base + ".title", t.title)}</h2></div>
+    <p class="v-intro">${ed(base + ".intro", t.intro, true)}</p>
+    ${t.art ? `<div class="v-hero">${art(t.art)}</div>` : ""}
+    <div class="vgrid" style="margin-top:16px">${cards}</div>
+    <div class="center-row edit-only" style="margin-top:16px"><button class="mini" onclick="addSection(${ti})">+ Add section</button></div>`;
+  $("#editbar").innerHTML = `<span>Edit mode — click any dashed text to rewrite it. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+    <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button><button class="mini" onclick="exportData()">Export JSON</button>
+    <button class="mini" onclick="$('#import-file').click()">Import JSON</button><button class="mini" onclick="resetData()">Discard browser edits</button>
+    <input type="file" id="import-file" accept=".json" hidden onchange="importData(this.files[0]);this.value=''">`;
+  $("#foot-meta").textContent = `Source of truth: ${DATA.meta.source} · Updated ${DATA.meta.updated} · Keys 1–${DATA.tabs.length} switch tabs · No team filter on this book`;
+  FX.set([{ mode: "embers", color: t.color }, { mode: "ash", color: "#bdb5a6" }]);
+  try { history.replaceState(null, "", "#" + t.id); } catch (e) {}
+  applyEditable();
+}
+function art(a) {
+  return `<div class="build-art" style="--acc:var(--tab)">${IMG.tag(a.path, true)}<div class="ph"><span class="ico">${esc(a.icon || "◫")}</span><span>${esc(a.label)} — ${esc(IMG.hint(a.path))}</span></div></div>`;
+}
+function addItem(ti, si) { DATA.tabs[ti].sections[si].list.push("New point"); persist("Added"); renderAll(); }
+function addSection(ti) { DATA.tabs[ti].sections.push({ h: "New section", p: "Write here.", list: [] }); persist("Added"); renderAll(); }
+
+/* ---------- edit mode, modal, toast ---------- */
+const PLAIN = (() => { const d = document.createElement("div"); try { d.contentEditable = "plaintext-only"; return d.contentEditable === "plaintext-only"; } catch (e) { return false; } })();
+function applyEditable() { $$("[data-edit]").forEach(el => { if (state.editing) { el.setAttribute("contenteditable", PLAIN ? "plaintext-only" : "true"); el.spellcheck = true; } else el.removeAttribute("contenteditable"); }); }
+function toggleEdit() {
+  state.editing = !state.editing;
+  document.body.classList.toggle("editing", state.editing);
+  $("#btn-edit").classList.toggle("active", state.editing);
+  SFX.play("tab", { pitch: state.editing ? 1.15 : 0.88 });
+  renderAll(); toast(state.editing ? "Edit mode on" : "Edit mode off");
+}
+function closeModal() { const o = $("#modal").classList.contains("open"); $("#modal").classList.remove("open"); if (o) SFX.play("modalClose"); }
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1900); }
+document.addEventListener("focusout", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (!el || !state.editing) return;
+  const v = el.innerText.replace(/\u00a0/g, " ").trim();
+  if (getPath(DATA, el.dataset.edit) === v) return;
+  setPath(DATA, el.dataset.edit, v); persist("Saved");
+  if (/\.(label|color)$/.test(el.dataset.edit)) renderAll();
+});
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest("[data-edit]");
+  if (el && el.isContentEditable) { if (e.key === "Enter" && !el.hasAttribute("data-ml")) { e.preventDefault(); el.blur(); } if (e.key === "Escape") el.blur(); return; }
+  if (e.key === "Escape") return closeModal();
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= DATA.tabs.length) go(DATA.tabs[n - 1].id);
+});
+
+/* ---------- UI sounds — procedural Web Audio with a warm room tone; one mute shared across books ---------- */
+const SFX = (() => {
+  let ctx = null, out = null, muted = false;
+  try { muted = (localStorage.getItem("edenCodex.mute") ?? localStorage.getItem("warlordsOfEden.mute")) === "1"; } catch (e) {}
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function ensure() {
+    if (reduce) return Promise.resolve();
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
+      out = ctx.createGain(); out.gain.value = 0.5;
+      const send = ctx.createGain(), dl = ctx.createDelay(0.5), fb = ctx.createGain(), lp = ctx.createBiquadFilter();
+      send.gain.value = 0.22; dl.delayTime.value = 0.09; fb.gain.value = 0.35; lp.type = "lowpass"; lp.frequency.value = 2200;
+      out.connect(comp); out.connect(send); send.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    return ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
+  }
+  document.addEventListener("pointerdown", () => { ensure(); }, { once: true, passive: true });
+  function env(g, t, peak, atk, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + atk); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function tone(f, t, dur, peak, type, f2) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    o.connect(g); g.connect(out); env(g, t, peak, Math.min(0.01, dur / 4), dur); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function pluck(f, t, dur, peak) { tone(f, t, dur, peak, "triangle"); tone(f * 2.003, t, dur * 0.6, peak * 0.25, "sine"); }
+  function hiss(t, dur, peak, type, f1, f2, q) {
+    const n = Math.ceil(ctx.sampleRate * (dur + 0.05)), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = b; fl.type = type; fl.frequency.setValueAtTime(f1, t);
+    if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    fl.Q.value = q || 1;
+    s.connect(fl); fl.connect(g); g.connect(out); env(g, t, peak, Math.min(0.02, dur / 3), dur); s.start(t); s.stop(t + dur + 0.05);
+  }
+  const KIT = {
+    tab: (t, p) => { hiss(t, 0.035, 0.16, "bandpass", 2400 * p, 0, 5); pluck(587 * p, t + 0.005, 0.12, 0.07); },
+    back: t => { pluck(659, t, 0.12, 0.06); pluck(494, t + 0.07, 0.16, 0.06); hiss(t, 0.12, 0.05, "bandpass", 1200, 500, 2); },
+    modalOpen: t => { hiss(t, 0.22, 0.07, "bandpass", 380, 1700, 1.4); tone(92, t, 0.24, 0.16, "sine", 52); pluck(880, t + 0.06, 0.4, 0.03); },
+    picker: t => { hiss(t, 0.2, 0.06, "bandpass", 500, 1900, 1.4); tone(110, t, 0.2, 0.12, "sine", 62); pluck(740, t + 0.05, 0.3, 0.035); pluck(988, t + 0.11, 0.3, 0.025); },
+    modalClose: t => { hiss(t, 0.14, 0.055, "bandpass", 1500, 420, 1.6); tone(330, t, 0.12, 0.045, "sine", 220); },
+    select: (t, p) => { pluck(523 * p, t, 0.22, 0.08); pluck(784 * p, t + 0.065, 0.3, 0.065); },
+    duoLoad: t => { tone(55, t, 0.7, 0.16, "sine"); tone(82.4, t + 0.02, 0.6, 0.08, "sine"); hiss(t, 0.5, 0.07, "lowpass", 180, 900, 0.7); [330, 415, 494, 659].forEach((f, i) => pluck(f, t + 0.12 + i * 0.07, 0.5, 0.04)); },
+    node: (t, p) => { hiss(t, 0.025, 0.08, "highpass", 3200, 0, 0.8); pluck(740 * p, t, 0.14, 0.055); },
+    toggle: (t, p, on) => { if (on) { pluck(523, t, 0.15, 0.06); pluck(784, t + 0.07, 0.2, 0.06); } else { pluck(784, t, 0.15, 0.05); pluck(523, t + 0.07, 0.2, 0.05); } },
+    save: t => [523, 659, 784, 1047].forEach((f, i) => pluck(f, t + i * 0.08, 0.45, 0.055)),
+    shutter: t => { hiss(t, 0.018, 0.14, "bandpass", 3000, 0, 3); hiss(t + 0.06, 0.022, 0.1, "bandpass", 2200, 0, 3); pluck(1175, t + 0.06, 0.08, 0.025); }
+  };
+  function play(kind, opts) {
+    if (muted || reduce || (typeof quiet !== "undefined" && quiet)) return;
+    const fn = KIT[kind];
+    if (!fn) return;
+    ensure().then(() => { if (ctx) fn(ctx.currentTime + 0.005, (opts && opts.pitch) || 1, !muted); }).catch(() => {});
+  }
+  function sync() {
+    const b = document.getElementById("btn-sound");
+    if (!b) return;
+    b.textContent = muted ? "\u{1F507} Muted" : "\u{266A} Sound";
+    b.classList.toggle("active", !muted);
+    b.title = muted ? "UI sounds off — click to enable" : "UI sounds on — click to mute";
+  }
+  function toggleMute() { muted = !muted; try { localStorage.setItem("edenCodex.mute", muted ? "1" : "0"); } catch (e) {} sync(); if (!muted) play("toggle"); }
+  return { play, toggleMute, sync };
+})();
+
+/* ---------- atmosphere particles ---------- */
+const FX = (() => {
+  const cv = $("#fx"), cx = cv.getContext("2d");
+  const N = (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? 0 : 110;
+  let w = 0, h = 0, parts = [], cfg = [], sig = "", raf = 0;
+  const R = (a, b) => a + Math.random() * (b - a);
+  function resize() { const d = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * d; cv.height = h * d; cv.style.width = w + "px"; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); }
+  function make(i, init) {
+    const c = cfg[i % cfg.length], p = { m: c.mode, c: c.color, t: 0, life: R(320, 900), a: R(.3, .85), s: R(1, 2.6), ph: R(0, 6.28), vx: 0, vy: 0 };
+    if (p.m === "embers") { p.x = R(0, w); p.y = init ? R(0, h) : h + R(0, 40); p.vx = R(-.2, .2); p.vy = -R(.35, 1.3); }
+    else { p.x = R(0, w); p.y = init ? R(0, h) : -R(0, 40); p.vx = R(-.25, .35); p.vy = R(.25, .7); p.a = R(.15, .45); }
+    return p;
+  }
+  function tick() {
+    cx.clearRect(0, 0, w, h);
+    parts.forEach((p, i) => {
+      p.t++; p.x += p.vx + Math.sin(p.t / 45 + p.ph) * .3; p.y += p.vy;
+      if (p.y < -90 || p.y > h + 90 || p.x < -90 || p.x > w + 90 || p.t > p.life) { parts[i] = make(i, false); return; }
+      const fade = Math.max(0, Math.min(1, p.t / 40, (p.life - p.t) / 40)); let al = p.a * fade;
+      cx.globalCompositeOperation = p.m === "embers" ? "lighter" : "source-over"; cx.fillStyle = p.c;
+      if (p.m === "embers") { al *= .65 + .35 * Math.sin(p.t / 6 + p.ph); cx.globalAlpha = al * .18; cx.beginPath(); cx.arc(p.x, p.y, p.s * 3.2, 0, 6.283); cx.fill(); }
+      cx.globalAlpha = al; cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, 6.283); cx.fill();
+    });
+    cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over"; raf = requestAnimationFrame(tick);
+  }
+  resize(); addEventListener("resize", resize);
+  return { set(next) { const s = JSON.stringify(next); if (s === sig) return; sig = s; cfg = next; parts = Array.from({ length: N }, (_, i) => make(i, true)); if (!raf && N) raf = requestAnimationFrame(tick); } };
+})();
+
+(function init() {
+  const note = boot();
+  IMG.seed(DATA.meta && DATA.meta.pictures);
+  const h = location.hash.slice(1);
+  if (DATA.tabs.some(t => t.id === h)) state.tab = h;
+  SFX.sync(); renderAll();
+  if (note) toast(note);
+})();
+</script>
+</body>
+</html>
