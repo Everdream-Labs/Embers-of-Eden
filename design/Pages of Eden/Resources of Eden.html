@@ -46,6 +46,16 @@
 .glance .xlink{font-size:.6rem;padding:2px 7px}
 @media (max-width:1180px){.tb-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.tb-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.goods{margin:0 auto 18px;max-width:1100px;text-align:center}
+.goods .kicker{margin-bottom:4px}
+.goods-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:12px}
+.goods-card{display:block;width:100%;padding:0 0 8px;background:rgba(0,0,0,.28);border:1px solid var(--line-2);color:var(--ink);cursor:pointer;text-align:center}
+.goods-card span{display:block;margin-top:6px;font-family:var(--font-head);letter-spacing:.1em;text-transform:uppercase;font-size:.68rem}
+.goods-card .shot{position:relative;aspect-ratio:1/1;overflow:hidden;background:#14110e}
+.goods-card img{width:100%;height:100%;object-fit:cover}
+.goods-view{display:block;width:min(480px,100%);margin:8px auto 0}
+@media (max-width:900px){.goods-grid{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:560px){.goods-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -501,6 +511,22 @@ const openFn = r => (r.kind === "node" ? `openNode('${r.item.id}')` : `openEquip
    TREE CANVAS
    ========================================================================== */
 const GEO = { head: 44, colW: 172, rowH: 140, nodeW: 144, nodeH: 100 };
+const GOODS = [
+  ["Wood", "Images/Resources/Wood.jpg"], ["Planks", "Images/Resources/Planks.jpg"], ["Stone", "Images/Resources/Stone.jpg"],
+  ["Bricks", "Images/Resources/Bricks.jpg"], ["Scrap", "Images/Resources/Scrap.jpg"], ["Nails", "Images/Resources/Nails.jpg"], ["Coal", "Images/Resources/Coal.jpg"],
+  ["Copper", "Images/Resources/Copper.jpg"], ["Tin", "Images/Resources/Tin.jpg"], ["Bronze", "Images/Resources/Bronze.jpg"],
+  ["Iron Ore", "Images/Resources/Iron Ore.jpg"], ["Iron Ingots", "Images/Resources/Iron Ingots.jpg"], ["Steel", "Images/Resources/Steel.jpg"], ["Sulphur", "Images/Resources/Sulphur.jpg"],
+  ["Gunpowder", "Images/Resources/Gunpowder.jpg"], ["Salt", "Images/Resources/Salt.jpg"], ["Water", "Images/Resources/Water.jpg"],
+  ["Silver Coin", "Images/Resources/Silver Coin.jpg"], ["Gold Coin", "Images/Resources/Gold Coin.jpg"], ["Gold Bars", "Images/Resources/Gold Bars.jpg"], ["Gems", "Images/Resources/Gems.jpg"],
+  ["Grain", "Images/Resources/Grain.jpg"], ["Bread", "Images/Resources/Bread.jpg"], ["Berries", "Images/Resources/Berries.jpg"], ["Fish", "Images/Resources/Fish.jpg"],
+  ["Meat", "Images/Resources/Meat.jpg"], ["Smoked Food", "Images/Resources/Smoked Food.jpg"], ["Herbs", "Images/Resources/Herbs.jpg"],
+  ["Leather", "Images/Resources/Leather.jpg"], ["Cloth", "Images/Resources/Cloth.jpg"],
+  ["Stone Axe", "Images/Resources/Stone Axe.jpg"], ["Iron Axe", "Images/Resources/Iron Axe.jpg"], ["Stone Pick", "Images/Resources/Stone Pick.jpg"], ["Iron Pick", "Images/Resources/Iron Pick.jpg"], ["Scrap Knife", "Images/Resources/Scrap Knife.jpg"],
+  ["Charcoal", "Images/Resources/Charcoal.jpg"], ["Glass", "Images/Resources/Glass.jpg"], ["Fuel", "Images/Resources/Fuel.jpg"], ["Alcohol", "Images/Resources/Alcohol.jpg"], ["Rubies", "Images/Resources/Rubies.jpg"],
+  ["Charge Cell", "Images/Resources/Charge Cell.jpg"], ["Droid Plating", "Images/Resources/Droid Plating.jpg"], ["Repair Kit", "Images/Resources/Repair Kit.jpg"],
+  ["Mechanical Parts", "Images/Resources/Mechanical Parts.jpg"], ["Wire", "Images/Resources/Wire.jpg"], ["Electronics", "Images/Resources/Electronics.jpg"],
+  ["Rare Scrap", "Images/Resources/Rare Scrap.jpg"], ["Rare Components", "Images/Resources/Rare Components.jpg"], ["Laser Components", "Images/Resources/Laser Components.jpg"]
+];
 function tileActs(editJs, forkJs, removeJs) {
   return `<div class="tile-acts">
     <button type="button" class="tile-act fork" title="Add a connected tile in the row below" aria-label="Add a connected tile below" onclick="event.stopPropagation();${forkJs}">+</button>
@@ -637,6 +663,7 @@ function renderAll() {
   let body = `<div class="tree-head"><div class="kicker">${t.id === "tools" ? "Material tiers I – V · Early → Late" : "Top to bottom: gathered → refined → advanced"}</div><h2>${esc(t.label)}</h2>
     <p>${ed(`tabs.${ti}.intro`, t.intro, true)}</p></div>
     ${note}${glanceHTML(t.id)}
+    ${t.id === "resources" ? goodsHTML() : ""}
     <p class="foot" style="text-align:center;margin:0 0 10px">Hover a node to trace everything it comes from and leads to · drag the background to pan · click a tile for details. Turn on Edit for the buttons on each tile.</p>
     ${treeHTML(t.id)}`;
   if (t.id === "tools") {
@@ -786,6 +813,13 @@ function removeEquip(id) {
 function toggleLock(obj) { obj.locked = !obj.locked; persist(obj.locked ? "Marked locked" : "Marked placeholder"); refresh(); }
 
 /* ---------- modal, edit mode, toast ---------- */
+function goodsHTML() {
+  const cards = GOODS.map(([name, path]) => `<button class="goods-card" onclick="showGood('${name}','${path}')"><div class="shot">${IMG.tag(path, false, name)}</div><span>${esc(name)}</span></button>`).join("");
+  return `<div class="goods"><div class="kicker">Stockpile</div><p class="foot">The common goods every colony tracks, plus food, leather, cloth, the first tools, the furnace goods the Ashen run hottest, and the charge, plating and parts the Droids live on. Planks are the sawpit boards — not their own tile yet. Iron ore and iron ingots share the one Iron tile. Silver and gold coins are the two currencies.</p><div class="goods-grid">${cards}</div></div>`;
+}
+function showGood(name, path) {
+  openModal(`<h3 class="m-title" style="text-align:center">${esc(name)}</h3><img class="goods-view" alt="${esc(name)}" src="${encodeURI(path)}">`);
+}
 function openModal(html) {
   if (!quiet) SFX.play("modalOpen");
   const b = $("#modal-body"), keep = quiet ? b.scrollTop : 0;

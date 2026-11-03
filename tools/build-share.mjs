@@ -25,7 +25,7 @@ const zip = path.join(root, "dist", `${name}.zip`);
 
 const BOOKS = {
   "Visions of Eden.html": ["Visions", "Warlords", "Flags", "Logos"],
-  "Warlords of Eden.html": ["Warlords", "Buildings", "Flags", "Logos"],
+  "Warlords of Eden.html": ["Warlords", "Buildings", "Flags", "Logos", "Wastelanders", "Hunters", "Militia", "Ashen", "Droids"],
   "Resources of Eden.html": ["Resources", "Produce", "Tools", "Weapons", "Armour", "Warlords"],
   "Maps of Eden.html": ["Maps"]
 };

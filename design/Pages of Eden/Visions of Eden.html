@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="eden-codex.css">
 <style>
 .v-hero{margin:4px auto 18px;max-width:980px}
+.v-hero .build-art{height:auto;aspect-ratio:16/9}
+.v-hero .build-art img{object-position:center}
 .v-intro{max-width:820px;margin:6px auto 0;text-align:center;color:var(--ink);font-size:.98rem}
 .vcard .addrow{text-align:center;margin-top:6px}
 .vlink{color:color-mix(in srgb,var(--tab) 70%,#fff)}
@@ -139,12 +141,12 @@ const IMG = (() => {
    from the markdown into here; edit in the page for quick tweaks.
    ========================================================================== */
 const DEFAULT_DATA = {
-  meta: { dataRev: "factory-2026-11-03-colony", updated: "2026-11-03", source: "Data/Visions_of_Eden.md" },
+  meta: { dataRev: "titles-2026-11-04", updated: "2026-11-04", source: "Data/Visions_of_Eden.md" },
   tabs: [
     /* ---------------------------------------------------------------- OVERVIEW */
     { id: "overview", label: "Overview", color: "#d0702f", kicker: "What the game is", title: "Colony survival city-builder",
       intro: "Embers of Eden is a post-apocalyptic, isometric city-builder and colony survival game. Grow a specialised survivor colony, master deep multi-step resource chains, and keep the settlement alive through environmental crises. It is not an Age of Empires-style RTS.",
-      art: { path: "Images/Visions/Overview.jpg", icon: "♨", label: "Key art placeholder" },
+      art: { path: "Images/Visions/Title.jpg", icon: "♨", label: "Title art — click to switch" },
       sections: [
         { h: "Status & phase", list: ["This is the locked direction — the codex and every other design file follow Visions_of_Eden.md, not the other way around", "Phase: still conceptualising everything before deciding what to build first", "No vertical slice or Early Access scope chosen yet"] },
         { h: "What it is", list: ["A city-builder / colony survival game with a specialised survivor colony", "Deep multi-step resource chains are the heart of the game", "Environmental crises are the main source of tension", "Combat is only a light, secondary placeholder — shelved until later", "No traditional “win”: like Timberborn, you build and endure — unless the colony fails"],
@@ -413,7 +415,7 @@ function renderAll() {
   applyEditable();
 }
 function art(a) {
-  return `<div class="build-art" style="--acc:var(--tab)">${IMG.tag(a.path, true)}<div class="ph"><span class="ico">${esc(a.icon || "◫")}</span><span>${esc(a.label)} — ${esc(IMG.hint(a.path))}</span></div></div>`;
+  return `<div class="build-art" style="--acc:var(--tab)">${IMG.tag(a.path, true, "Embers of Eden")}<div class="ph"><span class="ico">${esc(a.icon || "◫")}</span><span>${esc(a.label)} — ${esc(IMG.hint(a.path))}</span></div></div>`;
 }
 /* Card fields: h, tag, color (team accent), pics, p, list, table {cols, rows, rowColors}, links, wide */
 function card(s, sb, ti, si) {

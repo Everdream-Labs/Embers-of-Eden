@@ -188,6 +188,21 @@ body.editing .addbranch{display:flex}
 .m-row{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px;text-align:center;font-size:.85rem;color:var(--ink-dim)}
 
 @media (max-width:1180px){.glance{grid-template-columns:1fr 1fr}.how{grid-template-columns:1fr}.head-face{display:none}}
+.colony-flag{display:flex;justify-content:center;margin:12px auto 0;width:min(520px,82%)}
+.colony-flag:empty{display:none}
+.colony-flag .cloth{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#14110e;border:1px solid var(--line-2);box-shadow:0 14px 30px -20px #000}
+.colony-flag img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.folk{margin:0 auto 16px;max-width:980px;text-align:center}
+.folk .kicker{margin-bottom:4px}
+.folk-bar{display:flex;justify-content:center;gap:8px;margin:10px 0 14px}
+.folk-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.folk-grid.four{grid-template-columns:repeat(4,1fr)}
+.folk-card{display:block;width:100%;padding:0 0 10px;background:rgba(0,0,0,.28);border:1px solid var(--line-2);color:var(--ink);cursor:pointer;text-align:center}
+.folk-card span{display:block;margin-top:8px;font-family:var(--font-head);letter-spacing:.12em;text-transform:uppercase;font-size:.72rem}
+.folk-card .shot{position:relative;aspect-ratio:3/4;overflow:hidden;background:#14110e}
+.folk-card img{width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.folk-view{display:block;width:min(440px,100%);margin:8px auto 0}
+@media (max-width:760px){.folk-grid,.folk-grid.four{grid-template-columns:repeat(2,1fr)}}
 .sysgrid{grid-template-columns:repeat(3,1fr)}
 @media (max-width:1100px){.sysgrid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:760px){.ov-two,.wpics,.sysgrid{grid-template-columns:1fr}.cov,.disp,.disp-scale{grid-template-columns:110px 1fr 70px}}
@@ -212,6 +227,7 @@ body.editing .addbranch{display:flex}
       <h1 class="duo-title" id="duo-title"></h1>
       <div class="duo-sub" id="duo-sub"></div>
       <div class="motto" id="duo-motto"></div>
+      <div class="colony-flag" id="colony-flag"></div>
     </header>
 
     <nav class="teambar" id="teambar"></nav>
@@ -461,10 +477,10 @@ const DEFAULT_DATA = {
     twig: { id: "twig", name: "Twig", epithet: "The Woodsman", color: "#6faa45", colorName: "Moss Green", portrait: "Images/Warlords/Twig.jpg", named: true,
       personality: "Patient and grounded. Knows every tree worth cutting and every one worth leaving, rides the range and never misses a shot.",
       lean: "Timber, ranching, the hunt", tags: ["Timber", "Ranching", "Marksman"] },
-    militia1: { id: "militia1", name: "Militia Brother", epithet: "Name TBD", color: "#7f94a6", colorName: "Gun-Metal Blue", portrait: null, named: false,
+    militia1: { id: "militia1", name: "Militia Brother", epithet: "Name TBD", color: "#7f94a6", colorName: "Gun-Metal Blue", portrait: "Images/Warlords/Militia Brother.jpg", named: false,
       personality: "The quartermaster. Runs the factory floor like a supply depot — quotas, shifts, steel. Placeholder until names and faces lock.",
       lean: "Industry, quotas, logistics", tags: ["Brother", "Industry", "Placeholder"] },
-    militia2: { id: "militia2", name: "Militia Sister", epithet: "Name TBD", color: "#c9a24a", colorName: "Brass", portrait: null, named: false,
+    militia2: { id: "militia2", name: "Militia Sister", epithet: "Name TBD", color: "#c9a24a", colorName: "Brass", portrait: "Images/Warlords/Militia Sister.jpg", named: false,
       personality: "The engineer. Keeps the turbines turning and the plasma lines stable. Colder than her brother, and better at it. Placeholder.",
       lean: "Power, plasma, machines", tags: ["Sister", "Power", "Plasma"] },
     blowtorch: { id: "blowtorch", name: "Blowtorch", epithet: "The Artist of Fire", color: "#ffb02e", colorName: "Flame Gold", portrait: "Images/Warlords/Blowtorch.jpg", named: true,
@@ -484,13 +500,13 @@ const DEFAULT_DATA = {
       personality: "Hits first, thinks later — if at all." },
     bash: { id: "bash", name: "Bash", epithet: "Twin of Smash", color: "#d9a23a", portrait: "Images/Warlords/Bash.jpg", named: true,
       personality: "Slower temper, harder to stop once angered." },
-    afflicted1: { id: "afflicted1", name: "Afflicted I", epithet: "Name TBD", color: "#a8e04a", portrait: null, named: false,
+    afflicted1: { id: "afflicted1", name: "Afflicted I", epithet: "Name TBD", color: "#a8e04a", portrait: "Images/Warlords/Afflicted I.jpg", named: false,
       personality: "Hazmat-clad half of the couple. Irradiated ground feels like home." },
-    afflicted2: { id: "afflicted2", name: "Afflicted II", epithet: "Name TBD", color: "#4fb39a", portrait: null, named: false,
+    afflicted2: { id: "afflicted2", name: "Afflicted II", epithet: "Name TBD", color: "#4fb39a", portrait: "Images/Warlords/Afflicted II.jpg", named: false,
       personality: "The other half. Disease and rot are tools, not threats." },
-    pack1: { id: "pack1", name: "Pack Cousin I", epithet: "Name TBD", color: "#b0412e", portrait: null, named: false,
+    pack1: { id: "pack1", name: "Pack Cousin I", epithet: "Name TBD", color: "#b0412e", portrait: "Images/Warlords/Pack Cousin I.jpg", named: false,
       personality: "Comedic surface, cannibal core. Not siblings — they correct anyone who says otherwise." },
-    pack2: { id: "pack2", name: "Pack Cousin II", epithet: "Name TBD", color: "#d8c08a", portrait: null, named: false,
+    pack2: { id: "pack2", name: "Pack Cousin II", epithet: "Name TBD", color: "#d8c08a", portrait: "Images/Warlords/Pack Cousin II.jpg", named: false,
       personality: "The one the beasts answer to. Breeds anything, including wild map animals." }
   },
 
@@ -878,7 +894,48 @@ async function saveHtml() {
 }
 
 const PAGES = [...TEAM_IDS, "wastes", "player", "buildings"];
-const state = { page: "survivors", tab: "overview", editing: false, onlyMine: false, bFilter: "all" };
+const state = { page: "survivors", tab: "overview", editing: false, onlyMine: false, bFilter: "all", crew: "women" };
+const CREW = {
+  survivors: {
+    kicker: "Wastelanders",
+    blurb: "Generic faces for the people Viktor and Ayla meet on the road. Not a playable team.",
+    women: [["Trader", "Images/Wastelanders/Trader.jpg"], ["Bandit", "Images/Wastelanders/Bandit.jpg"], ["Herbalist", "Images/Wastelanders/Herbalist.jpg"], ["Scrapper", "Images/Wastelanders/Scrapper.jpg"]],
+    men: [["Scavenger", "Images/Wastelanders/Scavenger.jpg"], ["Refugee", "Images/Wastelanders/Refugee.jpg"], ["Hauler", "Images/Wastelanders/Hauler.jpg"], ["Watchman", "Images/Wastelanders/Watchman.jpg"]]
+  },
+  hunters: {
+    kicker: "Timberhold hands",
+    blurb: "Settlers who belong to the Hunters. Five women, five men — not warlords.",
+    women: [["Forester", "Images/Hunters/Forester.jpg"], ["Herder", "Images/Hunters/Herder.jpg"], ["Tanner", "Images/Hunters/Tanner.jpg"], ["Smokehand", "Images/Hunters/Smokehand.jpg"], ["Tracker", "Images/Hunters/Tracker.jpg"]],
+    men: [["Woodcutter", "Images/Hunters/Woodcutter.jpg"], ["Quarry Hand", "Images/Hunters/Quarry Hand.jpg"], ["Rancher", "Images/Hunters/Rancher.jpg"], ["Trapper", "Images/Hunters/Trapper.jpg"], ["Range Scout", "Images/Hunters/Range Scout.jpg"]]
+  },
+  militia: {
+    kicker: "Fort Hollow shift",
+    blurb: "Settlers who belong to the Militia. Five women, five men — not the brother and sister.",
+    women: [["Welder", "Images/Militia/Welder.jpg"], ["Roster Clerk", "Images/Militia/Roster Clerk.jpg"], ["Glasshouse Hand", "Images/Militia/Glasshouse Hand.jpg"], ["Foundry Lead", "Images/Militia/Foundry Lead.jpg"], ["Grid Tech", "Images/Militia/Grid Tech.jpg"]],
+    men: [["Smelter", "Images/Militia/Smelter.jpg"], ["Machinist", "Images/Militia/Machinist.jpg"], ["Shift Guard", "Images/Militia/Shift Guard.jpg"], ["Turbine Hand", "Images/Militia/Turbine Hand.jpg"], ["Yard Hauler", "Images/Militia/Yard Hauler.jpg"]]
+  },
+  ashen: {
+    kicker: "Cinder crew",
+    blurb: "Raiders who belong to the Ashen. Kohl, piercings, and a mean streak — not Blowtorch and Vesper.",
+    women: [["Char Burner", "Images/Ashen/Char Burner.jpg"], ["Ruby Sorter", "Images/Ashen/Ruby Sorter.jpg"], ["Ash Raider", "Images/Ashen/Ash Raider.jpg"]],
+    men: [["Slag Hand", "Images/Ashen/Slag Hand.jpg"], ["Night Broker", "Images/Ashen/Night Broker.jpg"]]
+  },
+  droids: {
+    kicker: "The hive",
+    blurb: "Eight shells and the one mind. Droid 0001 is the face. The others are built to work.",
+    shells: [
+      ["Droid 0001", "Images/Droids/Droid 0001.jpg"],
+      ["Hauler Shell", "Images/Droids/Hauler Shell.jpg"],
+      ["Builder Shell", "Images/Droids/Builder Shell.jpg"],
+      ["Miner Shell", "Images/Droids/Miner Shell.jpg"],
+      ["Grid Shell", "Images/Droids/Grid Shell.jpg"],
+      ["Sorter Shell", "Images/Droids/Sorter Shell.jpg"],
+      ["Cradle Shell", "Images/Droids/Cradle Shell.jpg"],
+      ["Scout Shell", "Images/Droids/Scout Shell.jpg"],
+      ["Fabricator Shell", "Images/Droids/Fabricator Shell.jpg"]
+    ]
+  }
+};
 const SIM = {};
 const navHistory = [];
 let reopen = null, lastKey = "";
@@ -1093,6 +1150,8 @@ function renderHeader() {
   $("#duo-sub").innerHTML = sub;
   $("#duo-motto").innerHTML = motto;
   $("#head-faces").innerHTML = faces;
+  const flagName = { survivors: "Survivors", hunters: "Hunters", militia: "Militia", ashen: "Ashen", droids: "Droids" }[p];
+  $("#colony-flag").innerHTML = flagName ? `<div class="cloth">${IMG.tag(`Images/Flags/${flagName} Colony Flag.jpg`, true, flagName + " colony flag")}</div>` : "";
   const team = isTeam(p) ? p : null;
   if (team) try { localStorage.setItem("edenCodex.team", team); } catch (e) {}
   $("#codex-nav").innerHTML = [["Visions", "Visions of Eden.html", ""], ["Warlords", "", ""], ["Resources", "Resources of Eden.html", team ? "#" + team : ""], ["Maps", "Maps of Eden.html", team ? "#map/" + team : "#forge"]]
@@ -1251,6 +1310,7 @@ function overviewHTML(id) {
   const wastes = DATA.wastes.order.map(f => DATA.wastes.factions[f]);
   return `<div class="ov">
     <p class="ov-pitch">${ed(base + ".playstyle", t.playstyle, true)}</p>
+    ${crewHTML(id)}
     <div class="glance">
       <div class="gl"><span>Master tree access</span><b>${c.pct}%</b><small>${c.taken} of ${c.core} core nodes</small></div>
       <div class="gl"><span>Peaks at 100%</span><b>${peaks.length ? peaks.length : "None"}</b><small>${esc(peaks.join(" · ") || "Even spread — ~80% everywhere")}</small></div>
@@ -1299,6 +1359,18 @@ function overviewHTML(id) {
     <div class="card"><h3>Open questions</h3><ul class="openq">${listEdit(base + ".open", t.open, "")}</ul></div>
     <p class="foot" style="text-align:center">${esc(DATA.meta.teamNote)}</p>
   </div>`;
+}
+function crewHTML(id) {
+  const pack = CREW[id];
+  if (!pack) return "";
+  const who = pack.shells || pack[state.crew] || pack.women;
+  const bar = pack.shells ? "" : `<div class="folk-bar">${[["women", "Women"], ["men", "Men"]].map(([k, label]) => `<button class="btn ${state.crew === k ? "active" : ""}" onclick="setCrew('${k}')">${label}</button>`).join("")}</div>`;
+  const cards = who.map(([name, path]) => `<button class="folk-card" onclick="showCrew('${name}','${path}')"><div class="shot">${IMG.tag(path, false, name)}</div><span>${esc(name)}</span></button>`).join("");
+  return `<div class="folk"><div class="kicker">${esc(pack.kicker)}</div><p class="foot">${esc(pack.blurb)}</p>${bar}<div class="folk-grid${who.length > 4 ? "" : " four"}">${cards}</div></div>`;
+}
+function setCrew(id) { state.crew = id; SFX.play("tab"); renderAll(); }
+function showCrew(name, path) {
+  openModal(`<h3 class="m-title" style="text-align:center">${esc(name)}</h3><img class="folk-view" alt="${esc(name)}" src="${encodeURI(path)}">`);
 }
 function previewColour(path, value) { setPath(DATA, path, value); applyTheme(); }
 function saveColour(path, value) { setPath(DATA, path, value); persist("Colour saved"); renderAll(); }
