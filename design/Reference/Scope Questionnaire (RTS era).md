@@ -1,7 +1,11 @@
-# Embers of Eden — Scope Questionnaire
+# Embers of Eden — Scope Questionnaire (RTS era — archived)
+
+> **Archived 3 November 2026.** This questionnaire was written for the RTS version of the game. Embers of Eden is now a city-builder; the decisions that replaced it live in `design/Pages of Eden/Data/Visions_of_Eden.md`. Kept for reference only — do not answer it.
 **Purpose:** close every remaining gap so the game has a full scope.
 **Compiled:** 1 November 2026, after the Visions / Warlords / Arms / Resources pass.
 **How to use:** answer under each question (Brett + Axel). Delete the suggestion once decided, or write "Yes, as suggested". Answers flow into `design/Pages of Eden/Data/*.md`, then into the HTML books.
+
+**Companion:** names, faces, faction fantasy and how each Warlord reads as a person are in `Warlord Character Questionnaire.md` (same folder). Do not answer them here.
 
 **Priority tags**
 - **P1** — needed before the first playable prototype
@@ -121,83 +125,49 @@ Answer:
 
 ---
 
-## 4. Warlords & Duos — roster gaps
+## 4. Warlords & Duos — roster mechanics
 
-**4.1 — Names still missing** `P1`
-Afflicted pair, Pack cousins, Bloodveil sisters, Templar brothers, Nomad mother & son, Militia siblings, and Dr. Something's real name.
-> Suggestion: give each a working name now (even if it changes) — art briefs and voice lines need them.
+Names, the Bloodveil faction name, Afflicted / Militia / Templar fantasy, Smash and Bash's silhouette, and the portrait style now live in `Warlord Character Questionnaire.md`. This section is the systems those people sit on.
 
-Answer:
-
-**4.2 — Bloodveil faction name** `P2`
-Keep "Bloodveil" or rename?
-> Suggestion alternatives: The Veil, Crimson Coven, The Weeping Sisters, Thornblood.
-
-Answer:
-
-**4.3 — Afflicted fantasy lock** `P1`
-Defensive survivors who weaponised sickness, or a plague cult that worships it?
-> Suggestion: survivors — a couple who adapted to the dead zones. It keeps them sympathetic and separates them from Bloodveil's cult.
-
-Answer:
-
-**4.4 — Militia identity** `P1`
-What makes the Militia unique beyond heavy armour?
-> Suggestion: *the last army* — drilled formations, fortifications and heavy firearms; strongest siege and static defence; weakest economy flexibility.
-
-Answer:
-
-**4.5 — Templars direction** `P1`
-Holy melee knights or faith-and-firearms? How do they avoid overlapping Mutants (melee) and Militia (guns)?
-> Suggestion: *faith engine* — morale, healing aura, relic bonuses and holy fire; average weapons. Their power comes from relics and buildings, not raw stats.
-
-Answer:
-
-**4.6 — Personal traits** `P1`
+**4.1 — Personal traits** `P1`
 Each Warlord needs one Troop trait, one Technology trait and one Passive trait. None are locked. Who drafts them?
 > Suggestion: draft all 23 Warlords in one session using the Warlords of Eden "Personal Traits" slots, then balance in pairs.
 
 Answer:
 
-**4.7 — Signature troops / buildings** `P1`
+**4.2 — Signature troops / buildings** `P1`
 The codex now proposes a signature for every Warlord (e.g. Viktor → Wasteland Raider, Mixy → Field Infirmary). Keep, change or swap troop ↔ building?
 
 Answer:
 
-**4.8 — Duo unique buildings** `P2`
+**4.3 — Duo unique buildings** `P2`
 Each Duo also has a unique building (Barter Post, Hunting Lodge …). Keep both systems (Duo building + Warlord signature), or merge them?
 > Suggestion: keep both — the Duo building is the economic identity, the signature is personal flavour.
 
 Answer:
 
-**4.9 — Open slot (Duo 13)** `P3`
+**4.4 — Open slot (Duo 13)** `P3`
 What goes in the reserved slot?
 > Suggestion ideas: *The Drowned* (coastal salvagers with boats), *The Choir* (radio-tower cult that broadcasts propaganda), *The Herd* (nomadic beast-riders).
 
 Answer:
 
-**4.10 — Mutants twin identity** `P2`
-Same model for Smash and Bash — how do players tell them apart? (Colour accent, scars, weapon, posture.)
-> Suggestion: Smash = red accent + bare-knuckle; Bash = amber accent + slab shield. Same body, different silhouette props.
-
-Answer:
-
-**4.11 — Droid chassis list** `P2`
+**4.5 — Droid chassis list** `P2`
 Light and Heavy chassis exist. What else? (Scout, Siege, Worker, Medic-repair?)
 
 Answer:
 
-**4.12 — Nomad vehicles** `P2`
+**4.6 — Nomad vehicles** `P2`
 How many vehicle types, what do they cost (Fuel?), and can other Duos capture or use them?
 
 Answer:
 
-**4.13 — Pack animal roster** `P2`
+**4.7 — Pack animal roster** `P2`
 Dogs, Vultures, Lions, Bears, Elephants, Hippos + any map animal. Which are bred vs tamed vs captured? Population cost per animal?
 
 Answer:
 
-**4.14 — Biome strengths per Duo** `P2`
+**4.8 — Biome strengths per Duo** `P2`
 Visions says each civ has biome pros/cons. List them.
 > Suggestion: Bloodveil + swamp, Nomads + desert, Hunters + forest, Afflicted + toxic zones, Droids − swamp.
 
@@ -607,9 +577,9 @@ Answer:
 
 Answer:
 
-**16.2 — Visual briefs** `P1`
-Image-generation briefs for every Warlord, Duo flag, logo, signature troop and building. Who writes them?
-> Suggestion: one brief template per subject (silhouette, palette from the codex, props, mood, 3 reference images). Shortlist with the Name1/Name2/Name3 picture system.
+**16.2 — Visual briefs (troops, buildings, flags)** `P1`
+Warlord names and portraits are decided in the Warlord Character Questionnaire, then turned into image prompts from Viktor and Ayla. This question is everything else: signature troops, buildings, logos and flags. Who writes those briefs?
+> Suggestion: one brief template per subject (silhouette, palette from the codex, props, mood, 3 reference images). Shortlist with the Name1/Name2/Name3 picture system. Logos before flags, Survivors first.
 
 Answer:
 
@@ -674,12 +644,6 @@ Answer:
 **16.7 — Sprite pipeline** `P2`
 In-game sprites: how many facing directions (4 / 8), frames per animation, resolution, and tool (the repo already has Aseprite files)? Portrait → sprite consistency?
 > Suggestion: 8 directions, 64–96 px units rendered from 3D or painted in Aseprite; every sprite sheet lives in `game/assets/` with its shortlist concept art in the codex `Images/` folders.
-
-Answer:
-
-**16.8 — Portrait style lock** `P2`
-Viktor and Ayla set a painted, grim portrait style. Lock that style for all 23 Warlords? Same framing, lighting and background?
-> Suggestion: yes — write one portrait brief (half-body, three-quarter view, muted background, Duo palette in clothing, accent colour in one prop).
 
 Answer:
 

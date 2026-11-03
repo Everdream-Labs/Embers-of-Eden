@@ -1,27 +1,35 @@
 {
-  "updated": "2026-11-01",
-  "mixRule": "union",
-  "mixRuleNote": "If either Warlord's Duo can use a weapon, status, troop line, tool or resource, the mixed pair can. Import-only stays import-only unless the other side can produce it. Buildings the pair cannot construct stay locked even if resources exist. A blacksmith can still forge imported ingots (e.g. Hardened Steel). Tweak per item later.",
-  "signatureRule": "Usually one signature per Warlord: a unique troop OR a unique building, not both.",
+  "updated": "2026-11-03",
+  "direction": "Post-apocalyptic city-builder / colony survival (Banished · Tropico · Cities: Skylines · Anno). Single-player PvE. No combat for now — weapons and armour are crafted goods.",
+  "teams": {
+    "playable": ["survivors", "hunters", "militia", "ashen", "droids"],
+    "default": "survivors",
+    "unlockRule": "All five are selectable while we playtest. The shipped game always starts with Viktor & Ayla; the other four unlock through challenges.",
+    "wastes": ["scientists", "afflicted", "mutants", "pack"],
+    "wastesRule": "Warlords of the Wastes are NPC factions only: no stats, no skill trees. Each has a disposition per playable team — trade opens at 55%, 100% = best allies. Policies and tree unlocks move it."
+  },
+  "treeRule": "One master team tree. Survivors take a flat ~80% of every branch; specialists take ~80% overall but spike to 100% in some branches and drop to ~60% in others. Exclusive branches (Ash Rites → Ashen, Charge & Hive → Droids) sit outside the core count; Droids' Food & Farming branch is replaced by Charge & Hive.",
+  "playerTreeRule": "The player tree is the largest tree, carries over between matches and gives small permanent bonuses plus one mastery branch per team.",
+  "pointsRule": "Final Fantasy XIII style — pour points into any open node, part-filling or filling several at once.",
   "accessStates": {
-    "yes": "Available / can produce",
-    "boost": "Stronger than baseline",
+    "yes": "Available / can produce or build",
+    "boost": "Team speciality — stronger than baseline (★)",
     "early": "Early access",
     "import": "Import only — can use, cannot produce",
     "tbd": "Undecided",
     "no": "No access"
   },
   "books": {
-    "visions": { "html": "Visions of Eden.html", "source": "Data/Visions_of_Eden.md", "filter": false, "tabs": ["Overview", "Modes", "Warlords", "World", "Combat", "Economy", "Retired"] },
-    "warlords": { "html": "Warlords of Eden.html", "source": "Data/Warlords_of_Eden.md", "filter": "warlord picker", "tabs": ["Team", "Skills", "Tech", "Buildings"] },
-    "arms": { "html": "Arms of Eden.html", "source": "Data/Arms_of_Eden.md", "filter": "two-Warlord pair", "tabs": ["Troops", "Weapons", "Armour", "Status Effects"] },
-    "resources": { "html": "Resources of Eden.html", "source": "Data/Resources_of_Eden.md", "filter": "two-Warlord pair", "tabs": ["Resources", "Produce", "Tools & Equipment"] },
-    "maps": { "html": "Maps of Eden.html", "source": "Data/Maps_of_Eden.md", "filter": false, "tabs": ["Maps", "Game Modes", "Extras"] }
+    "visions": { "html": "Visions of Eden.html", "source": "Data/Visions_of_Eden.md", "role": "The game direction in one place" },
+    "warlords": { "html": "Warlords of Eden.html", "source": "Data/Warlords_of_Eden.md", "role": "Five team pages, Warlords of the Wastes, master team tree, player tree, buildings", "hash": "#<team>/<overview|tree> · #wastes · #wastes/<faction> · #player · #buildings" },
+    "resources": { "html": "Resources of Eden.html", "source": "Data/Resources_of_Eden.md", "role": "Resources, produce, tools and crafted goods (incl. weapons and armour as goods), per-team access", "hash": "#<team> · #<team>/<tab>" },
+    "maps": { "html": "Maps of Eden.html", "source": "Data/Maps_of_Eden.md", "role": "Five team maps plus the World Forge seed generator", "hash": "#map/<team> · #forge" }
+  },
+  "archive": {
+    "arms": "design/Reference/Arms of Eden (Archive).html — the RTS-era troops, weapons, armour and status effects, kept for reference only. Source notes: design/Reference/Arms_of_Eden.md."
   },
   "sharedStyle": "eden-codex.css",
-  "images": "Images/<Category>/<Exact Name>.jpg — e.g. Images/Warlords/Viktor.jpg, Images/Resources/Steel.jpg, Images/Weapons/Arc Gun.jpg. Any missing image shows a labelled placeholder.",
+  "images": "Images/<Category>/<Exact Name>.jpg. Shortlist variants Name1.jpg, Name2.jpg … — click a picture in any book to cycle; the shown pick saves with Save into HTML. Missing pictures show a labelled placeholder.",
   "sync": "The markdown files in Data/ are the source of truth. Edit them, then ask the assistant to sync a batch into each HTML's DEFAULT_DATA. Quick edits made in a page (Edit → Save into HTML) are stored inside that HTML file and should be copied back into the markdown at the next sync.",
-  "images": "Images/<Category>/<Exact Name>.jpg. Shortlist variants Name1.jpg, Name2.jpg … — click a picture in any book to cycle; the shown pick saves with Save into HTML.",
-  "palette": "Duo colour = shared theme; each Warlord has a personal accent; mixed pairs adopt the two Warlord accents. Flags: colony flag, horizontal banner, vertical sash, logo — all use the Duo colour + both accents. Table in Warlords_of_Eden.md.",
-  "sharing": "Run `node tools/build-share.mjs --desktop` from the repo root. It builds dist/Pages of Eden (Share)/ and a .zip where every HTML is fully self-contained (styles and pictures embedded) plus the design notes, and copies both to the Desktop."
+  "sharing": "Run `node tools/build-share.mjs --desktop` from the repo root. It builds dist/Pages of Eden (Share)/ and a .zip where every HTML is fully self-contained (styles and pictures embedded) plus the design notes and the Arms archive, and copies both to the Desktop."
 }

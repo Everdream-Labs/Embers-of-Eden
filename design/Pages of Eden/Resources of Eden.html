@@ -7,6 +7,46 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="eden-codex.css">
+<style>
+/* Resources of Eden — page-only styles (team selector, all-teams marks, access glance) */
+.teambar{padding:10px 16px 8px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.28)}
+.tb-cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.tcard{--c:#888;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 6px 8px;text-align:center;cursor:pointer;
+  color:var(--ink);font-family:var(--font-body);border:1px solid var(--line-2);border-top:2px solid color-mix(in srgb,var(--c) 70%,transparent);
+  background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--c) 16%,transparent),rgba(0,0,0,.42) 75%);transition:border-color .15s,transform .15s,box-shadow .15s}
+.tcard:hover{border-color:var(--c);transform:translateY(-1px)}
+.tcard.cur{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c),0 0 18px -6px var(--c);background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--c) 34%,transparent),rgba(0,0,0,.42) 80%)}
+.tcard:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.tc-icons{display:flex;justify-content:center;gap:4px}
+.tthumb{position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:50%;color:var(--c);
+  border:1px solid color-mix(in srgb,var(--c) 60%,transparent);background:#14110e}
+.tthumb .sig{width:18px;height:18px}
+.tthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 15%}
+.tcard b{font-family:var(--font-head);font-weight:600;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;line-height:1.15;color:color-mix(in srgb,var(--c) 62%,#fff)}
+.tcard small{font-size:.7rem;color:var(--ink-dim);line-height:1.2}
+.tb-sum{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:8px;text-align:center;font-size:.82rem;color:var(--ink-dim)}
+.tb-sum .tb-id{font-family:var(--font-type);color:var(--ink)}
+.tb-sum .chip{border-color:color-mix(in srgb,var(--sc) 55%,transparent)}
+.tb-sum .chip b{color:var(--sc)}
+.tb-sum a.mini{text-decoration:none}
+.node .tmarks{position:absolute;top:-9px;right:6px;z-index:3;display:flex;gap:2px}
+.node .tmarks i{font-style:normal;font-family:var(--font-head);font-size:.56rem;letter-spacing:.02em;line-height:15px;padding:0 3px;background:#120f0c;border:1px solid color-mix(in srgb,var(--c) 70%,transparent)}
+.node .tmarks i em{font-style:normal;color:var(--c);margin-right:2px}
+.glance{margin:0 auto 14px;border:1px solid var(--line-2);background:rgba(0,0,0,.22)}
+.glance > summary{cursor:pointer;list-style:none;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:8px 12px;text-align:center;
+  font-family:var(--font-head);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--tab) 72%,#fff)}
+.glance > summary::-webkit-details-marker{display:none}
+.glance > summary::before{content:"▸";color:var(--ink-faint)}
+.glance[open] > summary::before{content:"▾"}
+.glance .gl-count{--c:#888;font-size:.64rem;letter-spacing:.06em;color:var(--ink-dim);border:1px solid color-mix(in srgb,var(--c) 55%,transparent);padding:1px 7px}
+.glance .gl-count em{font-style:normal;color:var(--c);margin-right:4px}
+.glance .matrix-wrap{padding:0 10px 10px}
+.glance .matrix td{vertical-align:middle}
+.glance .gl-cell{display:flex;flex-wrap:wrap;justify-content:center;gap:3px}
+.glance .xlink{font-size:.6rem;padding:2px 7px}
+@media (max-width:1180px){.tb-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.tb-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 </head>
 <body>
 <canvas id="fx"></canvas>
@@ -18,11 +58,11 @@
       <div class="motif a" id="motif-a"></div><div class="motif b" id="motif-b"></div>
       <div class="brandrow"><span class="brand"><b>Resources</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
       <div class="head-sigils" id="head-sigils"></div>
-      <div class="kicker">Gather · refine · grow · equip</div>
+      <div class="kicker">Gather · refine · grow · craft</div>
       <h1 class="duo-title">Resources</h1>
       <div class="motto" id="book-motto">Every chain starts in the dirt.</div>
     </header>
-    <div class="pairbar" id="pairbar"></div>
+    <div class="teambar" id="teambar"></div>
     <nav class="navbar">
       <div class="side"><button class="btn" id="btn-sound" onclick="SFX.toggleMute()">&#9836; Sound</button></div>
       <div class="tabs" id="tabs"></div>
@@ -111,184 +151,215 @@ const IMG = (() => {
   };
 })();
 /* ==========================================================================
-   DATA — mirrors Data/Resources_of_Eden.md. Access per Duo:
-   yes · boost · import (can use, cannot produce) · tbd · no.
-   "(suggestion)" = idea, not agreed. Mixed pairs use the union rule.
+   DATA — mirrors Data/Resources_of_Eden.md. Access per playable team:
+   yes · boost · weak · import (can use, cannot produce) · tbd · no.
+   "(suggestion)" = idea, not agreed. Teams are locked pairs — no mixing.
    ========================================================================== */
 const N = (tab, id, name, code, row, col, era, kind, from, x) => Object.assign({ tab, id, name, code, row, col, era, kind, from: from || [], ext: [], madeAt: "", gate: "", desc: "", notes: "", alsoUsed: "", access: {}, locked: false }, x || {});
 const NOFOOD = { droids: "no" };
 const P = (id, name, code, row, col, era, kind, from, x) => { const n = N("produce", id, name, code, row, col, era, kind, from, x); n.access = Object.assign({}, NOFOOD, n.access); return n; };
+const TIER_ERA = ["Early", "Mid", "Late", "Late", "Late"];
+const T = (id, name, code, row, col, kind, from, x) => N("tools", id, name, code, row, col, TIER_ERA[row] || "Late", kind, from, x);
 const DEFAULT_DATA = {
-  meta: { dataRev: "factory-2026-11-01", updated: "2026-11-01", source: "Data/Resources_of_Eden.md",
-    rule: "Union rule for mixed pairs: the pair gets the best access either side has. Import only = they can use stock bought or traded in, but cannot produce it. Buildings a pair cannot construct stay locked (Warlords of Eden) even if the resources exist — but a blacksmith can still forge imported ingots (e.g. Hardened Steel) into better gear." },
+  meta: { dataRev: "teams-2026-11-03", updated: "2026-11-03", source: "Data/Resources_of_Eden.md",
+    rule: "Teams are locked pairs — no mixing, so every mark is for one team. Import only = they can use stock bought or traded in, but cannot produce it. Weaker = they can produce it, but slower or at higher cost (one of their weak branches). Buildings a team cannot construct stay locked (Warlords of Eden) even if the resources exist — but a blacksmith can still forge imported ingots into gear. Global market prices move only with world events (drought, sandstorm, radiation), never with your own sales." },
   tabs: [
-    { id: "resources", label: "Resources", color: "#c9a24a", folder: "Resources", intro: "Natural resources and every refining step above them — ore to ingot to alloy. Follow the lines downward: each node is made from the nodes feeding into it." },
-    { id: "produce", label: "Produce", color: "#93b85c", folder: "Produce", intro: "Farms, pastures, foraging and fishing — and the kitchen chains that turn them into food. Droids ignore this whole tab." },
-    { id: "tools", label: "Tools & Equipment", color: "#5fb3c4", folder: "Tools", intro: "Tool tiers gate gathering (iron axe = softwood, steel axe = hardwood). Equipment below grows over time as new kit is needed." }
+    { id: "resources", label: "Resources", color: "#c9a24a", folder: "Resources", intro: "Natural resources and every refining step above them — ore to ingot to alloy — plus the two utilities, Water and Power. Follow the lines downward: each node is made from the nodes feeding into it." },
+    { id: "produce", label: "Produce", color: "#93b85c", folder: "Produce", intro: "Farms, pastures, foraging, hunting and fishing — and the kitchen chains that turn them into food. Droids cannot use anything on this tab: no food at all, power is their food. Water lives on the Resources tab as a utility." },
+    { id: "tools", label: "Tools & Equipment", color: "#5fb3c4", folder: "Tools", intro: "Tools, weapons and armour are all goods the colony crafts from resources — used by workers as tools, stockpiled for safety, or sold. Material tiers gate them (iron axe = softwood, steel axe = hardwood). No combat stats: combat is shelved." }
   ],
   bands: {
     resources: [{ label: "Early", sub: "Gathered" }, { label: "Early", sub: "Processed" }, { label: "Mid", sub: "Gathered" }, { label: "Mid", sub: "Refined" }, { label: "Mid", sub: "Components" }, { label: "Late", sub: "Gathered" }, { label: "Late", sub: "Refined" }, { label: "Late", sub: "Advanced & alloys" }],
-    produce: [{ label: "Wild", sub: "Forage, fish, water" }, { label: "Farms", sub: "Crops & pastures" }, { label: "Raw", sub: "Raw goods" }, { label: "Processed", sub: "Workshops" }, { label: "Kitchen", sub: "Meals" }, { label: "Late", sub: "Bonus foods" }],
-    tools: [{ label: "Tier I", sub: "Stone / scrap" }, { label: "Tier II", sub: "Bronze" }, { label: "Tier III", sub: "Iron" }, { label: "Tier IV", sub: "Steel" }, { label: "Tier V", sub: "Hardened steel" }]
+    produce: [{ label: "Wild", sub: "Forage, fish, hunt" }, { label: "Farms", sub: "Crops & pastures" }, { label: "Raw", sub: "Raw goods" }, { label: "Processed", sub: "Workshops" }, { label: "Kitchen", sub: "Meals" }, { label: "Late", sub: "Bonus foods" }],
+    tools: [{ label: "Tier I", sub: "Stone / scrap · Early", era: "Early" }, { label: "Tier II", sub: "Bronze · Mid", era: "Mid" }, { label: "Tier III", sub: "Iron · Late", era: "Late" }, { label: "Tier IV", sub: "Steel · Late", era: "Late" }, { label: "Tier V", sub: "Hardened steel · Late", era: "Late" }]
   },
   lanes: {
-    resources: [{ label: "Timber", color: "#a07a45" }, { label: "Stone", color: "#9a9488" }, { label: "Clay", color: "#b5653e" }, { label: "Sand & Glass", color: "#d8c48a" }, { label: "Tin", color: "#a9b4bd" }, { label: "Copper", color: "#c8743a" }, { label: "Coal & Iron", color: "#8a97a3" }, { label: "Alloys", color: "#6fb7d6" }, { label: "Alloys", color: "#6fb7d6" }, { label: "Scrap", color: "#a8996e" }, { label: "Components", color: "#57c2b0" }, { label: "Chemistry", color: "#c9b23a" }, { label: "Precious", color: "#e3c35a" }, { label: "Gems", color: "#b07ad6" }],
-    produce: [{ label: "Water", color: "#5fb3c4" }, { label: "Fish", color: "#4f8fbf" }, { label: "Berries", color: "#b0446a" }, { label: "Herbs", color: "#6faa55" }, { label: "Wild Game", color: "#9a6b3f" }, { label: "Grain", color: "#d8b450" }, { label: "Vegetables", color: "#7fae4a" }, { label: "Cotton", color: "#d9d2bf" }, { label: "Cattle", color: "#a77b52" }, { label: "Poultry", color: "#d9b77a" }, { label: "Pigs & Goats", color: "#c48d8d" }, { label: "Wild Beasts", color: "#c58a45" }, { label: "Dark Larder", color: "#9e3b3b" }],
-    tools: [{ label: "Axes", color: "#a07a45" }, { label: "Picks", color: "#9a9488" }, { label: "Farm Tools", color: "#d8b450" }, { label: "Building Tools", color: "#c9a24a" }, { label: "Fishing Gear", color: "#4f8fbf" }, { label: "Butchery", color: "#a77b52" }]
+    resources: [{ label: "Water & Power", color: "#5fb3c4" }, { label: "Timber", color: "#a07a45" }, { label: "Stone", color: "#9a9488" }, { label: "Clay", color: "#b5653e" }, { label: "Sand & Glass", color: "#d8c48a" }, { label: "Tin", color: "#a9b4bd" }, { label: "Copper", color: "#c8743a" }, { label: "Coal & Iron", color: "#8a97a3" }, { label: "Alloys", color: "#6fb7d6" }, { label: "Alloys", color: "#6fb7d6" }, { label: "Scrap", color: "#a8996e" }, { label: "Components", color: "#57c2b0" }, { label: "Chemistry", color: "#c9b23a" }, { label: "Precious", color: "#e3c35a" }, { label: "Gems", color: "#b07ad6" }],
+    produce: [{ label: "Fish", color: "#4f8fbf" }, { label: "Berries", color: "#b0446a" }, { label: "Herbs", color: "#6faa55" }, { label: "Wild Game", color: "#9a6b3f" }, { label: "Grain", color: "#d8b450" }, { label: "Vegetables", color: "#7fae4a" }, { label: "Cotton", color: "#d9d2bf" }, { label: "Cattle", color: "#a77b52" }, { label: "Poultry", color: "#d9b77a" }, { label: "Pigs & Goats", color: "#c48d8d" }, { label: "Wild Beasts", color: "#c58a45" }, { label: "Dark Larder", color: "#9e3b3b" }],
+    tools: [{ label: "Axes", color: "#a07a45" }, { label: "Picks", color: "#9a9488" }, { label: "Farm Tools", color: "#d8b450" }, { label: "Building Tools", color: "#c9a24a" }, { label: "Fishing Gear", color: "#4f8fbf" }, { label: "Butchery", color: "#a77b52" }, { label: "Melee Weapons", color: "#c8743a" }, { label: "Bows", color: "#6faa55" }, { label: "Firearms", color: "#a3a84e" }, { label: "Heavy Guns", color: "#a4ae74" }, { label: "Energy Weapons", color: "#4fb0ff" }, { label: "Explosives & Fire", color: "#ff5a1f" }, { label: "Light Armour", color: "#b5653e" }, { label: "Heavy Armour", color: "#8a97a3" }, { label: "Hazard & Tech", color: "#57c2b0" }]
   },
   nodes: [
     /* ---------------- RESOURCES ---------------- */
-    N("resources", "wood", "Wood", "Wd", 0, 0, "Early", "Gathered", [], { madeAt: "Lumber Camp", gate: "Any axe — a Stone Axe works scrub and deadfall; softwood forests need an Iron Axe", desc: "Core building material and early fuel.", access: { hunters: "boost" }, notes: "Hunters boost comes from Twig (wood & lumber)." }),
-    N("resources", "charcoal", "Charcoal", "Ch", 1, 0, "Early", "Processed", ["wood"], { madeAt: "Charcoal Kiln (suggestion)", desc: "Slow-burned wood. Early fuel for kilns, glass, gunpowder and smelting before coal arrives." }),
-    N("resources", "paper", "Paper", "Pp", 3, 0, "Mid", "Refined", ["wood"], { ext: ["produce:water"], madeAt: "Paper Mill (suggestion)", desc: "Research notes, blueprints and records for University-style research. Also wraps dynamite (suggestion)." }),
-    N("resources", "hardwood", "Hardwood", "Hw", 5, 0, "Late", "Gathered", ["wood"], { ext: ["tools:axe4"], madeAt: "Lumber Camp (upgraded)", gate: "Steel Axe — Visions: steel axe = hardwood", desc: "Dense late-game timber for premium buildings, longbows and fittings (suggestion).", access: { pack: "no" } }),
-    N("resources", "stone", "Stone", "St", 0, 1, "Early", "Gathered", [], { madeAt: "Quarry", gate: "Stone Pick", desc: "Foundations, walls and early tools. First rung of the mining ladder.", access: { hunters: "boost" }, notes: "Hunters boost comes from Brick (stone & mining)." }),
-    N("resources", "concrete", "Concrete", "Cn", 6, 1, "Late", "Refined", ["stone", "coal"], { ext: ["produce:water"], madeAt: "Cement Works (suggestion)", desc: "Late construction material for fortifications and advanced buildings.", access: { pack: "no" } }),
-    N("resources", "clay", "Clay", "Cl", 0, 2, "Early", "Gathered", [], { madeAt: "Clay Pit (suggestion)", desc: "Riverbank clay for bricks, pottery and kilns." }),
-    N("resources", "bricks", "Bricks", "Br", 3, 2, "Mid", "Refined", ["clay", "charcoal"], { madeAt: "Brick Kiln", desc: "Fired building material for sturdier, upgraded structures." }),
-    N("resources", "sand", "Sand", "Sd", 0, 3, "Early", "Gathered", [], { madeAt: "Sand Pit (suggestion)", desc: "Not on the Visions list yet — added so Glass has an input (suggestion)." }),
-    N("resources", "glass", "Glass", "Gl", 3, 3, "Mid", "Refined", ["sand", "charcoal"], { madeAt: "Glassworks (suggestion)", desc: "Windows, lenses, scopes, lab equipment and electronics.", access: { pack: "no" } }),
-    N("resources", "tin", "Tin", "Sn", 2, 4, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining I (tech) + Bronze Pick", desc: "First metal on the mining ladder. Alloyed with copper to make bronze.", access: { pack: "no" } }),
-    N("resources", "copper", "Copper", "Cu", 2, 5, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining II (tech) + Bronze Pick", desc: "Bronze, wire and electrics.", access: { pack: "no" } }),
-    N("resources", "bronze", "Bronze", "Bz", 3, 4, "Mid", "Refined", ["tin", "copper"], { madeAt: "Smelter", desc: "Second material tier: Stone → Bronze → Iron → Steel → Hardened Steel.", access: { pack: "no" }, notes: "The Pack skips bronze — stone to iron only, no alloy refinement." }),
-    N("resources", "wire", "Wire", "Wr", 3, 5, "Mid", "Refined", ["copper"], { madeAt: "Wireworks (suggestion)", desc: "Electrics, traps, fences, electronics and arc weapons.", access: { pack: "no", scientists: "boost" } }),
-    N("resources", "coal", "Coal", "Co", 2, 6, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining IV on the tech ladder (see notes)", desc: "High-heat fuel for iron, steel, bricks and concrete.", access: { pack: "tbd" }, notes: "Visions lists coal as Mid but puts it after iron on the mining ladder (stone → tin → copper → iron → coal → gold). Era vs ladder still to reconcile." }),
-    N("resources", "iron", "Iron", "Fe", 5, 6, "Late", "Gathered", ["coal"], { ext: ["tools:pick3"], madeAt: "Mine → Smelter", gate: "Mining III (tech) + Iron Pick", desc: "Third material tier. The Pack's ceiling — stone to iron, nothing refined beyond it." }),
-    N("resources", "steel", "Steel", "Sl", 6, 6, "Late", "Refined", ["iron", "coal"], { madeAt: "Smelter (Blast Furnace)", desc: "Fourth material tier. Every smelter can make regular steel.", access: { pack: "no", militia: "boost" }, alsoUsed: "Steel weapons, plate armour and steel tools (Arms of Eden)" }),
-    N("resources", "hardened", "Hardened Steel", "HS", 7, 6, "Late", "Special alloy", ["steel", "rarecomp"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy and the fifth material tier. Civ-limited: only some smelters can make it. Everyone else imports the ingots — and their blacksmith can still forge them into better gear.", access: { default: "import", scientists: "yes", militia: "yes", pack: "no" }, alsoUsed: "Hardened weapons, armour and tools (Arms of Eden)" }),
-    N("resources", "stainless", "Stainless Steel", "SS", 7, 7, "Late", "Special alloy", ["steel", "rarescrap"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy — corrosion-proof gear, medical and lab equipment (suggestion).", access: { default: "import", scientists: "yes", pack: "no" } }),
-    N("resources", "titanium", "Titanium", "Ti", 7, 8, "Late", "Special alloy", ["rarescrap", "fuel"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy — light, very strong frames and plating (suggestion).", access: { default: "import", scientists: "yes", droids: "yes", pack: "no" } }),
-    N("resources", "scrap", "Scrap", "Sc", 0, 9, "Early", "Gathered", [], { madeAt: "Scrapyard / dismantling", desc: "Generic wasteland material for construction and crafting — harvested from ruins and old buildings, or by dismantling.", access: { survivors: "boost" }, notes: "Survivors boost reflects their scavenge lean (suggestion)." }),
-    N("resources", "nails", "Nails", "Nl", 3, 9, "Mid", "Refined", ["scrap"], { madeAt: "Blacksmith", desc: "Construction fasteners — needed by many building upgrades." }),
-    N("resources", "mechparts", "Mechanical Parts", "MP", 4, 9, "Mid", "Component", ["scrap", "nails", "bronze"], { madeAt: "Workshop (suggestion)", desc: "Gears, springs and fittings for guns, machines and vehicles.", access: { pack: "no", nomads: "boost" } }),
-    N("resources", "rarescrap", "Rare Scrap", "RS", 5, 9, "Late", "Gathered", ["scrap"], { madeAt: "Sorting Yard (Scrapyard upgrade)", desc: "Valuable salvage sorted out of normal scrap mid / late game.", access: { survivors: "boost" } }),
-    N("resources", "rarecomp", "Rare Components", "RC", 3, 10, "Mid", "Component", ["scrap"], { madeAt: "Scrapyard (salvage)", desc: "Old-world parts — circuitry, bearings, optics.", access: { scientists: "boost", pack: "no" } }),
-    N("resources", "electronics", "Electronics", "El", 7, 10, "Late", "Advanced", ["rarecomp", "wire", "glass"], { madeAt: "Electronics Lab (suggestion)", desc: "Lasers, radios, droid parts and powered gear.", access: { scientists: "boost", droids: "boost", hunters: "import", pack: "no" }, notes: "Hunters import only: they distrust anything that hums (suggestion)." }),
-    N("resources", "salt", "Salt", "Sa", 0, 11, "Early", "Gathered", [], { madeAt: "Salt Pan (suggestion)", desc: "Preserves food and cures leather.", alsoUsed: "Smoked / Preserved Food, Cheese (Produce)" }),
-    N("resources", "sulphur", "Sulphur", "Su", 2, 11, "Mid", "Gathered", [], { madeAt: "Mine / vents", desc: "The key gunpowder input." }),
-    N("resources", "gunpowder", "Gunpowder", "Gp", 4, 11, "Mid", "Component", ["sulphur", "charcoal"], { ext: ["produce:fertiliser"], madeAt: "Munitions Workshop", desc: "Ammunition and explosives. Fertiliser stands in for nitrates (suggestion).", access: { pack: "tbd" }, notes: "The Pack never uses guns; explosives are still undecided for them." }),
-    N("resources", "fuel", "Fuel", "Fu", 6, 11, "Late", "Refined", ["coal"], { ext: ["produce:alcohol"], madeAt: "Refinery (suggestion)", desc: "Vehicles, generators and flamethrowers.", access: { nomads: "boost", ashen: "boost", pack: "no" } }),
-    N("resources", "silver", "Silver", "Ag", 0, 12, "Early", "Gathered", [], { madeAt: "Mine", desc: "Primary trade currency; its price slowly rises over the match. Also needed for many upgrades and luxury items." }),
-    N("resources", "gold", "Gold", "Au", 2, 12, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining V — the last rung", desc: "Unlocks mid-game. Currency, upgrades and luxuries; price slowly rises." }),
-    N("resources", "goldingot", "Gold Ingots", "GI", 6, 12, "Late", "Refined", ["gold", "coal"], { madeAt: "Smelter / Mint", desc: "Refined gold for upgrades, trade and jewellery." }),
-    N("resources", "puregold", "Pure Gold Ingots", "PG", 7, 12, "Late", "Refined", ["goldingot"], { madeAt: "Mint (suggestion)", desc: "Top-grade gold — late age checklists and wonders (suggestion)." }),
-    N("resources", "gems", "Gems", "Gm", 5, 13, "Late", "Gathered", [], { ext: ["tools:pick4"], madeAt: "Deep Mine", gate: "Steel Pick", desc: "Rare stones for jewellery and luxury trade.", access: { pack: "no" } }),
-    N("resources", "jewellery", "Jewellery", "Jw", 7, 13, "Late", "Luxury", ["gems", "goldingot", "silver"], { madeAt: "Jeweller (suggestion)", desc: "Luxury good — trade, happiness and age checklists (suggestion)." }),
-    /* ---------------- PRODUCE ---------------- */
-    P("water", "Water", "Wa", 0, 0, "Early", "Gathered", [], { madeAt: "Well / river", desc: "Upkeep for every unit alongside food. Wells near the colony; rivers and lakes elsewhere." }),
-    P("fish", "Fish", "Fi", 0, 1, "Early", "Gathered", [], { ext: ["tools:fish1"], madeAt: "Fishing Hut / dock", gate: "Fishing gear (Tools)", desc: "From fishable water. Edible raw; better smoked." }),
-    P("berries", "Berries", "Be", 0, 2, "Early", "Gathered", [], { madeAt: "Forager → Orchard (late)", desc: "Early forage. Orchards make it self-sustaining late game." }),
-    P("herbs", "Herbs", "He", 0, 3, "Early", "Gathered", [], { madeAt: "Herb Garden (suggestion)", desc: "Medicine, bandages and poultices — and poisons in the right hands." }),
-    P("game", "Wild Game", "Gm", 0, 4, "Early", "Gathered", [], { madeAt: "Hunting Lodge", desc: "Hunting wild animals for meat and hides (suggestion).", access: { hunters: "boost", pack: "boost" } }),
-    P("grain", "Grain", "Gr", 1, 5, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Staple crop for flour, bread and alcohol (suggestion)." }),
-    P("veg", "Vegetables", "Vg", 1, 6, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Stews and kitchen meals (suggestion)." }),
-    P("cotton", "Cotton", "Ct", 1, 7, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Cotton → Cloth (Visions)." }),
-    P("cattle", "Cattle", "Ca", 1, 8, "Early", "Pasture", [], { madeAt: "Pasture", desc: "Milk, meat, leather and manure." }),
-    P("chickens", "Chickens", "Ck", 1, 9, "Early", "Pasture", [], { madeAt: "Pasture / coop", desc: "Eggs and meat." }),
-    P("pigs", "Pigs & Goats", "Pg", 1, 10, "Early", "Pasture", [], { madeAt: "Pasture", desc: "Meat, goat milk and manure (suggestion)." }),
-    P("wildbreed", "Wild Breeding", "Wb", 1, 11, "Early", "Pasture", [], { madeAt: "Beast Den (Pack)", desc: "The Pack can breed any animal, including wild map animals. Other civs only get farm animals.", access: { default: "no", pack: "boost" } }),
-    P("milk", "Milk", "Mk", 2, 8, "Early", "Raw", ["cattle", "pigs"], { desc: "Edible raw; becomes cheese in the kitchen." }),
-    P("eggs", "Eggs", "Eg", 2, 9, "Early", "Raw", ["chickens"], { desc: "Edible raw or cooked." }),
-    P("meat", "Meat", "Mt", 2, 10, "Early", "Raw", ["cattle", "pigs", "chickens", "game", "wildbreed"], { madeAt: "Butcher (suggestion)", desc: "Edible raw; far better cooked, smoked or stewed." }),
-    P("leather", "Leather", "Lt", 2, 11, "Early", "Raw material", ["cattle", "game", "wildbreed"], { madeAt: "Tannery (suggestion)", desc: "Pasture by-product (e.g. cows). Distinct from Cloth — the two combine in armour and gear.", alsoUsed: "Leather armour, bows, saddles (Arms of Eden)" }),
-    P("humanmeat", "Human Meat", "Hm", 2, 12, "Early", "Raw", [], { madeAt: "Slain enemies / POWs", desc: "The Pack can use human meat. For anyone else it would be low-quality food with negative effects (food-quality tiers under consideration).", access: { default: "no", pack: "yes" } }),
-    P("flour", "Flour", "Fl", 3, 5, "Mid", "Processed", ["grain"], { madeAt: "Mill (suggestion)", desc: "Ground grain for bread." }),
-    P("fertiliser", "Fertiliser", "Fz", 3, 6, "Mid", "Processed", ["cattle", "pigs", "chickens"], { madeAt: "Manure Pit (suggestion)", desc: "Boosts farm yield. Also stands in for nitrates in gunpowder (suggestion).", alsoUsed: "Gunpowder (Resources tab)" }),
-    P("cloth", "Cloth", "Cf", 3, 7, "Early", "Processed", ["cotton"], { madeAt: "Weaver", desc: "Clothing, padded armour, bandages and sails. Combines with Leather.", alsoUsed: "Padded armour (Arms of Eden)" }),
-    P("alcohol", "Alcohol", "Al", 3, 2, "Mid", "Processed", ["berries", "grain"], { madeAt: "Distillery (suggestion)", desc: "Trade good, medicine input, fuel and molotovs.", alsoUsed: "Fuel (Resources tab), Molotov (Arms of Eden)" }),
-    P("medicine", "Medicine", "Md", 3, 3, "Mid", "Processed", ["herbs", "alcohol"], { madeAt: "Apothecary (suggestion)", desc: "Healing and cleansing; supplies healer units.", access: { scientists: "boost" } }),
-    P("bread", "Bread", "Bd", 4, 5, "Mid", "Meal", ["flour", "water"], { madeAt: "Kitchen", desc: "Staple meal (suggestion)." }),
-    P("stew", "Hearty Stew", "Sw", 4, 8, "Mid", "Meal", ["meat", "veg", "water"], { madeAt: "Kitchen", desc: "Combining ingredients gives a higher yield than eating them raw (suggestion)." }),
-    P("cheese", "Cheese", "Cs", 4, 9, "Mid", "Meal", ["milk"], { ext: ["resources:salt"], madeAt: "Creamery (suggestion)", desc: "Long-keeping dairy (suggestion)." }),
-    P("smoked", "Smoked / Preserved Food", "Sm", 4, 10, "Mid", "Meal", ["meat", "fish"], { ext: ["resources:salt", "resources:charcoal"], madeAt: "Smokehouse", desc: "Long-lasting food for trade and army upkeep. The Hunters excel at export.", access: { hunters: "boost" } }),
-    P("feast", "Feast", "Fs", 5, 8, "Late", "Meal", ["bread", "stew", "cheese", "alcohol"], { madeAt: "Kitchen (late)", desc: "Late foods can give minor bonuses (Visions). Exact bonuses TBD." }),
-    P("rations", "Field Rations", "Rt", 5, 10, "Late", "Meal", ["smoked", "bread"], { madeAt: "Kitchen", desc: "Packed food for armies on the march — eases military upkeep (suggestion)." }),
-    /* ---------------- TOOLS (material tiers) ---------------- */
-    N("tools", "axe1", "Stone Axe", "Ax", 0, 0, "Tier I", "Axe", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Scrub and deadfall wood (suggestion)" }),
-    N("tools", "axe2", "Bronze Axe", "Ax", 1, 0, "Tier II", "Axe", ["axe1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Faster felling (suggestion)", access: { pack: "no" } }),
-    N("tools", "axe3", "Iron Axe", "Ax", 2, 0, "Tier III", "Axe", ["axe2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Softwood forests (Visions)" }),
-    N("tools", "axe4", "Steel Axe", "Ax", 3, 0, "Tier IV", "Axe", ["axe3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Hardwood (Visions)", access: { pack: "no" } }),
-    N("tools", "axe5", "Hardened Axe", "Ax", 4, 0, "Tier V", "Axe", ["axe4"], { ext: ["resources:hardened", "resources:hardwood"], madeAt: "Blacksmith", gate: "Fastest felling; late tree farms (suggestion)", desc: "Forged from Hardened Steel ingots — imported for most Duos.", access: { pack: "no" } }),
-    N("tools", "pick1", "Stone Pick", "Pk", 0, 1, "Tier I", "Pick", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Stone, clay, salt" }),
-    N("tools", "pick2", "Bronze Pick", "Pk", 1, 1, "Tier II", "Pick", ["pick1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Tin & copper — Mining I–II", access: { pack: "no" } }),
-    N("tools", "pick3", "Iron Pick", "Pk", 2, 1, "Tier III", "Pick", ["pick2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Iron & coal — Mining III–IV" }),
-    N("tools", "pick4", "Steel Pick", "Pk", 3, 1, "Tier IV", "Pick", ["pick3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Gold & gems — Mining V", access: { pack: "no" } }),
-    N("tools", "pick5", "Hardened Pick", "Pk", 4, 1, "Tier V", "Pick", ["pick4"], { ext: ["resources:hardened"], madeAt: "Blacksmith", gate: "Deep veins — late mine extensions (Visions)", access: { pack: "no" } }),
-    N("tools", "farm1", "Stone Hoe", "Ho", 0, 2, "Tier I", "Farm tool", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Basic crop plots" }),
-    N("tools", "farm2", "Bronze Sickle", "Si", 1, 2, "Tier II", "Farm tool", ["farm1"], { ext: ["resources:bronze"], madeAt: "Blacksmith", gate: "Faster harvest (suggestion)", access: { pack: "no" } }),
-    N("tools", "farm3", "Iron Scythe", "Sy", 2, 2, "Tier III", "Farm tool", ["farm2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Large fields (suggestion)" }),
-    N("tools", "farm4", "Steel Plough", "Pl", 3, 2, "Tier IV", "Farm tool", ["farm3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Highest yield per farm (suggestion)", access: { pack: "no" } }),
-    N("tools", "build1", "Stone Mallet", "Ml", 0, 3, "Tier I", "Building tool", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Basic construction" }),
-    N("tools", "build2", "Bronze Saw", "Sw", 1, 3, "Tier II", "Building tool", ["build1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Faster building (suggestion)", access: { pack: "no" } }),
-    N("tools", "build3", "Iron Toolset", "Ts", 2, 3, "Tier III", "Building tool", ["build2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Building upgrades", desc: "This is the generic “Tools” good from the Visions mid list — consumed by building upgrades (suggestion)." }),
-    N("tools", "build4", "Steel Toolset", "Ts", 3, 3, "Tier IV", "Building tool", ["build3"], { ext: ["resources:steel", "resources:nails"], madeAt: "Blacksmith", gate: "Advanced upgrades (suggestion)", access: { pack: "no" } }),
-    N("tools", "build5", "Hardened Toolset", "Ts", 4, 3, "Tier V", "Building tool", ["build4"], { ext: ["resources:hardened"], madeAt: "Blacksmith", gate: "Wonders and fortifications (suggestion)", access: { pack: "no" } }),
-    N("tools", "fish1", "Hook & Line", "Hk", 0, 4, "Tier I", "Fishing gear", [], { ext: ["resources:wood", "produce:cloth"], madeAt: "Workbench (suggestion)", gate: "Shore fishing" }),
-    N("tools", "fish2", "Fishing Net", "Nt", 1, 4, "Tier II", "Fishing gear", ["fish1"], { ext: ["produce:cloth"], madeAt: "Weaver", gate: "More fish per trip (suggestion)" }),
-    N("tools", "fish3", "Iron Harpoon", "Hp", 2, 4, "Tier III", "Fishing gear", ["fish2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Big fish, deep water (suggestion)" }),
-    N("tools", "fish4", "Trawler Kit", "Tw", 3, 4, "Tier IV", "Fishing gear", ["fish3"], { ext: ["resources:steel", "produce:cloth"], madeAt: "Dock (suggestion)", gate: "Boats and deep water (suggestion)", access: { pack: "no" } }),
-    N("tools", "butch1", "Flint Knife", "Kn", 0, 5, "Tier I", "Butchery", [], { ext: ["resources:stone"], madeAt: "Workbench (suggestion)", gate: "Basic meat & hides" }),
-    N("tools", "butch2", "Bronze Knife", "Kn", 1, 5, "Tier II", "Butchery", ["butch1"], { ext: ["resources:bronze"], madeAt: "Blacksmith", gate: "Cleaner cuts (suggestion)", access: { pack: "no" } }),
-    N("tools", "butch3", "Iron Cleaver", "Cv", 2, 5, "Tier III", "Butchery", ["butch2"], { ext: ["resources:iron"], madeAt: "Blacksmith", gate: "More meat & leather per animal (suggestion)" }),
-    N("tools", "butch4", "Steel Skinning Kit", "Sk", 3, 5, "Tier IV", "Butchery", ["butch3"], { ext: ["resources:steel"], madeAt: "Blacksmith", gate: "Best leather yield (suggestion)", access: { pack: "no" } })
+    N("resources", "water", "Water", "Wa", 0, 0, "Early", "Utility", [], { madeAt: "Well · Water Collector · Pump", gate: "Pumps need a river, lake or groundwater; towers and pipes carry it to buildings (coverage)", desc: "Drunk by every colonist, used by some buildings (kitchens, brick kilns, paper mills, cement works, distilleries, pastures) and occasionally consumed in construction and upgrades. Distributed Cities: Skylines-style — pumps, water towers and pipes with coverage. Droughts dry the rivers: fill tanks and dams before the warning runs out.", access: { droids: "tbd" }, notes: "Droid water use is still open (Visions open point 7) — coolant, or none at all?" }),
+    N("resources", "power", "Power", "Pw", 1, 0, "Early", "Utility", ["wood"], { ext: ["resources:charcoal", "resources:coal", "resources:fuel"], madeAt: "Generator → Power Poles", gate: "Any building inside a pole's radius is powered — radius only, no chaining rules", desc: "Generators burn wood or charcoal early, coal from Mid and fuel late — better fuel, more output per generator. Not every building needs power; some don't at tier I but need it to keep upgrading. Droids charge every night: power is their food, so their grid must be far larger than anyone else's.", access: { hunters: "weak", militia: "boost", droids: "boost" }, notes: "Hunters are weak at Power & Grid (60% branch)." }),
+    N("resources", "wood", "Wood", "Wd", 0, 1, "Early", "Gathered", [], { madeAt: "Lumber Camp", gate: "Any axe — a Stone Axe works scrub and deadfall; softwood forests need an Iron Axe", desc: "Core building material and early fuel.", access: { hunters: "boost" }, notes: "Hunters: Timber & Stone is a 100% branch." }),
+    N("resources", "charcoal", "Charcoal", "Ch", 1, 1, "Early", "Processed", ["wood"], { madeAt: "Charcoal Kiln (suggestion)", desc: "Slow-burned wood. Early fuel for kilns, glass, gunpowder, generators and smelting before coal arrives.", access: { ashen: "boost" } }),
+    N("resources", "paper", "Paper", "Pp", 3, 1, "Mid", "Refined", ["wood", "water"], { madeAt: "Paper Mill (suggestion)", desc: "Research notes, blueprints and records for research buildings. Also wraps dynamite (suggestion)." }),
+    N("resources", "hardwood", "Hardwood", "Hw", 5, 1, "Late", "Gathered", ["wood"], { ext: ["tools:axe4"], madeAt: "Lumber Camp (upgraded)", gate: "Steel Axe — Visions: steel axe = hardwood", desc: "Dense late-game timber for premium buildings, bows and fittings (suggestion).", access: { hunters: "boost" } }),
+    N("resources", "stone", "Stone", "St", 0, 2, "Early", "Gathered", [], { madeAt: "Quarry", gate: "Stone Pick", desc: "Foundations, walls and early tools. First rung of the mining ladder.", access: { hunters: "boost" }, notes: "Hunters: Timber & Stone is a 100% branch." }),
+    N("resources", "concrete", "Concrete", "Cn", 6, 2, "Late", "Refined", ["stone", "coal", "water"], { madeAt: "Cement Works (suggestion)", desc: "Late construction material — dams, water towers and advanced buildings.", access: { militia: "boost" } }),
+    N("resources", "clay", "Clay", "Cl", 0, 3, "Early", "Gathered", [], { madeAt: "Clay Pit (suggestion)", desc: "Riverbank clay for bricks, pottery and kilns." }),
+    N("resources", "bricks", "Bricks", "Br", 3, 3, "Mid", "Refined", ["clay", "charcoal", "water"], { madeAt: "Brick Kiln", desc: "Fired building material for sturdier, upgraded structures." }),
+    N("resources", "sand", "Sand", "Sd", 0, 4, "Early", "Gathered", [], { madeAt: "Sand Pit (suggestion)", desc: "Not on the Visions list yet — added so Glass has an input (suggestion)." }),
+    N("resources", "glass", "Glass", "Gl", 3, 4, "Mid", "Refined", ["sand", "charcoal"], { madeAt: "Glassworks (suggestion)", desc: "Windows, lenses, scopes, lab equipment and electronics.", access: { ashen: "boost" }, notes: "Ashen boost: furnace work." }),
+    N("resources", "tin", "Tin", "Sn", 2, 5, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining I + Bronze Pick", desc: "First metal on the mining ladder. Alloyed with copper to make bronze." }),
+    N("resources", "bronze", "Bronze", "Bz", 3, 5, "Mid", "Refined", ["tin", "copper"], { madeAt: "Smelter", desc: "Second material tier: Stone → Bronze → Iron → Steel → Hardened Steel." }),
+    N("resources", "copper", "Copper", "Cu", 2, 6, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining II + Bronze Pick", desc: "Bronze, wire, ammunition and electrics." }),
+    N("resources", "wire", "Wire", "Wr", 3, 6, "Mid", "Refined", ["copper"], { madeAt: "Wireworks (suggestion)", desc: "Power poles, electronics, traps and fences." }),
+    N("resources", "coal", "Coal", "Co", 2, 7, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining IV on the ladder (see notes)", desc: "High-heat fuel for iron, steel, bricks, concrete and generators.", access: { ashen: "boost" }, notes: "Visions lists coal as Mid but puts it after iron on the mining ladder (stone → tin → copper → iron → coal → gold). Era vs ladder still to reconcile." }),
+    N("resources", "iron", "Iron", "Fe", 5, 7, "Late", "Gathered", ["coal"], { ext: ["tools:pick3"], madeAt: "Mine → Smelter", gate: "Mining III + Iron Pick", desc: "Third material tier.", access: { ashen: "boost" }, notes: "Ashen boost: mining and smelting." }),
+    N("resources", "steel", "Steel", "Sl", 6, 7, "Late", "Refined", ["iron", "coal"], { madeAt: "Smelter (Blast Furnace)", desc: "Fourth material tier. Every smelter can make regular steel.", access: { militia: "boost" } }),
+    N("resources", "hardened", "Hardened Steel", "HS", 7, 7, "Late", "Special alloy", ["steel", "rarecomp"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy and the fifth material tier. Which teams can smelt or enhance it is still undecided. Anyone can import the ingots — and their blacksmith can still forge them into Tier V gear.", access: { default: "tbd" }, notes: "Visions open point 3 — decided per team later." }),
+    N("resources", "stainless", "Stainless Steel", "SS", 7, 8, "Late", "Special alloy", ["steel", "rarescrap"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy — corrosion-proof gear, medical and lab equipment (suggestion).", access: { default: "tbd" }, notes: "Visions open point 3 — decided per team later." }),
+    N("resources", "titanium", "Titanium", "Ti", 7, 9, "Late", "Special alloy", ["rarescrap", "fuel"], { madeAt: "Alloy Foundry (suggestion)", desc: "Special Alloy — light, very strong frames and plating (suggestion).", access: { default: "tbd" }, notes: "Visions open point 3 — decided per team later." }),
+    N("resources", "scrap", "Scrap", "Sc", 0, 10, "Early", "Gathered", [], { madeAt: "Scrapyard / dismantling", desc: "Generic wasteland material for construction and crafting — harvested from ruins and old buildings, or by dismantling." }),
+    N("resources", "nails", "Nails", "Nl", 3, 10, "Mid", "Refined", ["scrap"], { madeAt: "Blacksmith", desc: "Construction fasteners — needed by many building upgrades." }),
+    N("resources", "mechparts", "Mechanical Parts", "MP", 4, 10, "Mid", "Component", ["scrap", "nails", "bronze"], { madeAt: "Workshop (suggestion)", desc: "Gears, springs and fittings for guns, machines, generators and vehicles.", access: { militia: "boost", droids: "boost" } }),
+    N("resources", "rarescrap", "Rare Scrap", "RS", 5, 10, "Late", "Gathered", ["scrap"], { madeAt: "Sorting Yard (Scrapyard upgrade)", desc: "Valuable salvage sorted out of normal scrap mid / late game.", access: { droids: "boost" } }),
+    N("resources", "rarecomp", "Rare Components", "RC", 3, 11, "Mid", "Component", ["scrap"], { madeAt: "Scrapyard (salvage)", desc: "Old-world parts — circuitry, bearings, optics.", access: { droids: "boost" } }),
+    N("resources", "electronics", "Electronics", "El", 6, 11, "Late", "Advanced", ["rarecomp", "wire", "glass"], { madeAt: "Electronics Lab (suggestion)", desc: "Radios, charge cells, droid parts, laser components and powered gear.", access: { hunters: "weak", militia: "boost", droids: "boost" }, notes: "Hunters: limited technology — weak electronics, never laser or plasma." }),
+    N("resources", "lasercomp", "Laser Components", "LC", 7, 11, "Late", "Advanced", ["electronics", "glass"], { madeAt: "Electronics Lab (suggestion)", desc: "Focusing optics and emitters for laser weapons and tools.", access: { hunters: "no", droids: "boost" }, notes: "Visions: Hunters never process laser components." }),
+    N("resources", "salt", "Salt", "Sa", 0, 12, "Early", "Gathered", [], { madeAt: "Salt Pan (suggestion)", desc: "Preserves food and cures leather.", alsoUsed: "Smoked / Preserved Food, Cheese (Produce)" }),
+    N("resources", "sulphur", "Sulphur", "Su", 2, 12, "Mid", "Gathered", [], { madeAt: "Mine / vents", desc: "The key gunpowder input." }),
+    N("resources", "gunpowder", "Gunpowder", "Gp", 4, 12, "Mid", "Component", ["sulphur", "charcoal"], { ext: ["produce:fertiliser"], madeAt: "Munitions Workshop", desc: "Ammunition, blasting charges for mines and quarries, and explosives. Fertiliser stands in for nitrates (suggestion)." }),
+    N("resources", "fuel", "Fuel", "Fu", 6, 12, "Late", "Refined", ["coal"], { ext: ["produce:alcohol"], madeAt: "Refinery (suggestion)", desc: "Generators, vehicles and flamethrowers.", access: { ashen: "boost" } }),
+    N("resources", "plasmacell", "Plasma Cells", "PC", 7, 12, "Late", "Advanced", ["fuel", "electronics"], { madeAt: "Laboratory (suggestion)", desc: "Superheated charge cores — the top of the tech ladder. Feeds plasma weapons.", access: { hunters: "no", militia: "boost", survivors: "tbd", ashen: "tbd", droids: "tbd" }, notes: "Militia's signature: advanced weapons up to plasma." }),
+    N("resources", "silver", "Silver", "Ag", 0, 13, "Early", "Gathered", [], { madeAt: "Mine", desc: "Primary currency (Silver / Gold). Market prices move only with world events — never with your own sales. Also needed for many upgrades and luxury items." }),
+    N("resources", "gold", "Gold", "Au", 2, 13, "Mid", "Gathered", [], { madeAt: "Mine", gate: "Mining V — the last rung", desc: "Unlocks with the Mid era. Currency, upgrades and luxuries; its market price moves with world events only." }),
+    N("resources", "goldingot", "Gold Ingots", "GI", 6, 13, "Late", "Refined", ["gold", "coal"], { madeAt: "Smelter / Mint", desc: "Refined gold for upgrades, trade and jewellery." }),
+    N("resources", "puregold", "Pure Gold Ingots", "PG", 7, 13, "Late", "Refined", ["goldingot"], { madeAt: "Mint (suggestion)", desc: "Top-grade gold — late era checklists and wonders (suggestion)." }),
+    N("resources", "gems", "Gems", "Gm", 5, 14, "Late", "Gathered", [], { ext: ["tools:pick4"], madeAt: "Deep Mine", gate: "Steel Pick", desc: "Rubies and other rare stones for jewellery and luxury trade.", access: { ashen: "boost" }, notes: "Ashen boost: deep mining — rubies." }),
+    N("resources", "jewellery", "Jewellery", "Jw", 7, 14, "Late", "Luxury", ["gems", "goldingot", "silver"], { madeAt: "Jeweller (suggestion)", desc: "Luxury good — trade, happiness and era checklists (suggestion)." }),
+    /* ---------------- PRODUCE (Droids: no access to anything here) ---------------- */
+    P("fish", "Fish", "Fi", 0, 0, "Early", "Gathered", [], { ext: ["tools:fish1"], madeAt: "Fishing Hut / dock", gate: "Fishing gear (Tools & Equipment)", desc: "From fishable water. Edible raw; better smoked.", access: { hunters: "boost", militia: "weak" } }),
+    P("berries", "Berries", "Be", 0, 1, "Early", "Gathered", [], { madeAt: "Forager → Orchard (late)", desc: "Early forage. Orchards make it self-sustaining late game.", access: { militia: "weak" } }),
+    P("herbs", "Herbs", "He", 0, 2, "Early", "Gathered", [], { madeAt: "Herb Garden (suggestion)", desc: "Medicine and bandages — stockpile before disease or radiation events.", access: { militia: "weak" } }),
+    P("game", "Wild Game", "WG", 0, 3, "Early", "Gathered", [], { madeAt: "Hunting Lodge", desc: "Hunting wild animals for meat and hides.", access: { hunters: "boost", militia: "weak" } }),
+    P("grain", "Grain", "Gr", 1, 4, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Staple crop for flour, bread and alcohol (suggestion). Yield follows the fertility map; droughts strip fertility unless irrigation was prepared.", access: { hunters: "boost", militia: "weak" } }),
+    P("veg", "Vegetables", "Vg", 1, 5, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Stews and kitchen meals (suggestion).", access: { hunters: "boost", militia: "weak" } }),
+    P("cotton", "Cotton", "Ct", 1, 6, "Early", "Farm crop", [], { madeAt: "Farm", desc: "Cotton → Cloth (Visions).", access: { militia: "weak" } }),
+    P("cattle", "Cattle", "Ca", 1, 7, "Early", "Pasture", [], { ext: ["resources:water"], madeAt: "Pasture", desc: "Milk, meat, leather and manure. Livestock drink water.", access: { hunters: "boost", militia: "weak" } }),
+    P("chickens", "Chickens", "Ck", 1, 8, "Early", "Pasture", [], { madeAt: "Pasture / coop", desc: "Eggs and meat.", access: { hunters: "boost", militia: "weak" } }),
+    P("pigs", "Pigs & Goats", "Pg", 1, 9, "Early", "Pasture", [], { madeAt: "Pasture", desc: "Meat, goat milk and manure (suggestion).", access: { hunters: "boost", militia: "weak" } }),
+    P("wildbreed", "Wild Taming", "WT", 1, 10, "Early", "Pasture", [], { madeAt: "Ranch (suggestion)", desc: "Tame and breed wild map animals — horses, bison, boar — alongside farm stock (suggestion).", access: { default: "no", hunters: "boost" }, notes: "Hunters-only suggestion (best animal products) — remove if it doesn't fit." }),
+    P("milk", "Milk", "Mk", 2, 7, "Early", "Raw", ["cattle", "pigs"], { desc: "Edible raw; becomes cheese in the kitchen.", access: { hunters: "boost" } }),
+    P("eggs", "Eggs", "Eg", 2, 8, "Early", "Raw", ["chickens"], { desc: "Edible raw or cooked.", access: { hunters: "boost" } }),
+    P("meat", "Meat", "Mt", 2, 9, "Early", "Raw", ["cattle", "pigs", "chickens", "game", "wildbreed"], { madeAt: "Butcher (suggestion)", desc: "Edible raw; far better cooked, smoked or stewed.", access: { hunters: "boost" } }),
+    P("leather", "Leather", "Lt", 2, 10, "Early", "Raw material", ["cattle", "game", "wildbreed"], { madeAt: "Tannery (suggestion)", desc: "Pasture and hunting by-product. Distinct from Cloth — the two combine in armour, bows, slings and saddles.", access: { hunters: "boost" } }),
+    P("humanmeat", "Human Meat", "Hm", 2, 11, "Early", "Raw", [], { madeAt: "Ash Rites (Ashen only)", desc: "Ashen-only, through the exclusive cannibalism branch of the Ash Rites tree. A dark fallback when starving — fear, unrest and food-quality effects TBD.", access: { default: "no", ashen: "yes" } }),
+    P("alcohol", "Alcohol", "Al", 3, 1, "Mid", "Processed", ["berries", "grain"], { ext: ["resources:water"], madeAt: "Distillery (suggestion)", desc: "Trade good, medicine input, fuel and molotovs." }),
+    P("medicine", "Medicine", "Md", 3, 2, "Mid", "Processed", ["herbs", "alcohol"], { madeAt: "Apothecary (suggestion)", desc: "Treats disease and radiation sickness — stockpile before a radiation burst, which gives very little warning.", access: { ashen: "weak" }, notes: "Ashen are weak at Health (60% branch)." }),
+    P("flour", "Flour", "Fl", 3, 4, "Mid", "Processed", ["grain"], { madeAt: "Mill (suggestion)", desc: "Ground grain for bread." }),
+    P("fertiliser", "Fertiliser", "Fz", 3, 5, "Mid", "Processed", ["cattle", "pigs", "chickens"], { madeAt: "Manure Pit (suggestion)", desc: "Boosts farm fertility. Also stands in for nitrates in gunpowder (suggestion)." }),
+    P("cloth", "Cloth", "Cf", 3, 6, "Early", "Processed", ["cotton"], { madeAt: "Weaver", desc: "Clothing, padded armour, bandages, gas masks and rope. Combines with Leather." }),
+    P("bread", "Bread", "Bd", 4, 4, "Mid", "Meal", ["flour"], { ext: ["resources:water"], madeAt: "Kitchen", desc: "Staple meal (suggestion)." }),
+    P("stew", "Hearty Stew", "Sw", 4, 7, "Mid", "Meal", ["meat", "veg"], { ext: ["resources:water"], madeAt: "Kitchen", desc: "Combining ingredients gives a higher yield than eating them raw (suggestion)." }),
+    P("cheese", "Cheese", "Cs", 4, 8, "Mid", "Meal", ["milk"], { ext: ["resources:salt"], madeAt: "Creamery (suggestion)", desc: "Long-keeping dairy (suggestion)." }),
+    P("smoked", "Smoked / Preserved Food", "Sm", 4, 9, "Mid", "Meal", ["meat", "fish"], { ext: ["resources:salt", "resources:charcoal"], madeAt: "Smokehouse", desc: "Long-lasting food for trade and crisis stockpiles. The Hunters excel at export.", access: { hunters: "boost" } }),
+    P("feast", "Feast", "Fs", 5, 7, "Late", "Meal", ["bread", "stew", "cheese", "alcohol"], { madeAt: "Kitchen (late)", desc: "Late foods can give minor bonuses (Visions). Exact bonuses TBD." }),
+    P("rations", "Field Rations", "Rt", 5, 9, "Late", "Meal", ["smoked", "bread"], { madeAt: "Kitchen", desc: "Packed food for scavengers, traders and expeditions — keeps through droughts (suggestion)." }),
+    /* ---------------- TOOLS & EQUIPMENT (material tiers I–V) ---------------- */
+    T("axe1", "Stone Axe", "Ax", 0, 0, "Axe", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Scrub and deadfall wood (suggestion)", desc: "Also the colony's first weapon." }),
+    T("axe2", "Bronze Axe", "Ax", 1, 0, "Axe", ["axe1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Faster felling (suggestion)" }),
+    T("axe3", "Iron Axe", "Ax", 2, 0, "Axe", ["axe2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Softwood forests (Visions)" }),
+    T("axe4", "Steel Axe", "Ax", 3, 0, "Axe", ["axe3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Hardwood (Visions)" }),
+    T("axe5", "Hardened Axe", "Ax", 4, 0, "Axe", ["axe4"], { ext: ["resources:hardened", "resources:hardwood"], madeAt: "Blacksmith", gate: "Fastest felling; late tree farms (suggestion)", desc: "Forged from Hardened Steel ingots — made or imported." }),
+    T("pick1", "Stone Pick", "Pk", 0, 1, "Pick", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Stone, clay, salt" }),
+    T("pick2", "Bronze Pick", "Pk", 1, 1, "Pick", ["pick1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Tin & copper — Mining I–II" }),
+    T("pick3", "Iron Pick", "Pk", 2, 1, "Pick", ["pick2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Iron & coal — Mining III–IV" }),
+    T("pick4", "Steel Pick", "Pk", 3, 1, "Pick", ["pick3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Gold & gems — Mining V", access: { ashen: "boost" } }),
+    T("pick5", "Hardened Pick", "Pk", 4, 1, "Pick", ["pick4"], { ext: ["resources:hardened"], madeAt: "Blacksmith", gate: "Deep veins — late mine extensions (Visions)", access: { ashen: "boost" } }),
+    T("farm1", "Stone Hoe", "Ho", 0, 2, "Farm tool", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Basic crop plots", access: { droids: "no" } }),
+    T("farm2", "Bronze Sickle", "Si", 1, 2, "Farm tool", ["farm1"], { ext: ["resources:bronze"], madeAt: "Blacksmith", gate: "Faster harvest (suggestion)", access: { droids: "no" } }),
+    T("farm3", "Iron Scythe", "Sy", 2, 2, "Farm tool", ["farm2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Large fields (suggestion)", access: { droids: "no" } }),
+    T("farm4", "Steel Plough", "Pl", 3, 2, "Farm tool", ["farm3"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Highest yield per farm (suggestion)", access: { droids: "no" } }),
+    T("build1", "Stone Mallet", "Ml", 0, 3, "Building tool", [], { ext: ["resources:stone", "resources:wood"], madeAt: "Workbench (suggestion)", gate: "Basic construction" }),
+    T("build2", "Bronze Saw", "Sw", 1, 3, "Building tool", ["build1"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Faster building (suggestion)" }),
+    T("build3", "Iron Toolset", "Ts", 2, 3, "Building tool", ["build2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Building upgrades", desc: "This is the generic “Tools” good from the Visions mid list — consumed by building upgrades (suggestion)." }),
+    T("build4", "Steel Toolset", "Ts", 3, 3, "Building tool", ["build3"], { ext: ["resources:steel", "resources:nails"], madeAt: "Blacksmith", gate: "Advanced upgrades (suggestion)" }),
+    T("build5", "Hardened Toolset", "Ts", 4, 3, "Building tool", ["build4"], { ext: ["resources:hardened"], madeAt: "Blacksmith", gate: "Wonders and late upgrades (suggestion)" }),
+    T("fish1", "Hook & Line", "Hk", 0, 4, "Fishing gear", [], { ext: ["resources:wood", "produce:cloth"], madeAt: "Workbench (suggestion)", gate: "Shore fishing", access: { droids: "no" } }),
+    T("fish2", "Fishing Net", "Nt", 1, 4, "Fishing gear", ["fish1"], { ext: ["produce:cloth"], madeAt: "Weaver", gate: "More fish per trip (suggestion)", access: { droids: "no" } }),
+    T("fish3", "Iron Harpoon", "Hp", 2, 4, "Fishing gear", ["fish2"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Big fish, deep water (suggestion)", access: { droids: "no" } }),
+    T("fish4", "Trawler Kit", "Tw", 3, 4, "Fishing gear", ["fish3"], { ext: ["resources:steel", "produce:cloth"], madeAt: "Dock (suggestion)", gate: "Boats and deep water (suggestion)", access: { droids: "no" } }),
+    T("butch1", "Flint Knife", "Kn", 0, 5, "Butchery", [], { ext: ["resources:stone"], madeAt: "Workbench (suggestion)", gate: "Basic meat & hides", access: { droids: "no" } }),
+    T("butch2", "Bronze Knife", "Kn", 1, 5, "Butchery", ["butch1"], { ext: ["resources:bronze"], madeAt: "Blacksmith", gate: "Cleaner cuts (suggestion)", access: { droids: "no" } }),
+    T("butch3", "Iron Cleaver", "Cv", 2, 5, "Butchery", ["butch2"], { ext: ["resources:iron"], madeAt: "Blacksmith", gate: "More meat & leather per animal (suggestion)", access: { droids: "no" } }),
+    T("butch4", "Steel Skinning Kit", "Sk", 3, 5, "Butchery", ["butch3"], { ext: ["resources:steel"], madeAt: "Blacksmith", gate: "Best leather yield (suggestion)", access: { droids: "no" } }),
+    /* weapons — goods: carried by guards, used as tools, stockpiled or sold */
+    T("knife", "Scrap Knife", "SK", 0, 6, "Melee weapon", [], { ext: ["resources:scrap"], madeAt: "Workbench (suggestion)", gate: "Watch / guard kit — first rung", desc: "The first blade: cuts rope and hides, arms the watch, sells cheap. Knives → axes → swords." }),
+    T("waraxe", "Bronze War Axe", "WA", 1, 6, "Melee weapon", ["knife"], { ext: ["resources:bronze", "resources:wood"], madeAt: "Blacksmith", gate: "Guard kit — Tier II", desc: "Heavier axe head on a long haft. Doubles as a felling tool in a pinch." }),
+    T("sword", "Iron Sword", "IS", 2, 6, "Melee weapon", ["waraxe"], { ext: ["resources:iron", "resources:wood"], madeAt: "Blacksmith", gate: "Guard kit — Tier III", desc: "Standard forged blade — a steady trade good." }),
+    T("longblade", "Steel Longblade", "LB", 3, 6, "Melee weapon", ["sword"], { ext: ["resources:steel", "resources:wood"], madeAt: "Blacksmith", gate: "Guard kit — Tier IV", desc: "Fine steel blade; sells well to micro-colonies." }),
+    T("warblade", "Hardened Warblade", "HW", 4, 6, "Melee weapon", ["longblade"], { ext: ["resources:hardened", "resources:wood"], madeAt: "Blacksmith (imported ingots OK)", gate: "Guard kit — Tier V", desc: "Top-tier blade from Hardened Steel — made or imported ingots." }),
+    T("sling", "Sling", "SL", 0, 7, "Bow", [], { ext: ["produce:leather", "resources:stone"], madeAt: "Workbench", gate: "Hunting small game; watch kit", access: { hunters: "boost", droids: "no" } }),
+    T("shortbow", "Short Bow", "SB", 1, 7, "Bow", ["sling"], { ext: ["resources:wood", "produce:leather"], madeAt: "Bowyer (suggestion)", gate: "Hunting Lodge kit", access: { hunters: "boost", droids: "no" } }),
+    T("longbow", "Longbow", "Lb", 2, 7, "Bow", ["shortbow"], { ext: ["resources:wood", "resources:iron", "produce:leather"], madeAt: "Bowyer (suggestion)", gate: "Big game", access: { hunters: "boost", droids: "no" } }),
+    T("compound", "Compound Bow", "CB", 3, 7, "Bow", ["longbow"], { ext: ["resources:steel", "resources:wire", "produce:cloth"], madeAt: "Bowyer (suggestion)", gate: "Silent hunting at range", access: { hunters: "boost", droids: "no" } }),
+    T("pistol", "Pipe Pistol", "PP", 1, 8, "Firearm", [], { ext: ["resources:scrap", "resources:bronze", "resources:gunpowder"], madeAt: "Gunsmith (suggestion)", gate: "First handgun — needs gunpowder (Mid)", desc: "Crude handgun. Handguns → rifles.", access: { hunters: "boost" } }),
+    T("boltrifle", "Bolt Rifle", "BR", 2, 8, "Firearm", ["pistol"], { ext: ["resources:iron", "resources:wood", "resources:gunpowder"], madeAt: "Gunsmith", gate: "Hunting and watch towers", access: { hunters: "boost" } }),
+    T("repeater", "Repeater Rifle", "RR", 3, 8, "Firearm", ["boltrifle"], { ext: ["resources:steel", "resources:mechparts", "resources:gunpowder"], madeAt: "Gunsmith", gate: "Lever-action — a Hunters' trade staple", access: { hunters: "boost" } }),
+    T("marksman", "Marksman Rifle", "MR", 4, 8, "Firearm", ["repeater"], { ext: ["resources:hardened", "resources:glass", "resources:mechparts"], madeAt: "Gunsmith", gate: "Scoped — top-tier firearm", access: { hunters: "boost" } }),
+    T("scattergun", "Scattergun", "Sg", 2, 9, "Heavy gun", [], { ext: ["resources:iron", "resources:wood", "resources:gunpowder"], madeAt: "Gunsmith", gate: "Close-range guard kit" }),
+    T("hmg", "Heavy Machine Gun", "HG", 3, 9, "Heavy gun", ["scattergun"], { ext: ["resources:steel", "resources:mechparts", "resources:gunpowder"], madeAt: "Gunsmith / Armoury (suggestion)", gate: "Mounted on walls and watchtowers", access: { militia: "boost" } }),
+    T("laserpistol", "Laser Pistol", "LP", 3, 10, "Energy weapon", [], { ext: ["resources:lasercomp", "resources:wire", "resources:steel"], madeAt: "Electronics Lab (suggestion)", gate: "Needs Laser Components", access: { hunters: "no", droids: "boost" } }),
+    T("laserrifle", "Laser Rifle", "LR", 4, 10, "Energy weapon", ["laserpistol"], { ext: ["resources:lasercomp", "resources:electronics", "resources:steel"], madeAt: "Electronics Lab (suggestion)", gate: "Late tech", access: { hunters: "no", droids: "boost" } }),
+    T("plasma", "Plasma Caster", "Pz", 4, 10, "Energy weapon", ["laserpistol"], { ext: ["resources:plasmacell", "resources:lasercomp", "resources:hardened"], madeAt: "Laboratory (suggestion)", gate: "Top of the tech ladder", access: { hunters: "no", militia: "boost", survivors: "tbd", ashen: "tbd", droids: "tbd" }, notes: "Militia: advanced weapons up to plasma." }),
+    T("molotov", "Molotov", "Mo", 0, 11, "Incendiary", [], { ext: ["produce:alcohol", "produce:cloth"], madeAt: "Munitions Workshop", gate: "Bottle, rag, fire", access: { ashen: "boost", droids: "no" } }),
+    T("pipebomb", "Pipe Bomb", "PB", 1, 11, "Explosive", ["molotov"], { ext: ["resources:scrap", "resources:gunpowder"], madeAt: "Munitions Workshop", gate: "Clears rubble and ruins (suggestion)" }),
+    T("dynamite", "Dynamite", "Dy", 2, 11, "Explosive", ["pipebomb"], { ext: ["resources:gunpowder", "resources:paper"], madeAt: "Munitions Workshop", gate: "Blasting charges speed up quarries and mines (suggestion)", access: { hunters: "boost", ashen: "boost" } }),
+    T("flamer", "Flamethrower", "Ft", 3, 11, "Incendiary", ["dynamite"], { ext: ["resources:steel", "resources:fuel", "resources:mechparts"], madeAt: "Munitions Workshop", gate: "Clears scrub and blight (suggestion)", access: { ashen: "boost" } }),
+    /* armour — goods: worn by guards and hazard workers, or sold */
+    T("padded", "Padded Cloth", "Pd", 0, 12, "Light armour", [], { ext: ["produce:cloth"], madeAt: "Weaver", gate: "Basic work and watch wear", access: { droids: "no" } }),
+    T("leatherarm", "Leather Armour", "LA", 1, 12, "Light armour", ["padded"], { ext: ["produce:leather"], madeAt: "Tannery (suggestion)", gate: "Hunters and scouts", access: { hunters: "boost", droids: "no" } }),
+    T("brigandine", "Brigandine", "Bg", 2, 12, "Light armour", ["leatherarm"], { ext: ["produce:leather", "produce:cloth", "resources:iron"], madeAt: "Tailor / Blacksmith", gate: "Riveted leather and iron", access: { droids: "no" } }),
+    T("ranger", "Ranger Duster", "RD", 3, 12, "Light armour", ["brigandine"], { ext: ["produce:leather", "produce:cloth", "resources:steel"], madeAt: "Tailor (suggestion)", gate: "Long coat over steel plates", desc: "The Hunters' signature kit — the NCR Ranger look.", access: { hunters: "boost", droids: "no" } }),
+    T("scrapplate", "Scrap Plating", "SP", 0, 13, "Heavy armour", [], { ext: ["resources:scrap"], madeAt: "Workbench", gate: "Leather → scrap → plate", desc: "Bolted-on salvage. Droids can craft metal armour to sell, but their chassis wear Droid Plating." }),
+    T("bronzescale", "Bronze Scale", "BS", 1, 13, "Heavy armour", ["scrapplate"], { ext: ["resources:bronze", "resources:scrap"], madeAt: "Blacksmith" }),
+    T("ironplate", "Iron Plate", "IP", 2, 13, "Heavy armour", ["bronzescale"], { ext: ["resources:iron", "resources:nails"], madeAt: "Blacksmith" }),
+    T("steelplate", "Steel Plate", "StP", 3, 13, "Heavy armour", ["ironplate"], { ext: ["resources:steel", "resources:nails"], madeAt: "Blacksmith / Armoury", access: { militia: "boost" } }),
+    T("hardplate", "Hardened Plate", "HP", 4, 13, "Heavy armour", ["steelplate"], { ext: ["resources:hardened", "resources:steel"], madeAt: "Armoury (imported ingots OK)", access: { militia: "boost" } }),
+    T("droidplate", "Droid Plating", "DP", 1, 14, "Chassis armour", [], { ext: ["resources:scrap", "resources:mechparts"], madeAt: "Droid Assembly (suggestion)", gate: "Droid chassis only", desc: "Bolt-on chassis armour — the only armour a droid wears.", access: { default: "no", droids: "boost" } }),
+    T("fireproof", "Fireproof Coat", "FC", 2, 14, "Hazard gear", [], { ext: ["produce:leather", "produce:cloth"], madeAt: "Tailor (suggestion)", gate: "Furnace, smelter and kiln workers", desc: "Lets furnace crews work hotter and longer (suggestion).", access: { ashen: "boost", droids: "no" } }),
+    T("hazmat", "Hazmat Suit", "HZ", 3, 14, "Hazard gear", ["fireproof"], { ext: ["produce:cloth", "resources:glass", "resources:charcoal"], madeAt: "Workshop", gate: "Radiation zones and storms", desc: "Lets workers keep gathering through a radiation burst or in irradiated ruins (suggestion).", access: { droids: "no" } }),
+    T("exoframe", "Powered Exo-Frame", "EF", 4, 14, "Hazard gear", ["hazmat"], { ext: ["resources:electronics", "resources:steel", "resources:mechparts"], madeAt: "Electronics Lab (suggestion)", gate: "Heavy lifting — builders and haulers (suggestion)", desc: "Powered frame for builders and haulers — needs charging.", access: { hunters: "no", militia: "boost", survivors: "tbd", ashen: "tbd", droids: "no" } })
   ],
   equipment: [
-    { id: "gasmask", name: "Gas Mask", code: "GM", ext: ["produce:cloth", "resources:charcoal", "resources:glass"], madeAt: "Workshop", desc: "Filters toxic air — hazard zones and poison clouds.", access: { afflicted: "boost" } },
-    { id: "filter", name: "Water Filter", code: "WF", ext: ["resources:charcoal", "produce:cloth", "resources:scrap"], madeAt: "Workshop", desc: "Cleans bad water sources (suggestion).", access: {} },
-    { id: "bandage", name: "Bandages", code: "Bn", ext: ["produce:cloth", "produce:herbs"], madeAt: "Apothecary", desc: "Field healing; stops bleeding (suggestion).", access: {} },
-    { id: "medkit", name: "Med Kit", code: "MK", ext: ["produce:medicine", "produce:cloth"], madeAt: "Apothecary", desc: "Healer supply; cleanses some status effects.", access: { scientists: "boost" } },
-    { id: "rope", name: "Rope & Pulley", code: "Rp", ext: ["produce:cloth", "resources:wood"], madeAt: "Workshop", desc: "Construction, hauling and cliffs (suggestion).", access: {} },
-    { id: "lantern", name: "Lantern", code: "Ln", ext: ["resources:glass", "produce:alcohol"], madeAt: "Workshop", desc: "Night work and vision (suggestion).", access: { pack: "no" } },
-    { id: "trapkit", name: "Trap Kit", code: "TK", ext: ["resources:wire", "resources:wood"], madeAt: "Hunting Lodge", desc: "Snares for hunting and defence — Twig's speciality.", access: { hunters: "boost", pack: "no" } },
-    { id: "saddle", name: "Saddle & Tack", code: "Sd", ext: ["produce:leather"], madeAt: "Tannery", desc: "Mounts and beasts of burden (suggestion).", access: { nomads: "boost", droids: "no" } },
-    { id: "vehicleparts", name: "Vehicle Parts", code: "VP", ext: ["resources:mechparts", "resources:steel", "resources:fuel"], madeAt: "Caravan Yard / Workshop", desc: "Builds and repairs vehicles.", access: { default: "tbd", nomads: "boost", pack: "no" } },
-    { id: "repairkit", name: "Repair Kit", code: "RK", ext: ["resources:mechparts", "resources:electronics"], madeAt: "Workshop", desc: "Repairs machines and droid chassis.", access: { droids: "boost", pack: "no" } },
-    { id: "radio", name: "Radio Set", code: "Rd", ext: ["resources:electronics", "resources:wire"], madeAt: "Electronics Lab", desc: "Ties into the Radio / TV Broadcast Centre for settler recruitment.", access: { hunters: "import", pack: "no" } }
+    { id: "gasmask", name: "Gas Mask", code: "GM", ext: ["produce:cloth", "resources:charcoal", "resources:glass"], madeAt: "Workshop", desc: "Lets workers keep working through sandstorms, smoke and toxic zones.", access: { droids: "no" } },
+    { id: "filter", name: "Water Filter", code: "WF", ext: ["resources:charcoal", "produce:cloth", "resources:scrap"], madeAt: "Workshop", desc: "Cleans dirty or irradiated water so it is safe to drink — vital after a radiation burst (suggestion).", access: { droids: "tbd" } },
+    { id: "bandage", name: "Bandages", code: "Bn", ext: ["produce:cloth", "produce:herbs"], madeAt: "Apothecary", desc: "Basic treatment for injured workers (suggestion).", access: { ashen: "weak", droids: "no" } },
+    { id: "medkit", name: "Med Kit", code: "MK", ext: ["produce:medicine", "produce:cloth"], madeAt: "Apothecary", desc: "Clinic supply — treats injuries, disease and radiation sickness.", access: { ashen: "weak", droids: "no" } },
+    { id: "rope", name: "Rope & Pulley", code: "Rp", ext: ["produce:cloth", "resources:wood"], madeAt: "Workshop", desc: "Construction, hauling and cliffs (suggestion).", access: { droids: "import" } },
+    { id: "lantern", name: "Lantern", code: "Ln", ext: ["resources:glass", "produce:alcohol"], madeAt: "Workshop", desc: "Night work and night shifts (suggestion).", access: { droids: "no" } },
+    { id: "trapkit", name: "Trap Kit", code: "TK", ext: ["resources:wire", "resources:wood"], madeAt: "Hunting Lodge", desc: "Snares for hunting and pest control — Twig's speciality.", access: { hunters: "boost", droids: "no" } },
+    { id: "saddle", name: "Saddle & Tack", code: "Sd", ext: ["produce:leather"], madeAt: "Tannery", desc: "Horses and beasts of burden for haulers and traders (suggestion).", access: { hunters: "boost", droids: "no" } },
+    { id: "ammo", name: "Ammunition", code: "Am", ext: ["resources:gunpowder", "resources:copper", "resources:scrap"], madeAt: "Munitions Workshop", desc: "Cartridges for every firearm — a steady trade good (suggestion).", access: { hunters: "boost" } },
+    { id: "vehicleparts", name: "Vehicle Parts", code: "VP", ext: ["resources:mechparts", "resources:steel", "resources:fuel"], madeAt: "Workshop", desc: "Carts, trucks and haulers for logistics (suggestion).", access: { militia: "boost" } },
+    { id: "repairkit", name: "Repair Kit", code: "RK", ext: ["resources:mechparts", "resources:electronics"], madeAt: "Workshop", desc: "Repairs machines, generators and droid chassis — the Droids' answer to medicine.", access: { droids: "boost", hunters: "weak" } },
+    { id: "chargecell", name: "Charge Cell", code: "CC", ext: ["resources:power", "resources:copper", "resources:electronics"], madeAt: "Electronics Lab", desc: "Stored power for when generators stop — droids drain them in a blackout or sandstorm (suggestion).", access: { droids: "boost", hunters: "weak" } },
+    { id: "radio", name: "Radio Set", code: "Rd", ext: ["resources:electronics", "resources:wire"], madeAt: "Electronics Lab", desc: "Ties into the Radio / TV Broadcast Centre for settler recruitment.", access: { hunters: "weak" } }
   ],
-  duoNotes: {
-    mutants: "Mutants: poor tool and weapon use — gathering penalty (TBD).",
-    droids: "Droids: no food economy — they ignore food entirely, but pay more materials.",
-    pack: "The Pack: stone → iron only. No bronze, steel or alloy refinement (could become Import only — TBD).",
-    hunters: "The Hunters: stone + wood specialists; distrust high-tech electronics (suggestion)."
+  teamNotes: {
+    survivors: "Survivors — neutral. About 80% of every branch: good at everything, best at nothing. No boosts or blocks; special alloys and plasma are still undecided.",
+    hunters: "The Hunters — land and labour. ★ food, animal products, wood and stone; ★ guns, bows and leather gear. ▼ weak electronics and power. ✕ never laser or plasma.",
+    militia: "Militia — industry. ★ steel, concrete, mechanical parts, power and electronics; ★ heavy guns, plate and plasma. ▼ weak farming, foraging and the land.",
+    ashen: "Ashen — fire and the dark economy. ★ charcoal, coal, iron, glass, fuel and gems (rubies); ★ incendiaries, blasting and fireproof gear. Only team with Human Meat (Ash Rites). ▼ weak medicine and health.",
+    droids: "Droids — no food at all: the whole Produce tab is closed, including cloth and leather. Power is their food — every droid charges at night, so the grid must be huge. ★ power, electronics, components and salvage. Water use still undecided."
   }
 };
 
 /* ==========================================================================
-   ROSTER (filter) — full profiles live in Warlords of Eden
+   TEAMS — five playable, locked pairs. Full profiles live in Warlords of Eden
    ========================================================================== */
-const EDEN_DUOS = [
-  { id: "survivors", name: "Survivors", color: "#8b9096", fx: "embers", warlords: [["viktor", "Viktor", "Images/Warlords/Viktor.jpg", "#5b8fd1"], ["ayla", "Ayla", "Images/Warlords/Ayla.jpg", "#9a6bb8"]] },
-  { id: "hunters", name: "The Hunters", color: "#a3a84e", fx: "ash", warlords: [["brick", "Brick", "Images/Warlords/Brick.jpg", "#b8875a"], ["twig", "Twig", "Images/Warlords/Twig.jpg", "#6faa45"]] },
-  { id: "scientists", name: "Scientists", color: "#3fd0c9", fx: "sparks", warlords: [["drsomething", "Dr. Something", "Images/Warlords/Dr Something.jpg", "#4f9dff"], ["mixy", "Mixy", "Images/Warlords/Mixy.jpg", "#7fe3a4"]] },
-  { id: "mutants", name: "Mutants", color: "#9bc53d", fx: "spores", warlords: [["smash", "Smash", "Images/Warlords/Smash.jpg", "#e2552f"], ["bash", "Bash", "Images/Warlords/Bash.jpg", "#d9a23a"]] },
-  { id: "afflicted", name: "Afflicted", color: "#c2c43c", fx: "spores", warlords: [["afflicted1", "Afflicted I", "Images/Warlords/Afflicted I.jpg", "#a8e04a"], ["afflicted2", "Afflicted II", "Images/Warlords/Afflicted II.jpg", "#4fb39a"]] },
-  { id: "militia", name: "Militia", color: "#a4ae74", fx: "ash", warlords: [["militia1", "Militia Brother", "Images/Warlords/Militia Brother.jpg", "#7f94a6"], ["militia2", "Militia Sister", "Images/Warlords/Militia Sister.jpg", "#c9a24a"]] },
-  { id: "bloodveil", name: "Bloodveil", color: "#c42a42", fx: "drip", warlords: [["bloodveil1", "Brunette Sister", "Images/Warlords/Brunette Sister.jpg", "#8e3a7c"], ["bloodveil2", "Redhead Sister", "Images/Warlords/Redhead Sister.jpg", "#e8643a"]] },
-  { id: "templars", name: "Templars", color: "#d6b45e", fx: "ash", warlords: [["templar1", "Templar I", "Images/Warlords/Templar I.jpg", "#e2d9c3"], ["templar2", "Templar II", "Images/Warlords/Templar II.jpg", "#b8433a"]] },
-  { id: "pack", name: "The Pack", color: "#c58a45", fx: "dust", warlords: [["pack1", "Pack Cousin I", "Images/Warlords/Pack Cousin I.jpg", "#b0412e"], ["pack2", "Pack Cousin II", "Images/Warlords/Pack Cousin II.jpg", "#d8c08a"]] },
-  { id: "ashen", name: "Ashen", color: "#ff5a1f", fx: "embers", warlords: [["blowtorch", "Blowtorch", "Images/Warlords/Blowtorch.jpg", "#ffb02e"], ["vesper", "Vesper", "Images/Warlords/Vesper.jpg", "#9da3c2"]] },
-  { id: "nomads", name: "Nomads", color: "#d7a85e", fx: "dust", warlords: [["nomad1", "Nomad Mother", "Images/Warlords/Nomad Mother.jpg", "#b8693a"], ["nomad2", "Nomad Son", "Images/Warlords/Nomad Son.jpg", "#3fbfae"]] },
-  { id: "droids", name: "Droids", color: "#4fb0ff", fx: "data", single: true, warlords: [["hive", "Droid 0001", "Images/Warlords/Droid 0001.jpg", "#bfeaff"]] }
+const TEAMS = [
+  { id: "survivors", name: "Survivors", short: "S", color: "#8b9096", fx: "embers", who: "Viktor & Ayla", identity: "Neutral — good at everything, best at nothing", warlords: [["viktor", "Viktor", "Images/Warlords/Viktor.jpg", "#5b8fd1"], ["ayla", "Ayla", "Images/Warlords/Ayla.jpg", "#9a6bb8"]] },
+  { id: "hunters", name: "The Hunters", short: "H", color: "#a3a84e", fx: "dust", who: "Brick & Twig", identity: "Land and labour — western homesteaders", warlords: [["brick", "Brick", "Images/Warlords/Brick.jpg", "#b8875a"], ["twig", "Twig", "Images/Warlords/Twig.jpg", "#6faa45"]] },
+  { id: "militia", name: "Militia", short: "M", color: "#a4ae74", fx: "ash", who: "Brother & Sister (TBD)", identity: "Industry — steel, power and plasma", warlords: [["militia1", "Militia Brother", "Images/Warlords/Militia Brother.jpg", "#7f94a6"], ["militia2", "Militia Sister", "Images/Warlords/Militia Sister.jpg", "#c9a24a"]] },
+  { id: "ashen", name: "Ashen", short: "A", color: "#ff5a1f", fx: "embers", who: "Blowtorch & Vesper", identity: "Fire and the dark economy", warlords: [["blowtorch", "Blowtorch", "Images/Warlords/Blowtorch.jpg", "#ffb02e"], ["vesper", "Vesper", "Images/Warlords/Vesper.jpg", "#9da3c2"]] },
+  { id: "droids", name: "Droids", short: "D", color: "#4fb0ff", fx: "data", single: true, who: "Droid 0001", identity: "The wildcard — power is their food", warlords: [["droid0001", "Droid 0001", "Images/Warlords/Droid 0001.jpg", "#bfeaff"]] }
 ];
-const DUO = Object.fromEntries(EDEN_DUOS.map(d => [d.id, d]));
-const WARLORD = {};
-EDEN_DUOS.forEach(d => d.warlords.forEach(([id, name, portrait, accent]) => { WARLORD[id] = { id, name, portrait, accent, duo: d.id }; }));
+const TEAM = Object.fromEntries(TEAMS.map(t => [t.id, t]));
+const WARLORD_TEAM = { hive: "droids" };
+TEAMS.forEach(t => t.warlords.forEach(w => { WARLORD_TEAM[w[0]] = t.id; }));
 const SIGILS = {
   survivors: '<circle cx="32" cy="32" r="27"/><path d="M32 13c6 9 12 14 12 23a12 12 0 0 1-24 0c0-6 3-10 6-15 2 4 3 6 6 8 0-6-2-10 0-16z"/>',
   hunters: '<circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="4"/><path d="M32 4v16M32 44v16M4 32h16M44 32h16"/>',
-  scientists: '<ellipse cx="32" cy="32" rx="27" ry="10"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="27" ry="10" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
-  mutants: '<circle cx="24" cy="32" r="16"/><circle cx="40" cy="32" r="16"/><path d="M32 19v26"/>',
-  afflicted: '<path d="M32 7c12 0 20 8 20 20 0 8-4 14-10 18v7H22v-7c-6-4-10-10-10-18C12 15 20 7 32 7z"/><circle cx="24" cy="27" r="5"/><circle cx="40" cy="27" r="5"/><circle cx="32" cy="45" r="4"/>',
   militia: '<path d="M10 10h44"/><path d="M12 20l20 11 20-11M12 32l20 11 20-11M12 44l20 11 20-11"/>',
-  bloodveil: '<path d="M32 5C24 19 15 29 15 40a17 17 0 0 0 34 0C49 29 40 19 32 5z"/><path d="M24 41a8 8 0 0 0 8 8"/>',
-  templars: '<path d="M32 5v54M13 22h38"/><path d="M26 5h12M26 59h12M13 16v12M51 16v12"/>',
-  pack: '<path d="M13 9c10 14 12 30 8 47M30 5c8 16 8 34 2 54M47 9c6 14 6 30 0 47"/>',
   ashen: '<path d="M32 4c10 14 18 20 18 34a18 18 0 0 1-36 0c0-10 6-14 8-22 4 6 6 8 8 10 2-8 0-14 2-22z"/><path d="M32 40c4 4 6 6 6 10a6 6 0 0 1-12 0c0-4 2-6 6-10z"/>',
-  nomads: '<circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="6"/><path d="M32 6v20M32 38v20M6 32h20M38 32h20M14 14l14 14M36 36l14 14M50 14L36 28M28 36L14 50"/>',
   droids: '<path d="M32 4l24 14v28L32 60 8 46V18z"/><circle cx="32" cy="32" r="10"/><circle cx="32" cy="32" r="3" fill="currentColor"/>',
-  open: '<circle cx="32" cy="32" r="26" stroke-dasharray="6 6"/><path d="M24 25a8 8 0 1 1 12 7c-3 2-4 3-4 7"/><circle cx="32" cy="46" r="1.6" fill="currentColor"/>'
+  all: '<circle cx="32" cy="10" r="6"/><circle cx="53" cy="26" r="6"/><circle cx="45" cy="51" r="6"/><circle cx="19" cy="51" r="6"/><circle cx="11" cy="26" r="6"/><circle cx="32" cy="32" r="4" fill="currentColor"/>'
 };
-const sigil = id => `<svg class="sig" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${SIGILS[id] || SIGILS.open}</svg>`;
+const sigil = id => `<svg class="sig" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${SIGILS[id] || SIGILS.all}</svg>`;
 const flag = (id, color) => `<svg class="flag" viewBox="0 0 38 44" aria-hidden="true" style="color:${color}"><path d="M8 5v37" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M11 8h16v28H11z" fill="currentColor" opacity=".22"/><path d="M11 8h16v5H11z" fill="currentColor" opacity=".7"/></svg>`;
 const crest = d => `<span class="crest" style="color:${d.color}">${sigil(d.id)}${flag(d.id, d.color)}</span>`;
 
@@ -303,71 +374,58 @@ const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a :
 function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
 const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
 const isSugg = s => /\(suggestion\)/i.test(s || "");
-const BOOKS = [["visions", "Visions", "Visions of Eden.html", false], ["warlords", "Warlords", "Warlords of Eden.html", false], ["arms", "Arms", "Arms of Eden.html", true], ["resources", "Resources", "Resources of Eden.html", true], ["maps", "Maps", "Maps of Eden.html", false]];
+const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["resources", "Resources", "Resources of Eden.html"], ["maps", "Maps", "Maps of Eden.html"]];
 const ACC = {
-  rank: { no: 0, tbd: 1, import: 2, yes: 3, boost: 4, early: 4 },
-  label: { no: "No access", tbd: "Undecided", import: "Import only", yes: "Can produce", boost: "Stronger", early: "Early access" },
-  mark: { no: "✕", tbd: "?", import: "⇄", yes: "✓", boost: "★", early: "⚡" },
-  color: { no: "var(--bad)", tbd: "var(--tbd)", import: "#e0a85a", yes: "var(--good)", boost: "var(--tbd)", early: "#4fb0ff" },
-  cycle: ["yes", "boost", "import", "tbd", "no"]
+  order: ["yes", "boost", "weak", "import", "tbd", "no"],
+  label: { yes: "Can produce", boost: "Stronger", weak: "Weaker", import: "Import only", tbd: "Undecided", no: "No access" },
+  mark: { yes: "✓", boost: "★", weak: "▼", import: "⇄", tbd: "?", no: "✕" },
+  color: { yes: "var(--good)", boost: "#f2c94c", weak: "#b7a7d6", import: "#e0a85a", tbd: "#b5ac9c", no: "var(--bad)" },
+  cycle: ["yes", "boost", "weak", "import", "tbd", "no"]
 };
-const accessOf = (item, duo) => (item.access && (item.access[duo] || item.access.default)) || "yes";
-const union = list => list.reduce((b, v) => (b == null || (ACC.rank[v] ?? 1) > (ACC.rank[b] ?? 1) ? v : b), null) || "tbd";
+const accessOf = (item, team) => (item.access && (item.access[team] || item.access.default)) || "yes";
 
-/* ---------- pair filter ---------- */
-const PAIR = { w1: "", w2: "" };
-const partner = wid => { const d = DUO[WARLORD[wid].duo]; return (d.warlords.find(w => w[0] !== wid) || d.warlords[0])[0]; };
-const pairDuos = () => { if (!PAIR.w1) return []; const a = WARLORD[PAIR.w1].duo, b = WARLORD[PAIR.w2 || PAIR.w1].duo; return a === b ? [a] : [a, b]; };
-const pairKind = () => !PAIR.w1 ? "none" : DUO[pairDuos()[0]].single ? "hive" : pairDuos().length === 1 ? "natural" : "mixed";
-const pairHash = () => (PAIR.w1 ? `${PAIR.w1}+${PAIR.w2}` : "all");
-const pairAccents = () => (!PAIR.w1 ? [] : [...new Set([PAIR.w1, PAIR.w2])].map(id => WARLORD[id]));
-const verdict = item => (PAIR.w1 ? union(pairDuos().map(d => accessOf(item, d))) : null);
-function readPair(str) {
-  const m = String(str || "").match(/^(\w+)\+(\w+)$/);
-  PAIR.w1 = PAIR.w2 = "";
-  if (!m || !WARLORD[m[1]] || !WARLORD[m[2]]) return;
-  if (DUO[WARLORD[m[1]].duo].single || DUO[WARLORD[m[2]].duo].single) { PAIR.w1 = PAIR.w2 = "hive"; return; }
-  PAIR.w1 = m[1]; PAIR.w2 = m[1] === m[2] ? partner(m[1]) : m[2];
-}
-function setPair(slot, id) {
-  const prev = pairKind();
-  if (!id) { if (slot === 1) PAIR.w1 = PAIR.w2 = ""; else if (PAIR.w1) PAIR.w2 = partner(PAIR.w1); }
-  else if (DUO[WARLORD[id].duo].single) PAIR.w1 = PAIR.w2 = id;
-  else if (slot === 1) { PAIR.w1 = id; if (!PAIR.w2 || prev !== "mixed" || PAIR.w2 === id || DUO[WARLORD[PAIR.w2].duo].single) PAIR.w2 = partner(id); }
-  else { if (!PAIR.w1 || DUO[WARLORD[PAIR.w1].duo].single) PAIR.w1 = partner(id); PAIR.w2 = id; if (PAIR.w1 === PAIR.w2) PAIR.w1 = partner(id); }
-  try { localStorage.setItem("edenCodex.pair", pairHash()); } catch (e) {}
-  SFX.play(pairKind() === "mixed" ? "duoLoad" : "select");
+/* ---------- team selector ---------- */
+const teamHash = () => state.team || "all";
+const verdict = item => (state.team ? accessOf(item, state.team) : null);
+function setTeam(id) {
+  id = TEAM[id] ? id : "";
+  if (id === state.team) return;
+  state.team = id;
+  try { localStorage.setItem("edenCodex.team", id || "all"); } catch (e) {}
+  SFX.play(id ? "duoLoad" : "select");
   renderAll();
 }
-function pairLabel() {
-  const k = pairKind(); if (k === "none") return "No filter — showing every Duo's access";
-  const a = WARLORD[PAIR.w1], b = WARLORD[PAIR.w2];
-  if (k === "hive") return "Droid 0001 — commands alone, never mixes";
-  if (k === "natural") return `Natural Duo · ${DUO[a.duo].name}`;
-  return `Mixed pair · ${a.name} + ${b.name}`;
+function allItems() { return DATA.nodes.map(n => ({ kind: "node", item: n })).concat(DATA.equipment.map(e => ({ kind: "equip", item: e }))); }
+function teamCounts(teamId) {
+  const c = {}; ACC.order.forEach(s => { c[s] = 0; });
+  allItems().forEach(r => { c[accessOf(r.item, teamId)]++; });
+  return c;
 }
-function pslot(slot) {
-  const wid = slot === 1 ? PAIR.w1 : PAIR.w2, w = wid ? WARLORD[wid] : null, d = w ? DUO[w.duo] : null, hive = pairKind() === "hive";
-  const opts = (slot === 1 ? `<option value="">— No filter · show all —</option>` : `<option value="">${hive ? "Droid 0001 commands alone" : "— pick Warlord I first —"}</option>`) +
-    EDEN_DUOS.map(dd => `<optgroup label="${esc(dd.name)}">${dd.warlords.map(([id, nm]) => `<option value="${id}" ${id === wid && !(hive && slot === 2) ? "selected" : ""} ${slot === 2 && dd.single ? "disabled" : ""}>${esc(nm)}${dd.single ? " (solo)" : ""}</option>`).join("")}</optgroup>`).join("");
-  const c = d ? d.color : "#6f675b";
-  return `<div class="pslot" style="--c:${c};--wa:${w ? w.accent : c}"><span class="pthumb">${sigil(d ? d.id : "open")}${w ? IMG.tag(w.portrait) : ""}</span>
-    <label><span class="plabel">${w ? `<i>●</i> ` : ""}Warlord ${slot === 1 ? "I" : "II"}${d ? ` · <b style="color:${c}">${esc(d.name)}</b>` : ""}</span>
-    <select ${slot === 2 && (!PAIR.w1 || hive) ? "disabled" : ""} onchange="setPair(${slot},this.value)">${opts}</select></label>${d ? flag(d.id, c) : ""}</div>`;
+function teamCard(t) {
+  const cur = (t ? t.id : "") === state.team;
+  const color = t ? t.color : "#c9a24a";
+  const icons = t ? t.warlords.map(w => `<span class="tthumb" title="${esc(w[1])}">${sigil(t.id)}${IMG.tag(w[2], false, w[1])}</span>`).join("") : `<span class="tthumb">${sigil("all")}</span>`;
+  return `<button type="button" class="tcard ${cur ? "cur" : ""}" style="--c:${color}" role="radio" aria-checked="${cur}" onclick="setTeam('${t ? t.id : ""}')" title="${esc(t ? `${t.name} — ${t.identity}` : "Every team's access at once")}">
+    <span class="tc-icons">${icons}</span><b>${esc(t ? t.name : "All teams")}</b><small>${esc(t ? t.who : "Overview")}</small></button>`;
 }
-function pairBarHTML() {
-  const k = pairKind(), ds = pairDuos();
-  return `${pslot(1)}<div class="pmid"><div class="pkind ${k}">${esc(pairLabel())}</div>
-    <div class="pchips">${pairAccents().map(w => `<span class="chip" style="color:${w.accent};border-color:${w.accent}">${sigil(w.duo)}${esc(w.name)}</span>`).join('<span class="xsep">+</span>') || '<span class="dim">Pick a Warlord to grey out what that team cannot use</span>'}</div>
-    <div class="prule">${k === "mixed" ? "Union rule — if either side has it, the pair has it" : "The filter carries across Arms & Resources"}</div>
-    <div class="center-row" style="margin-top:6px">${k === "mixed" ? `<button class="mini" onclick="setPair(2,partner(PAIR.w1))">⇄ Natural partner</button>` : ""}${PAIR.w1 ? `<button class="mini" onclick="setPair(1,'')">✕ Clear filter</button>` : ""}</div></div>${pslot(2)}`;
+function teamBarHTML() {
+  const t = TEAM[state.team];
+  let sum;
+  if (!t) sum = `<span class="tb-id">All teams — each tile shows which teams differ from ✓.</span><span>Pick a team to grey out what it cannot acquire or process. Teams are locked pairs — no mixing.</span>`;
+  else {
+    const c = teamCounts(t.id);
+    sum = `<span class="tb-id" style="color:${t.color}">${esc(t.identity)}</span>
+      ${["boost", "weak", "import", "tbd", "no"].filter(s => c[s]).map(s => `<span class="chip" style="--sc:${ACC.color[s]}" title="${ACC.label[s]} across all three tabs"><b>${ACC.mark[s]}</b>${c[s]} ${ACC.label[s]}</span>`).join("")}
+      <a class="mini" href="${encodeURI("Warlords of Eden.html")}#${t.id}">Warlords profile ↗</a><a class="mini" href="${encodeURI("Maps of Eden.html")}#map/${t.id}">Team map ↗</a>`;
+  }
+  return `<div class="tb-cards" role="radiogroup" aria-label="Team">${teamCard(null)}${TEAMS.map(teamCard).join("")}</div><div class="tb-sum">${sum}</div>`;
 }
 
 /* ==========================================================================
    STATE + PERSISTENCE (browser edits + Save into HTML)
    ========================================================================== */
 const STORE_KEY = "resourcesOfEden.v1";
-const state = { tab: "resources", editing: false };
+const state = { tab: "resources", team: "", editing: false, glance: false };
 let DATA = null, fileRev = "factory", reopen = null, quiet = false;
 function readBaked() { try { const t = $("#codex-baked").textContent.trim(); return t && t !== "null" ? JSON.parse(t) : null; } catch (e) { return null; } }
 function boot() {
@@ -406,7 +464,7 @@ function exportData() { const a = document.createElement("a"); a.href = URL.crea
 function importData(file) {
   if (!file) return;
   const r = new FileReader();
-  r.onload = () => { try { const d = JSON.parse(r.result); if (!d.nodes || !d.tabs) throw 0; DATA = d; persist("Imported"); renderAll(); } catch (e) { toast("Import failed — not a Resources of Eden file"); } };
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d.nodes || !d.tabs) throw 0; d.equipment = d.equipment || []; d.teamNotes = d.teamNotes || {}; DATA = d; persist("Imported"); renderAll(); } catch (e) { toast("Import failed — not a Resources of Eden file"); } };
   r.readAsText(file);
 }
 function resetData() {
@@ -437,24 +495,65 @@ function usesOf(id) {
 }
 const laneColor = n => (DATA.lanes[n.tab][n.col] || {}).color || "var(--tab)";
 const imgPath = (item, folder) => `Images/${folder}/${item.name.replace(/[\/\\:*?"<>|]/g, "-")}.jpg`;
+const openFn = r => (r.kind === "node" ? `openNode('${r.item.id}')` : `openEquip('${r.item.id}')`);
 
 /* ==========================================================================
    TREE CANVAS
    ========================================================================== */
 const GEO = { head: 44, colW: 172, rowH: 140, nodeW: 144, nodeH: 100 };
-function nodeCard(n, color, onclick, extCount) {
+function tileActs(editJs, forkJs, removeJs) {
+  return `<div class="tile-acts">
+    <button type="button" class="tile-act fork" title="Add a connected tile in the row below" aria-label="Add a connected tile below" onclick="event.stopPropagation();${forkJs}">+</button>
+    <button type="button" class="tile-act edit" title="Edit this tile" aria-label="Edit this tile" onclick="event.stopPropagation();${editJs}">✎</button>
+    <button type="button" class="tile-act del" title="Remove this tile" aria-label="Remove this tile" onclick="event.stopPropagation();${removeJs}">×</button>
+  </div>`;
+}
+function guardOpen(fn) { if (!state.editing) fn(); }
+function uniqueId(name, ids) {
+  let base = String(name || "node").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 18) || "node";
+  const set = new Set(ids);
+  let id = base, i = 2;
+  while (set.has(id)) id = base + i++;
+  return id;
+}
+function laneLayout(lanes, bands, items) {
+  const groups = {};
+  items.forEach(n => { const k = n.row + ":" + n.col; (groups[k] = groups[k] || []).push(n); });
+  Object.values(groups).forEach(g => g.sort((a, b) => (a.slot || 0) - (b.slot || 0)).forEach((n, i) => { n.slot = i; }));
+  const colW = lanes.map((_, c) => {
+    let m = 1;
+    Object.keys(groups).forEach(k => { if (Number(k.split(":")[1]) === c) m = Math.max(m, groups[k].length); });
+    return Math.max(GEO.colW, 12 + m * (GEO.nodeW + 8));
+  });
+  const colX = [];
+  let x = 8;
+  colW.forEach(w => { colX.push(x); x += w; });
+  const pos = {};
+  items.forEach(n => {
+    const g = groups[n.row + ":" + n.col], gap = 8;
+    const inner = g.length * GEO.nodeW + (g.length - 1) * gap;
+    const start = colX[n.col] + Math.max(6, (colW[n.col] - inner) / 2);
+    pos[n.id] = { x: start + n.slot * (GEO.nodeW + gap), y: GEO.head + n.row * GEO.rowH + (GEO.rowH - GEO.nodeH) / 2 };
+  });
+  return { pos, colX, colW, W: x + 8, H: GEO.head + bands.length * GEO.rowH + 16 };
+}
+function accBadge(item) {
+  const v = verdict(item);
+  if (v) return v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : "";
+  const diff = TEAMS.map(t => [t, accessOf(item, t.id)]).filter(([, s]) => s !== "yes");
+  return diff.length ? `<span class="tmarks">${diff.map(([t, s]) => `<i style="--c:${t.color};color:${ACC.color[s]}" title="${esc(t.name)}: ${ACC.label[s]}"><em>${t.short}</em>${ACC.mark[s]}</i>`).join("")}</span>` : "";
+}
+function nodeCard(n, color, extCount) {
   const v = verdict(n);
   const cls = [!n.locked ? "placeholder" : "", v === "no" ? "gated" : "", v === "import" ? "imp" : ""].join(" ");
-  const badge = v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : "";
-  return `<div class="node ${cls}" data-key="${n.id}" style="--acc:${color}" onclick="${onclick}">${badge}
+  return `<div class="node ${cls}" data-key="${n.id}" style="--acc:${color}" onclick="guardOpen(function(){openNode('${n.id}')})">${accBadge(n)}
     <div class="code">${esc(n.code)}</div><div class="n-name">${esc(n.name)}</div><div class="n-sub">${esc(n.era)} · ${esc(n.kind)}</div>
-    ${extCount ? `<span class="ext" title="Also needs inputs from another tab">↗${extCount}</span>` : ""}</div>`;
+    ${extCount ? `<span class="ext" title="Also takes inputs not drawn as lines (other tabs or later rows) — open the tile to see them">↗${extCount}</span>` : ""}
+    ${tileActs(`openNode('${n.id}')`, `forkNode('${n.id}')`, `removeNode('${n.id}')`)}</div>`;
 }
 function treeHTML(tab) {
   const lanes = DATA.lanes[tab], bands = DATA.bands[tab], nodes = DATA.nodes.filter(n => n.tab === tab);
-  const W = lanes.length * GEO.colW + 16, H = GEO.head + bands.length * GEO.rowH + 8;
-  const pos = {};
-  nodes.forEach(n => { pos[n.id] = { x: 8 + n.col * GEO.colW + (GEO.colW - GEO.nodeW) / 2, y: GEO.head + n.row * GEO.rowH + (GEO.rowH - GEO.nodeH) / 2 }; });
+  const L = laneLayout(lanes, bands, nodes), pos = L.pos, W = L.W, H = L.H;
   let links = "";
   nodes.forEach(n => n.from.forEach(f => {
     const a = pos[f], b = pos[n.id]; if (!a || !b) return;
@@ -465,9 +564,9 @@ function treeHTML(tab) {
     <div class="tc-labels" style="padding-top:${GEO.head}px">${bands.map(b => `<div class="tc-blabel" style="height:${GEO.rowH}px"><b>${esc(b.label)}</b><small>${esc(b.sub)}</small></div>`).join("")}</div>
     <div class="tc-scroll"><div class="tc-canvas" style="width:${W}px;height:${H}px">
       ${bands.map((b, i) => `<div class="tc-band ${i % 2 ? "alt" : ""}" style="top:${GEO.head + i * GEO.rowH}px;height:${GEO.rowH}px"></div>`).join("")}
-      ${lanes.map((l, i) => `<div class="tc-lane" style="left:${8 + i * GEO.colW}px;width:${GEO.colW}px;--lc:${l.color}">${esc(l.label)}</div>`).join("")}
+      ${lanes.map((l, i) => `<div class="tc-lane" style="left:${L.colX[i]}px;width:${L.colW[i]}px;--lc:${l.color}">${esc(l.label)}</div>`).join("")}
       <svg class="tc-links" width="${W}" height="${H}">${links}</svg>
-      ${nodes.map(n => `<div class="tc-node" style="left:${pos[n.id].x}px;top:${pos[n.id].y}px;width:${GEO.nodeW}px;height:${GEO.nodeH}px">${nodeCard(n, laneColor(n), `openNode('${n.id}')`, n.ext.length)}</div>`).join("")}
+      ${nodes.map(n => `<div class="tc-node" style="left:${pos[n.id].x}px;top:${pos[n.id].y}px;width:${GEO.nodeW}px;height:${GEO.nodeH}px">${nodeCard(n, laneColor(n), n.ext.length)}</div>`).join("")}
     </div></div></div>`;
 }
 function wireTree() {
@@ -491,55 +590,79 @@ function wireTree() {
   ["pointerup", "pointerleave"].forEach(ev => sc.addEventListener(ev, () => { drag = null; sc.classList.remove("grab"); }));
 }
 
+/* ---------- team access at a glance (per tab) ---------- */
+function glanceHTML(tabId) {
+  const items = DATA.nodes.filter(n => n.tab === tabId).map(n => ({ kind: "node", item: n })).concat(tabId === "tools" ? DATA.equipment.map(e => ({ kind: "equip", item: e })) : []);
+  const teams = state.team ? [TEAM[state.team]] : TEAMS, cols = ["boost", "weak", "import", "tbd", "no"];
+  const counts = teams.map(t => { const c = {}; cols.forEach(s => { c[s] = items.filter(r => accessOf(r.item, t.id) === s).length; }); return [t, c]; });
+  const summary = counts.map(([t, c]) => `<span class="gl-count" style="--c:${t.color}"><em>${esc(t.name)}</em>${cols.filter(s => c[s]).map(s => `<b style="color:${ACC.color[s]}">${ACC.mark[s]}</b>${c[s]}`).join(" ") || "all ✓"}</span>`).join("");
+  const rows = teams.map(t => `<tr class="${state.team ? "inpair" : ""}"><td class="duo" style="color:${t.color}">${sigil(t.id)}${esc(t.name)}</td>${cols.map(s => {
+    const hit = items.filter(r => accessOf(r.item, t.id) === s);
+    return `<td><div class="gl-cell">${hit.length ? hit.map(r => `<button class="xlink" onclick="${openFn(r)}">${esc(r.item.name)}</button>`).join("") : '<span class="dim">—</span>'}</div></td>`;
+  }).join("")}</tr>`).join("");
+  return `<details class="glance" ${state.glance ? "open" : ""} ontoggle="state.glance=this.open"><summary>Team access at a glance ${summary}</summary>
+    <div class="matrix-wrap"><table class="matrix"><thead><tr><th>Team</th>${cols.map(s => `<th><b style="color:${ACC.color[s]}">${ACC.mark[s]}</b> ${ACC.label[s]}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div></details>`;
+}
+
 /* ==========================================================================
    RENDER
    ========================================================================== */
 function go(tab) { if (tab === state.tab) return; SFX.play("tab", { pitch: 1 + DATA.tabs.findIndex(t => t.id === tab) * 0.06 }); state.tab = tab; renderAll(); $(".views").scrollTop = 0; }
+function bookHref(id, file) {
+  const tm = state.team;
+  if (id === "resources") return `#${teamHash()}/${state.tab}`;
+  if (id === "warlords") return encodeURI(file) + (tm ? "#" + tm : "");
+  if (id === "maps") return encodeURI(file) + (tm ? "#map/" + tm : "");
+  return encodeURI(file);
+}
 function renderAll() {
-  const t = TAB(state.tab), ds = pairDuos();
+  const t = TAB(state.tab), tm = TEAM[state.team] || null;
   const root = document.documentElement.style;
   root.setProperty("--tab", t.color); root.setProperty("--duo-a", t.color);
-  root.setProperty("--duo-b", ds.length ? DUO[ds[ds.length - 1]].color : "#5a4a3a");
-  const acc = pairAccents(); root.setProperty("--w1", acc.length ? acc[0].accent : "#3a3128"); root.setProperty("--w2", acc.length ? acc[acc.length - 1].accent : "#3a3128");
-  $("#motif-a").dataset.m = ds[0] || ""; $("#motif-b").dataset.m = ds[ds.length - 1] || "";
-  $("#head-sigils").innerHTML = ds.map(id => crest(DUO[id])).join('<span class="xsep">✕</span>');
-  $("#book-motto").textContent = PAIR.w1 ? pairLabel() : "Every chain starts in the dirt.";
-  $("#codex-nav").innerHTML = BOOKS.map(([id, l, f, p]) => `<a class="${id === "resources" ? "cur" : ""}" href="${encodeURI(f)}${p ? "#" + pairHash() : ""}">${l}</a>`).join("");
-  $("#pairbar").innerHTML = pairBarHTML();
+  root.setProperty("--duo-b", tm ? tm.color : "#5a4a3a");
+  root.setProperty("--w1", tm ? tm.warlords[0][3] : "#3a3128"); root.setProperty("--w2", tm ? tm.warlords[tm.warlords.length - 1][3] : "#3a3128");
+  $("#motif-a").dataset.m = $("#motif-b").dataset.m = tm ? tm.id : "";
+  $("#head-sigils").innerHTML = tm ? crest(tm) : "";
+  $("#book-motto").textContent = tm ? `${tm.name} · ${tm.who} — ${tm.identity}` : "Every chain starts in the dirt.";
+  $("#codex-nav").innerHTML = BOOKS.map(([id, l, f]) => `<a class="${id === "resources" ? "cur" : ""}" href="${bookHref(id, f)}">${l}</a>`).join("");
+  $("#teambar").innerHTML = teamBarHTML();
   $("#tabs").innerHTML = DATA.tabs.map((x, i) => `<button class="btn ${x.id === t.id ? "active" : ""}" style="--tc:${x.color}" onclick="go('${x.id}')" title="Key ${i + 1}">${esc(x.label)}</button>`).join("");
-  $("#editbar").innerHTML = `<span>Edit mode — click dashed text to rewrite it; click a Duo chip in a card to cycle its access. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+  $("#editbar").innerHTML = `<span>Edit mode — green adds a connected tile in the row below, blue opens the card, red removes it. Dashed text and team chips still edit as before. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
     <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button><button class="mini" onclick="exportData()">Export JSON</button>
     <button class="mini" onclick="$('#import-file').click()">Import JSON</button><button class="mini" onclick="resetData()">Discard browser edits</button>
     <input type="file" id="import-file" accept=".json" hidden onchange="importData(this.files[0]);this.value=''">`;
   const ti = DATA.tabs.indexOf(t);
-  const notes = ds.map(d => DATA.duoNotes[d]).filter(Boolean);
-  let body = `<div class="tree-head"><div class="kicker">${t.id === "tools" ? "Material tiers I – V" : "Top to bottom: gathered → refined → advanced"}</div><h2>${esc(t.label)}</h2>
+  DATA.teamNotes = DATA.teamNotes || {};
+  const note = tm && (DATA.teamNotes[tm.id] || state.editing) ? `<div class="verdict" style="--vc:${tm.color}">${ed(`teamNotes.${tm.id}`, DATA.teamNotes[tm.id] || "—", true)}</div>` : "";
+  let body = `<div class="tree-head"><div class="kicker">${t.id === "tools" ? "Material tiers I – V · Early → Late" : "Top to bottom: gathered → refined → advanced"}</div><h2>${esc(t.label)}</h2>
     <p>${ed(`tabs.${ti}.intro`, t.intro, true)}</p></div>
-    ${notes.length ? `<div class="verdict" style="--vc:var(--tbd)">${notes.map(esc).join("<br>")}</div>` : ""}
-    <p class="foot" style="text-align:center;margin:0 0 10px">Hover a node to trace everything it comes from and leads to · drag the background to pan · click for details</p>
+    ${note}${glanceHTML(t.id)}
+    <p class="foot" style="text-align:center;margin:0 0 10px">Hover a node to trace everything it comes from and leads to · drag the background to pan · click a tile for details. Turn on Edit for the buttons on each tile.</p>
     ${treeHTML(t.id)}`;
   if (t.id === "tools") {
-    body += `<div class="sec" style="margin-top:24px"><div class="sec-title">Equipment</div>
-      <p class="foot" style="text-align:center;margin:-4px 0 12px">Misc kit — this list grows as new equipment is needed.</p>
+    body += `<div class="sec" style="margin-top:24px"><div class="sec-title">Equipment & kit</div>
+      <p class="foot" style="text-align:center;margin:-4px 0 12px">Misc goods — this list grows as new kit is needed.</p>
       <div class="bgrid">${DATA.equipment.map(e => equipCard(e)).join("")}</div>
       <div class="center-row edit-only" style="margin-top:10px"><button class="mini" onclick="addEquipment()">+ Add equipment</button></div></div>`;
   }
   body += `<p class="foot" style="text-align:center;margin-top:18px">${esc(DATA.meta.rule)}</p>`;
   $("#view").innerHTML = body;
   $("#legend").innerHTML = `<span><i class="dash"></i>Dashed = placeholder / not locked</span>
-    ${["yes", "boost", "import", "tbd", "no"].map(s => `<span><b style="color:${ACC.color[s]}">${ACC.mark[s]}</b> ${ACC.label[s]}</span>`).join("")}
+    ${ACC.order.map(s => `<span><b style="color:${ACC.color[s]}">${ACC.mark[s]}</b> ${ACC.label[s]}</span>`).join("")}
+    ${tm ? "" : `<span class="dim">${TEAMS.map(x => `<b style="color:${x.color}">${x.short}</b>`).join(" ")} = team initials on tiles</span>`}
     <span class="dim">Updated ${esc(DATA.meta.updated)} · Keys 1–3 tabs · Esc closes</span>`;
-  const fx = ds.length ? pairAccents().map(w => ({ mode: DUO[w.duo].fx, color: w.accent })) : [{ mode: "dust", color: t.color }, { mode: "ash", color: "#bdb5a6" }];
+  const fx = tm ? tm.warlords.map(w => ({ mode: tm.fx, color: w[3] })) : [{ mode: "dust", color: t.color }, { mode: "ash", color: "#bdb5a6" }];
   FX.set(fx);
-  try { history.replaceState(null, "", `#${pairHash()}/${state.tab}`); } catch (e) {}
+  try { history.replaceState(null, "", `#${teamHash()}/${state.tab}`); } catch (e) {}
   wireTree();
   applyEditable();
 }
 function equipCard(e) {
   const v = verdict(e);
   const cls = [!e.locked ? "placeholder" : "", v === "no" ? "gated" : "", v === "import" ? "imp" : ""].join(" ");
-  return `<div class="node ${cls}" style="--acc:var(--tab)" onclick="openEquip('${e.id}')">${v && v !== "yes" ? `<span class="acc" style="color:${ACC.color[v]}">${ACC.mark[v]} ${ACC.label[v]}</span>` : ""}
-    <div class="code">${esc(e.code)}</div><div class="n-name">${esc(e.name)}</div><div class="n-sub">${esc(e.madeAt)}</div></div>`;
+  return `<div class="node ${cls}" style="--acc:var(--tab)" onclick="guardOpen(function(){openEquip('${e.id}')})">${accBadge(e)}
+    <div class="code">${esc(e.code)}</div><div class="n-name">${esc(e.name)}</div><div class="n-sub">${esc(e.madeAt)}</div>
+    ${tileActs(`openEquip('${e.id}')`, `forkEquip('${e.id}')`, `removeEquip('${e.id}')`)}</div>`;
 }
 
 /* ==========================================================================
@@ -548,30 +671,35 @@ function equipCard(e) {
 function chipFor(r) {
   const tabName = r.kind === "node" ? TAB(r.item.tab).label : "Equipment";
   const v = verdict(r.item);
-  const fn = r.kind === "node" ? `openNode('${r.item.id}')` : `openEquip('${r.item.id}')`;
-  return `<button class="xlink ${v === "no" ? "gated" : ""}" onclick="${fn}" title="${esc(tabName)}">${v ? accMarkHTML(v) : ""}${esc(r.item.name)}<small class="dim">${r.kind === "node" && r.item.tab !== state.tab ? " · " + esc(tabName) : ""}</small></button>`;
+  return `<button class="xlink ${v === "no" ? "gated" : ""}" onclick="${openFn(r)}" title="${esc(tabName)}">${v ? accMarkHTML(v) : ""}${esc(r.item.name)}<small class="dim">${r.kind === "node" && r.item.tab !== state.tab ? " · " + esc(tabName) : ""}</small></button>`;
 }
 const accMarkHTML = s => `<b style="color:${ACC.color[s]}">${ACC.mark[s]}</b>`;
+const VERDICT_TEXT = {
+  boost: "One of this team's strengths — faster or higher yield.",
+  weak: "They can produce it, but slower or at higher cost (one of their weak branches).",
+  import: "They can spend bought or traded stock, but cannot produce it themselves.",
+  tbd: "Still undecided for this team.",
+  no: "This team cannot acquire or process it."
+};
 function verdictHTML(item) {
-  if (!PAIR.w1) return "";
-  const ds = pairDuos(), v = verdict(item);
-  const parts = ds.map(d => `${esc(DUO[d].name)}: ${ACC.label[accessOf(item, d)]}`).join(" · ");
-  const extra = v === "import" ? "They can spend imported or traded stock, but cannot produce it themselves." : v === "no" ? "This team cannot produce or use it." : "";
-  return `<div class="verdict" style="--vc:${ACC.color[v]}"><b style="color:${ACC.color[v]}">${ACC.mark[v]} ${esc(pairLabel())} → ${ACC.label[v]}</b><small>${parts}</small>${extra ? `<small>${extra}</small>` : ""}</div>`;
+  const tm = TEAM[state.team]; if (!tm) return "";
+  const v = verdict(item);
+  return `<div class="verdict" style="--vc:${ACC.color[v]}"><b style="color:${ACC.color[v]}">${ACC.mark[v]} ${esc(tm.name)} → ${ACC.label[v]}</b>${VERDICT_TEXT[v] ? `<small>${VERDICT_TEXT[v]}</small>` : ""}</div>`;
 }
 function accessRowHTML(item, path) {
-  return `<div class="acc-row">${EDEN_DUOS.map(d => {
+  return `<div class="acc-row">${TEAMS.map(d => {
     const s = accessOf(item, d.id);
     return `<span class="chip ${s === "no" ? "no" : ""}" style="--c:${d.color}" title="${esc(d.name)}: ${ACC.label[s]}" onclick="cycleAccess('${path}','${d.id}')">${accMarkHTML(s)}${esc(d.name)}</span>`;
   }).join("")}</div>`;
 }
-function cycleAccess(path, duo) {
+function cycleAccess(path, team) {
   if (!state.editing) return;
   const item = getPath(DATA, path); item.access = item.access || {};
-  const cur = accessOf(item, duo), next = ACC.cycle[(ACC.cycle.indexOf(cur) + 1) % ACC.cycle.length];
-  item.access[duo] = next;
-  persist(`${DUO[duo].name}: ${ACC.label[next]}`); refresh();
+  const cur = accessOf(item, team), next = ACC.cycle[(ACC.cycle.indexOf(cur) + 1) % ACC.cycle.length];
+  item.access[team] = next;
+  persist(`${TEAM[team].name}: ${ACC.label[next]}`); refresh();
 }
+const ACCESS_KEY = "✓ can produce · ★ stronger · ▼ weaker · ⇄ import only · ? undecided · ✕ none";
 function openNode(id) {
   const n = NODE(id), i = DATA.nodes.indexOf(n), base = `nodes.${i}`, t = TAB(n.tab), color = laneColor(n);
   if (n.tab !== state.tab) { state.tab = n.tab; renderAll(); }
@@ -582,16 +710,16 @@ function openNode(id) {
   openModal(`
     <div class="m-kicker">${esc(t.label)} · ${esc(n.era)} · ${esc(n.kind)}</div>
     <h3 class="m-title" style="--acc:${color}">${ed(base + ".name", n.name)}</h3>
-    <div class="m-tags"><span class="chip" style="color:${color}">${esc(n.code)} · ${esc(DATA.lanes[n.tab][n.col].label)}</span>${n.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}${isSugg(n.desc + n.madeAt) ? '<span class="badge-draft">Has suggestions</span>' : ""}</div>
+    <div class="m-tags"><span class="chip" style="color:${color}">${esc(n.code)} · ${esc((DATA.lanes[n.tab][n.col] || {}).label || "")}</span>${n.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}${isSugg(n.desc + n.madeAt + n.gate) ? '<span class="badge-draft">Has suggestions</span>' : ""}</div>
     ${verdictHTML(n)}
     ${art(imgPath(n, t.folder), n.code, color)}
     <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", n.desc || "—", true)}</p></div>
-    <div class="kv"><div><span>Made / gathered at</span><b>${ed(base + ".madeAt", n.madeAt || "—")}</b></div><div><span>Gate / requirement</span><b>${ed(base + ".gate", n.gate || "—", true)}</b></div></div>
+    <div class="kv"><div><span>Made / gathered at</span><b>${ed(base + ".madeAt", n.madeAt || "—")}</b></div><div><span>${n.tab === "tools" ? "Use / unlocks" : "Gate / requirement"}</span><b>${ed(base + ".gate", n.gate || "—", true)}</b></div></div>
     <div class="m-sec"><div class="sec-title">Made from</div>${inputs.length ? `<div class="xlinks">${inputs.map(chipFor).join("")}</div>` : '<p class="dim" style="text-align:center">Raw — gathered directly.</p>'}</div>
     <div class="m-sec"><div class="sec-title">Leads to</div>${uses.length ? `<div class="xlinks">${uses.map(chipFor).join("")}</div>` : '<p class="dim" style="text-align:center">End product in this book.</p>'}
-      ${n.alsoUsed ? `<p class="foot" style="text-align:center">Also: ${ed(base + ".alsoUsed", n.alsoUsed)} · <a class="vlink" href="${encodeURI("Arms of Eden.html")}#${pairHash()}/weapons" style="color:var(--tab)">Arms of Eden ↗</a></p>` : ""}</div>
-    <div class="m-sec"><div class="sec-title">Access by Duo</div>${accessRowHTML(n, base)}
-      <p class="foot" style="text-align:center">✓ can produce · ★ stronger · ⇄ import only · ? undecided · ✕ none${state.editing ? " — click a chip to cycle it" : ""}</p></div>
+      ${n.alsoUsed || state.editing ? `<p class="foot" style="text-align:center">Also: ${ed(base + ".alsoUsed", n.alsoUsed || "—")}</p>` : ""}</div>
+    <div class="m-sec"><div class="sec-title">Access by team</div>${accessRowHTML(n, base)}
+      <p class="foot" style="text-align:center">${ACCESS_KEY}${state.editing ? " — click a chip to cycle it" : ""}</p></div>
     ${n.notes || state.editing ? `<div class="m-sec"><div class="sec-title">Notes</div><p class="dim">${ed(base + ".notes", n.notes || "—", true)}</p></div>` : ""}
     <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.nodes[${i}])">${n.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
 }
@@ -602,7 +730,7 @@ function openEquip(id) {
   reopen = () => openEquip(id);
   const inputs = e.ext.map(refItem).filter(Boolean);
   openModal(`
-    <div class="m-kicker">Tools & Equipment · Equipment</div>
+    <div class="m-kicker">Tools & Equipment · Equipment & kit</div>
     <h3 class="m-title" style="--acc:var(--tab)">${ed(base + ".name", e.name)}</h3>
     <div class="m-tags"><span class="chip">${esc(e.code)}</span>${e.locked ? '<span class="badge-lock">Locked</span>' : '<span class="badge-ph">Placeholder</span>'}</div>
     ${verdictHTML(e)}
@@ -610,13 +738,51 @@ function openEquip(id) {
     <div class="m-sec"><div class="sec-title">Description</div><p>${ed(base + ".desc", e.desc || "—", true)}</p></div>
     <div class="kv"><div><span>Made at</span><b>${ed(base + ".madeAt", e.madeAt || "—")}</b></div><div><span>Inputs</span><b>${inputs.length} resource${inputs.length === 1 ? "" : "s"}</b></div></div>
     <div class="m-sec"><div class="sec-title">Made from</div><div class="xlinks">${inputs.map(chipFor).join("") || '<span class="dim">TBD</span>'}</div></div>
-    <div class="m-sec"><div class="sec-title">Access by Duo</div>${accessRowHTML(e, base)}</div>
+    <div class="m-sec"><div class="sec-title">Access by team</div>${accessRowHTML(e, base)}
+      <p class="foot" style="text-align:center">${ACCESS_KEY}${state.editing ? " — click a chip to cycle it" : ""}</p></div>
     <div class="m-foot"><button class="mini edit-only" onclick="toggleLock(DATA.equipment[${i}])">${e.locked ? "Mark placeholder" : "Mark locked"}</button></div>`);
 }
 function art(path, icon, color) {
   return `<div class="build-art short" style="--acc:${color}">${IMG.tag(path, true)}<div class="ph"><span class="ico">${esc(icon)}</span><span>Image placeholder — ${esc(IMG.hint(path))}</span></div></div>`;
 }
 function addEquipment() { DATA.equipment.push({ id: "eq" + Date.now(), name: "New equipment", code: "Nw", ext: [], madeAt: "Workshop", desc: "Describe it.", access: {} }); persist("Added"); renderAll(); }
+function forkNode(id) {
+  const n = NODE(id); if (!n) return;
+  const tab = n.tab, row = n.row + 1, bands = DATA.bands[tab];
+  if (row >= bands.length) bands.push({ label: "New", sub: "Branched" });
+  const b = bands[row];
+  const slot = DATA.nodes.filter(x => x.tab === tab && x.row === row && x.col === n.col).length;
+  const nid = uniqueId("new", DATA.nodes.map(x => x.id));
+  DATA.nodes.push(N(tab, nid, "New", "Nw", row, n.col, b.era || b.label, tab === "tools" ? n.kind : b.sub, [n.id], { desc: "Branched from " + n.name + ".", slot }));
+  persist("Added a tile under " + n.name);
+  renderAll();
+}
+function removeNode(id) {
+  const n = NODE(id); if (!n) return;
+  DATA.nodes.forEach(x => {
+    x.from = (x.from || []).filter(f => f !== id);
+    x.ext = (x.ext || []).filter(r => r.split(":")[1] !== id);
+  });
+  DATA.equipment.forEach(e => { e.ext = (e.ext || []).filter(r => r.split(":")[1] !== id); });
+  DATA.nodes.splice(DATA.nodes.indexOf(n), 1);
+  reopen = null; $("#modal").classList.remove("open");
+  persist("Removed " + n.name);
+  renderAll();
+}
+function forkEquip(id) {
+  const e = EQUIP(id); if (!e) return;
+  DATA.equipment.push({ id: "eq" + Date.now(), name: "New equipment", code: "Nw", ext: (e.ext || []).slice(), madeAt: e.madeAt || "Workshop", desc: "Branched from " + e.name + ".", access: Object.assign({}, e.access) });
+  persist("Added equipment");
+  renderAll();
+}
+function removeEquip(id) {
+  const i = DATA.equipment.findIndex(e => e.id === id); if (i < 0) return;
+  const name = DATA.equipment[i].name;
+  DATA.equipment.splice(i, 1);
+  reopen = null; $("#modal").classList.remove("open");
+  persist("Removed " + name);
+  renderAll();
+}
 function toggleLock(obj) { obj.locked = !obj.locked; persist(obj.locked ? "Marked locked" : "Marked placeholder"); refresh(); }
 
 /* ---------- modal, edit mode, toast ---------- */
@@ -634,8 +800,11 @@ function toggleEdit() {
   document.body.classList.toggle("editing", state.editing);
   $("#btn-edit").classList.toggle("active", state.editing);
   SFX.play("tab", { pitch: state.editing ? 1.15 : 0.88 });
-  refresh(); toast(state.editing ? "Edit mode on" : "Edit mode off");
+  refresh(); toast(state.editing ? "Edit mode on — use the buttons on each tile" : "Edit mode off");
 }
+document.addEventListener("contextmenu", e => {
+  if (state.editing && e.target.closest && e.target.closest(".node, .tc-wrap")) { e.preventDefault(); toast("Use the buttons on the tile"); }
+});
 let toastTimer;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1900); }
 document.addEventListener("focusout", e => {
@@ -762,20 +931,42 @@ const FX = (() => {
 })();
 
 /* ==========================================================================
-   START — URL: #pair/tab/open:id  (pair = "all" or warlord1+warlord2)
+   START — URL: #<team>  ·  #<team>/<tab>  ·  #<team>/<tab>/open:<id>
+   team = survivors | hunters | militia | ashen | droids | all
    ========================================================================== */
+function readHash() {
+  const out = { team: null, tab: null, open: "" };
+  decodeURIComponent(location.hash.slice(1)).split("/").filter(Boolean).forEach(p => {
+    if (p.startsWith("open:")) out.open = p.slice(5);
+    else if (p === "all") out.team = "";
+    else if (TEAM[p]) out.team = p;
+    else if (DATA.tabs.some(t => t.id === p)) out.tab = p;
+    else if (/^\w+\+\w+$/.test(p) && WARLORD_TEAM[p.split("+")[0]]) out.team = WARLORD_TEAM[p.split("+")[0]];
+  });
+  return out;
+}
+function openFromHash(id) { if (!id) return; quiet = true; if (NODE(id)) openNode(id); else if (EQUIP(id)) openEquip(id); quiet = false; }
 (function init() {
   const note = boot();
   IMG.seed(DATA.meta && DATA.meta.pictures);
-  const parts = decodeURIComponent(location.hash.slice(1)).split("/");
-  let saved = ""; try { saved = localStorage.getItem("edenCodex.pair") || ""; } catch (e) {}
-  readPair(parts[0] && parts[0] !== "" ? (parts[0] === "all" ? "" : parts[0]) : saved);
-  if (DATA.tabs.some(t => t.id === parts[1])) state.tab = parts[1];
+  const h = readHash();
+  let saved = "";
+  try {
+    saved = localStorage.getItem("edenCodex.team") || "";
+    if (!saved) { const legacy = (localStorage.getItem("edenCodex.pair") || "").split("+")[0]; saved = WARLORD_TEAM[legacy] || ""; }
+  } catch (e) {}
+  state.team = h.team !== null ? h.team : (TEAM[saved] ? saved : "");
+  if (h.tab) state.tab = h.tab;
   SFX.sync(); renderAll();
-  const open = (parts[2] || "").replace(/^open:/, "");
-  if (open) { quiet = true; if (NODE(open)) openNode(open); else if (EQUIP(open)) openEquip(open); quiet = false; }
+  openFromHash(h.open);
   if (note) toast(note);
 })();
+addEventListener("hashchange", () => {
+  const h = readHash();
+  const team = h.team !== null ? h.team : state.team, tab = h.tab || state.tab;
+  if (team !== state.team || tab !== state.tab) { state.team = team; state.tab = tab; renderAll(); }
+  openFromHash(h.open);
+});
 </script>
 </body>
 </html>

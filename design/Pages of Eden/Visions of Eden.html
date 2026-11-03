@@ -12,6 +12,27 @@
 .v-intro{max-width:820px;margin:6px auto 0;text-align:center;color:var(--ink);font-size:.98rem}
 .vcard .addrow{text-align:center;margin-top:6px}
 .vlink{color:color-mix(in srgb,var(--tab) 70%,#fff)}
+.vgrid{grid-auto-flow:row dense}
+.vgrid .vcard.wide{grid-column:1/-1}
+.vcard p{text-align:center}
+.vcard ul{text-align:left}
+.vcard.team{background:linear-gradient(180deg,color-mix(in srgb,var(--tab) 12%,transparent),rgba(0,0,0,.26) 65%)}
+.v-tag{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 10px;text-align:center;
+  font-family:var(--font-head);letter-spacing:.14em;text-transform:uppercase;font-size:.74rem;color:var(--ink-dim)}
+.v-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--tab);box-shadow:0 0 10px -1px var(--tab);border:1px solid rgba(255,255,255,.25)}
+.v-tag code{font-family:var(--font-body);font-size:.7rem;letter-spacing:.04em;text-transform:none;color:var(--ink-faint)}
+.v-pics{display:flex;justify-content:center;gap:8px;margin:0 0 10px}
+.v-pic{position:relative;width:86px;height:106px;overflow:hidden;background:rgba(0,0,0,.3);border:1px solid color-mix(in srgb,var(--tab) 55%,var(--line-2))}
+.v-pic:not(.has-img){display:none}
+.v-pic img{display:block;width:100%;height:100%;object-fit:cover}
+.v-pic .pic-count{right:3px;bottom:3px;font-size:.5rem;letter-spacing:.06em;padding:1px 4px}
+.vtable-wrap{overflow-x:auto;margin:2px 0 8px}
+.vtable{width:100%;border-collapse:collapse;font-size:.86rem}
+.vtable th,.vtable td{border:1px solid var(--line-2);padding:7px 10px;text-align:center;vertical-align:middle}
+.vtable th{font-family:var(--font-head);font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:.68rem;color:var(--ink-dim);background:rgba(0,0,0,.35)}
+.vtable td:first-child{font-family:var(--font-head);letter-spacing:.08em;color:#fff;white-space:nowrap}
+.vtable tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+.vtable tr[style] td:first-child{box-shadow:inset 4px 0 0 var(--rc);color:color-mix(in srgb,var(--rc) 65%,#fff)}
 </style>
 </head>
 <body>
@@ -22,9 +43,9 @@
   <main class="plate center" style="--acc:var(--tab)">
     <header class="duo-head">
       <div class="brandrow"><span class="brand"><b>Visions</b> of Eden</span><nav class="codex-nav" id="codex-nav"></nav></div>
-      <div class="kicker" id="book-kicker">Living overview · not a rules matrix</div>
+      <div class="kicker" id="book-kicker">Living overview · locked direction</div>
       <h1 class="duo-title">Embers of Eden</h1>
-      <div class="motto">Grow the colony. Specialise your people. Kill the other warlords.</div>
+      <div class="motto">Build the colony. Specialise your people. Survive the next crisis.</div>
     </header>
     <nav class="navbar">
       <div class="side"><button class="btn" id="btn-sound" onclick="SFX.toggleMute()">&#9836; Sound</button></div>
@@ -118,88 +139,178 @@ const IMG = (() => {
    from the markdown into here; edit in the page for quick tweaks.
    ========================================================================== */
 const DEFAULT_DATA = {
-  meta: { dataRev: "factory-2026-11-01b", updated: "2026-11-01", source: "Data/Visions_of_Eden.md" },
+  meta: { dataRev: "factory-2026-11-03-colony", updated: "2026-11-03", source: "Data/Visions_of_Eden.md" },
   tabs: [
-    { id: "overview", label: "Overview", color: "#d0702f", kicker: "What the game is", title: "Colony-builder RTS",
-      intro: "Embers of Eden is a post-apocalyptic colony-builder RTS. Players expand a survivor colony across large, themed maps, manage population and resources, and ultimately eliminate rival warlords.",
+    /* ---------------------------------------------------------------- OVERVIEW */
+    { id: "overview", label: "Overview", color: "#d0702f", kicker: "What the game is", title: "Colony survival city-builder",
+      intro: "Embers of Eden is a post-apocalyptic, isometric city-builder and colony survival game. Grow a specialised survivor colony, master deep multi-step resource chains, and keep the settlement alive through environmental crises. It is not an Age of Empires-style RTS.",
       art: { path: "Images/Visions/Overview.jpg", icon: "♨", label: "Key art placeholder" },
       sections: [
-        { h: "Pitch", p: "Draws heavily from Age of Empires while adding deeper colony identity, family / specialisation systems and persistent hero progression.",
-          list: ["Locked isometric camera", "Regicide-style victory", "Map control and tech progression", "Relic-style objectives"] },
-        { h: "Core loop", p: "Grow your colony, specialise your people, expand across the map, and kill the other warlords." },
-        { h: "Core fantasy & tone", list: ["Raw, methodical and often brutal", "Grit baseline 6–7, with peaks to 10", "Tone is delivered mostly through the duo you play: unique buildings, troops, skills, edicts and playstyle", "Dark options (slavery of POWs, forced measures when starving) are mechanical tools, not constant moral dilemmas", "Minimal cutscenes — lore is drip-fed through gameplay, warlord identities and the world"] },
-        { h: "What it is not", list: ["Not a Stardew Valley-style farming sim", "Not cozy survival craft", "Not a narrative adventure — those early concepts are fully superseded"], links: [["See retired ideas", "#retired"]] },
-        { h: "Known open points", list: ["Exact challenge list for unlocking duos", "Full resource list, production chains, and per-duo unique troops / buildings", "Light happiness / population-growth modifier details (if kept)", "Remaining questionnaire sections — maps, resources, combat depth, victory variants", "Final names and trait details for several warlords"] },
-        { h: "The Pages of Eden", p: "Four linked books document every design decision. This one stays broad; the others hold the gameplay detail.",
-          list: ["Warlords of Eden — duos, warlords, skills, tech, buildings", "Arms of Eden — troops, weapons, armour, status effects (filterable by team)", "Resources of Eden — resources, produce, tools & equipment (filterable by team)", "Maps of Eden — twelve home-turf maps with previews, game setup, terrain, neutrals and relics"],
-          links: [["Warlords of Eden", "Warlords of Eden.html"], ["Arms of Eden", "Arms of Eden.html"], ["Resources of Eden", "Resources of Eden.html"], ["Maps of Eden", "Maps of Eden.html"]] }
+        { h: "Status & phase", list: ["This is the locked direction — the codex and every other design file follow Visions_of_Eden.md, not the other way around", "Phase: still conceptualising everything before deciding what to build first", "No vertical slice or Early Access scope chosen yet"] },
+        { h: "What it is", list: ["A city-builder / colony survival game with a specialised survivor colony", "Deep multi-step resource chains are the heart of the game", "Environmental crises are the main source of tension", "Combat is only a light, secondary placeholder — shelved until later", "No traditional “win”: like Timberborn, you build and endure — unless the colony fails"],
+          links: [["Failure states", "#society"], ["Environmental pressure", "#world"]] },
+        { h: "Core loop", p: "Build the colony → assign roles and professions → specialise production → prepare stockpiles for the next crisis → expand, trade and upgrade → survive indefinitely." },
+        { h: "Primary influences", list: ["Endzone — settlers, professions, survival clarity, scrappy upgraded buildings, refinement chains", "Timberborn — complexity, polish, drought / fertility pressure, idle / builder / hauler roles, two factions that play very differently", "Cities: Skylines — water and power distribution, coverage overlays", "Tropico — leader at the centre (El Presidente-style), elections, unrest, policy building", "Final Fantasy XIII — Crystarium-style point spending on skill trees", "Age of Empires / Diablo — graphical taste and isometric feel only, not the core loop"] },
+        { h: "Core fantasy & tone", list: ["Raw, methodical and often brutal", "Grit baseline 6–7, with peaks to 10", "Tone is delivered through the team you play: economy pros / cons, their slice of the master tree, their unique building, policies and playstyle", "Dark options are mechanical tools (Ashen-only slavery and cannibalism branches, harsh policies when starving), not constant moral lectures", "Minimal cutscenes — lore is drip-fed through gameplay, warlord identities, NPC encounters and the world"] },
+        { h: "Multiplayer", p: "An afterthought for later. The core design is a strong single-player city-builder." },
+        { h: "The Pages of Eden", wide: true, p: "Key reference files. This book stays broad; the others hold the gameplay detail. The old Arms of Eden book is archived as reference only.",
+          table: { cols: ["File", "Purpose"], rows: [
+            ["Data/Visions_of_Eden.md", "Source of truth for this book"],
+            ["Visions of Eden.html", "Visual version of the vision document (this page)"],
+            ["Warlords of Eden.html", "Teams, Warlords of the Wastes, skill trees, buildings"],
+            ["Resources of Eden.html", "Resource, produce and tool chains (incl. weapons / armour as goods)"],
+            ["Maps of Eden.html", "Five team maps + World Forge"],
+            ["design/Reference/Arms of Eden (Archive).html", "Old RTS arms book — reference only"]] },
+          links: [["Warlords of Eden", "Warlords of Eden.html"], ["Resources of Eden", "Resources of Eden.html"], ["Maps of Eden", "Maps of Eden.html"]] }
       ] },
-    { id: "modes", label: "Modes", color: "#c9a24a", kicker: "Victory & game modes", title: "Regicide first",
-      intro: "Kill the opponent's warlord(s) to win. Every other mode branches from this default.",
+    /* ---------------------------------------------------------------- TEAMS */
+    { id: "teams", label: "Teams", color: "#c9a24a", kicker: "Playable teams (locked)", title: "Five teams, five economies",
+      intro: "Five playable teams. During development all five are selectable for playtesting. In the shipped game the first match is always Viktor & Ayla; the other four unlock through challenges.",
       sections: [
-        { h: "Primary victory", p: "Regicide — kill the opponent's warlord(s). Warlords are champion units that die only for the current match." },
-        { h: "Alternate victories of interest", list: ["% map control", "Wonder / economic victory", "Relic victory", "Survival", "Destroy a key building", "Territory control thresholds"] },
-        { h: "Solo", list: ["Control both warlords of your duo as independent units", "Offline capable", "Speed controls: Pause / ×2 / ×3 / unlockable ×4"] },
-        { h: "Multiplayer", list: ["Individual colonies", "Up to roughly 8–10 players", "No drop-in", "Disconnect → colony goes rogue (defensive NPC) after 30 minutes"] },
-        { h: "Duos", list: ["Two players share one colony", "Each player is locked to one specific warlord for the entire match"] },
-        { h: "Match length & meta", list: ["Target full-map length: 5–10 hours", "Shorter, smaller modes will exist", "Post-match: detailed score screen saved into a personal library of past games"] }
+        { h: "Survivors", color: "#8b9096", tag: "#1 · Viktor & Ayla", pics: ["Images/Warlords/Viktor.jpg", "Images/Warlords/Ayla.jpg"],
+          p: "Neutral. Roughly 80% of every branch of the master tree — good at everything, best at nothing.",
+          list: ["Default start and tutorial team", "The shipped game's first match is always Viktor & Ayla", "Coverage: flat ≈80% everywhere"],
+          links: [["Warlords", "Warlords of Eden.html#survivors"], ["Team map", "Maps of Eden.html#map/survivors"]] },
+        { h: "The Hunters", color: "#a3a84e", tag: "#2 · Brick & Twig", pics: ["Images/Warlords/Brick.jpg", "Images/Warlords/Twig.jpg"],
+          p: "Land and labour. Western homesteaders — think NCR Rangers in Fallout: New Vegas.",
+          list: ["Best producers of food, animal products and raw resources", "Make good guns, tools and crafted goods", "Limited technology: no laser weapons, weak electronics and power", "100%: Food & Farming, Timber & Stone · 60%: Industry, Power"],
+          links: [["Warlords", "Warlords of Eden.html#hunters"], ["Team map", "Maps of Eden.html#map/hunters"]] },
+        { h: "Militia", color: "#a4ae74", tag: "#3 · Brother & Sister (names TBD)",
+          p: "Industry. The inverse of the Hunters.",
+          list: ["Heavy industrial production and power", "Advanced weaponry up to plasma", "Weak at farming, foraging and the land", "100%: Industry & Crafting, Power & Grid · 60%: Food & Farming"],
+          links: [["Warlords", "Warlords of Eden.html#militia"], ["Team map", "Maps of Eden.html#map/militia"]] },
+        { h: "Ashen", color: "#ff5a1f", tag: "#4 · Blowtorch & Vesper", pics: ["Images/Warlords/Blowtorch.jpg", "Images/Warlords/Vesper.jpg"],
+          p: "Fire and the dark economy. Pyro identity — mining, smelting and furnaces.",
+          list: ["Exclusive Ash Rites branch — slavery, cannibalism, fear", "Weak at health and civic trust", "100%: Mining & Metallurgy, Ash Rites · 60%: Health, Society, Trade"],
+          links: [["Warlords", "Warlords of Eden.html#ashen"], ["Team map", "Maps of Eden.html#map/ashen"]] },
+        { h: "Droids", color: "#4fb0ff", tag: "#5 · Droid 0001 · single warlord", pics: ["Images/Warlords/Droid 0001.jpg"],
+          p: "The wildcard. No food at all — power is their food.",
+          list: ["Food & Farming is replaced by the exclusive Charge & Hive branch", "Every droid returns home to charge each night, so the grid must be far larger than anyone else's", "Many other unique rules (still open)", "100%: Power & Grid, Logistics, Charge & Hive · 60%: Water, Health, Society, Trade"],
+          links: [["Warlords", "Warlords of Eden.html#droids"], ["Team map", "Maps of Eden.html#map/droids"]] },
+        { h: "Team rules (locked)", list: ["Teams are locked pairs (Droids: one warlord) — no mixing warlords across teams", "The old Bond system is removed", "Warlords stay at the Town Centre (Tropico / El Presidente-style); a champion / combat role only if combat returns later", "Changing team changes economy pros / cons, the slice of the master tree you can take, and the unique building", "One unique building per team — placeholder for now", "The Droid Data Centre elimination rule is gone; a Data Centre may return later with a different, non-RTS function"],
+          links: [["Team buildings", "Warlords of Eden.html#buildings"]] },
+        { h: "Warlords of the Wastes", color: "#9c8f7a", tag: "Lore + NPC · not playable",
+          p: "Personas and art are kept for world flavour and as occasional named NPC micro-colonies among generic wastelanders.",
+          list: ["Scientists — Dr. Something & Mixy", "Afflicted", "Mutants — Smash & Bash (demoted when Militia took the playable slot)", "The Pack — the cousins"],
+          links: [["Open the Wastes", "Warlords of Eden.html#wastes"]] },
+        { h: "Wastes disposition", color: "#9c8f7a", tag: "Codex presentation (locked)",
+          p: "A list of the Wastes factions with their flags. Clicking a flag opens a modal with the warlord pictures, their personality, what they stand for, and a disposition bar per playable team.",
+          list: ["0% = hostile · 100% = best allies", "Trade opens at ~55%", "Each faction starts at a different disposition toward each playable team (e.g. friendly to Viktor & Ayla, hostile to the Hunters)", "Disposition moves with policies and with team and player skill-tree unlocks", "No stat multipliers or skill trees for Wastes factions"] },
+        { h: "Removed & shelved", color: "#8a8478", tag: "Not in the game",
+          list: ["Removed — Templars: gone (not playable, not lore, not NPC)", "Removed — Blood Ravens / Bloodveil: gone. A future “two sisters dark cult” might exist as a scene or minimal story beat only", "Shelved — Nomads: cut as a team. The western flavour now lives in the Hunters; a movable-base mechanic may resurface elsewhere"] }
       ] },
-    { id: "warlords", label: "Warlords", color: "#b07ad6", kicker: "Warlords, duos & mixing", title: "A duo, not a race",
-      intro: "Players don't pick a single race in the classic sense. They play a duo of warlords — with one exception.",
-      art: { path: "Images/Visions/Warlords.jpg", icon: "⚔", label: "Warlord line-up placeholder" },
+    /* ---------------------------------------------------------------- PROGRESSION */
+    { id: "progression", label: "Progression", color: "#b07ad6", kicker: "Skill & progression", title: "Three layers that stack",
+      intro: "Three influences stack: the player meta tree (all games) + the team tree (this match) + building tiers (this match).",
       sections: [
-        { h: "Default duo", p: "Survivors — Viktor & Ayla, father and daughter. Vanilla wasteland survivors: broad, new-player friendly, faster progression, minimal penalties. Viktor leans attack, Ayla leans defence." },
-        { h: "Unlocking", list: ["Other duos unlock via challenges: play matches, specific win conditions, milestones", "Examples: “enlist 1000 slaves”, “win as Scientists to unlock Mutants”", "Not pure defeat-to-unlock (Smash Bros style)", "Once unlocked, individual warlords can be freely mixed — except Droids", "Target at launch: roughly 12 duos plus one open slot"] },
-        { h: "Progression (clarified 30 Oct)", list: ["Each warlord has a full personal skill tree and gains XP every game they are played", "Each natural duo has a full specialised tree; both members feed it (~2× rate when the natural pair plays)", "Mixed pair: each warlord still earns personal XP and feeds their own natural duo tree", "Mixed pair also grows a light Warlord–Warlord Bond bar — small passives (e.g. +1% damage together), not a full tree", "Colony tech tree remains per match", "All warlord and duo progression persists on the player profile"] },
-        { h: "Leaders in combat", list: ["Champion-level units that keep full citizen abilities: build, gather, craft, heal", "They only die for the current game", "Strong but killable by a focused group — more vulnerable than an AoE King"] },
-        { h: "Droids exception", p: "The Droids are a single hive-mind warlord (Droid 0001). They never mix with any other warlord and only ever play solo. Their Data Centre replaces the Town Centre as their elimination building." },
-        { h: "Mixed pair rule", p: "Union rule (current default, tweakable item by item): if either warlord's duo can use a weapon, status, troop line, tool or resource, the pair can. Import-only stays import-only unless the other side can produce it. Buildings the pair cannot construct stay locked.",
-          links: [["Preview in Arms of Eden", "Arms of Eden.html"], ["Preview in Resources of Eden", "Resources of Eden.html"]] },
-        { h: "Duo identities at a glance", list: ["1 · Survivors (Viktor & Ayla) — vanilla, trade lean", "2 · The Hunters (Brick & Twig) — stone + wood specialists", "3 · Scientists — plasma, electricity, healing / poison", "4 · Mutants — melee tanks, high food, strong matched harmony", "5 · Afflicted — poison, disease, bleed, psychosis", "6 · Militia — slow, heavily armoured military", "7 · Bloodveil — witchy swamp / forest cult, conversion, bleed, low HP", "8 · Templars — post-apoc religious knights (in review)", "9 · The Pack — primal, strong early game, unique animal troops", "10 · Ashen (Blowtorch & Vesper) — fire, psychology, slavery, trading", "11 · Nomads — mobility, multiple Town Centres, vehicles", "12 · Droids — synthetic hive mind, single warlord, never mixed", "13 · Open slot"],
-          links: [["Open Warlords of Eden", "Warlords of Eden.html"]] }
+        { h: "1 · Master team tree", tag: "Per match",
+          list: ["One large master tree covering the whole economy", "Every team reaches roughly 80% of the nodes", "Specialist teams are spiky — 100% in their best branches, as low as ~60% in their weakest", "Survivors sit flat at ~80% everywhere", "The old shared School / Lab tech table is retired — its ideas live in the master tree now"] },
+        { h: "Branches", tag: "10 shared + 2 exclusive",
+          p: "Food & Farming · Water & Irrigation · Timber & Stone · Mining & Metallurgy · Industry & Crafting · Power & Grid · Logistics & Construction · Health & Survival · Society & Rule · Trade & Relations",
+          list: ["Ash Rites — Ashen only: slavery, cannibalism, fear", "Charge & Hive — Droids only: replaces Food & Farming"] },
+        { h: "Team coverage", wide: true,
+          table: { cols: ["Team", "100% branches", "Weakest branches"], rowColors: ["#8b9096", "#a3a84e", "#a4ae74", "#ff5a1f", "#4fb0ff"], rows: [
+            ["Survivors", "— (≈80% everywhere)", "—"],
+            ["Hunters", "Food & Farming, Timber & Stone", "Industry, Power (60%)"],
+            ["Militia", "Industry & Crafting, Power & Grid", "Food & Farming (60%)"],
+            ["Ashen", "Mining & Metallurgy, Ash Rites", "Health, Society, Trade (60%)"],
+            ["Droids", "Power & Grid, Logistics, Charge & Hive", "No Food branch; Water, Health, Society, Trade (60%)"]] } },
+        { h: "2 · Player tree", tag: "Meta · carries over between matches",
+          list: ["The largest tree in the game — bigger than any team tree", "Earns points by playing and completing challenges (the challenge list grows during development)", "Small, permanent bonuses: “+2% wood chopping”, “when playing Ashen, +5% rubies when mining”", "General branches plus a mastery branch for each team", "Challenge ideas are captured as they come up during development"],
+          links: [["Player tree", "Warlords of Eden.html#player"]] },
+        { h: "Point spending", tag: "Final Fantasy XIII style · all trees",
+          p: "Earn points, then dump them into a node whether or not that completes it. A big haul can fill several nodes at once.",
+          list: ["Codex tooling: the Pages of Eden boards keep the green fork / blue edit / red remove tile tools for designing nodes"] },
+        { h: "3 · Building upgrades", tag: "Per match",
+          list: ["Buildings upgrade on-site (Endzone-style scrappy tiers)", "An upgrade either improves efficiency or unlocks a new set of recipes", "Example: smelter → smelts more ores → alloys → furnace → steel", "Some buildings don't need power at tier I but need power to keep upgrading"],
+          links: [["Buildings", "Warlords of Eden.html#buildings"]] }
       ] },
-    { id: "world", label: "World", color: "#93b85c", kicker: "Map features", title: "Huge, themed, semi-random",
-      intro: "Maps are big on purpose: fewer early clashes, longer economic games, and land you build around.",
+    /* ---------------------------------------------------------------- COLONY */
+    { id: "colony", label: "Colony", color: "#5fb3c4", kicker: "Population, utilities & economy", title: "People, pipes and chains",
+      intro: "Not “select every villager like an RTS unit” — a Timberborn + Endzone model. Deep multi-step resource chains are the heart of the game.",
+      art: { path: "Images/Visions/Colony.jpg", icon: "⚙", label: "Settlement concept placeholder" },
+      sections: [
+        { h: "Population roles",
+          table: { cols: ["Role", "Behaviour"], rows: [
+            ["Settler / idle", "General labour — builds, carries, fills gaps"],
+            ["Builder", "Waits at the Builder's Depot; construction only"],
+            ["Hauler", "Transporter — logistics only"],
+            ["Professions", "Assigned via one menu with a headcount per profession"]] } },
+        { h: "Population & happiness", list: ["Population can grow to hundreds", "Happiness stays a simple production-bonus scale", "Happiness also feeds unrest"],
+          links: [["Unrest & elections", "#society"]] },
+        { h: "Construction priority", tag: "Locked",
+          p: "Every construction site has a priority setting. Available builders work the highest-priority sites first — like Timberborn and Endzone." },
+        { h: "Professions", tag: "First pass", wide: true,
+          p: "Woodcutter · forester · quarry worker · miner · scavenger · water collector · pump operator · farmer · rancher · hunter · fisher · forager / herbalist · miller / baker · cook · butcher / smoker · tanner · weaver / tailor · charcoal burner · brickmaker · glassblower · smelter · smith / toolmaker · gunsmith · mechanic · electrician · medic / nurse · researcher · trader · watch / guard · preacher / propagandist" },
+        { h: "Water", list: ["A resource like any other — consumed by the population, by some buildings, and occasionally in construction and upgrades", "Distribution: Cities: Skylines-style network (pumps, towers, pipes) with coverage", "Dams, water tanks and irrigation protect farms through drought"] },
+        { h: "Power", list: ["Generators feed power poles; any building inside a pole's radius is powered", "Radius only — no chaining rules beyond placing more poles", "Not all buildings need power; some don't at tier I but need it to keep upgrading", "Droids need a vastly larger grid — charging is their food"] },
+        { h: "Production", list: ["Deep multi-step resource chains (the Resources book stays central)", "Buildings with assigned workers", "Research buildings unlock most non-standard content", "Age / era progression: resource checklists + Town Hall upgrades (some checklist items team-specific)", "Global per-player stockpile (warehouse logic)"],
+          links: [["Resources of Eden", "Resources of Eden.html"]] },
+        { h: "Farms & fertility", list: ["Farms and pastures use a fertility map + location", "Drought strips fertility unless dams, water tanks and irrigation were prepared (Timberborn-like)", "Food: raw goods and Kitchen recipes", "Droids skip food entirely"] },
+        { h: "Goods, scrap & money", list: ["Weapons and armour are goods, crafted like anything else (knives → axes → swords → handguns → laser rifles) and sold or used as tools", "Scrap, Rare Scrap, Special Alloys — which teams can craft and enhance alloys is decided per team later", "Team access: some teams cannot acquire or process certain resources (Hunters never process laser components; Droids skip food)", "Currency: Silver / Gold"] },
+        { h: "Material tiers", p: "Stone → Bronze → Iron → Steel → Hardened Steel" },
+        { h: "Resources by era", tag: "Current shortlist", wide: true,
+          list: ["Early: Food, Water, Wood, Stone, Silver, Scrap, Cloth, Herbs, Charcoal, Leather, Clay, Salt, Berries, Milk, Eggs, Fish", "Mid: Tin, Copper, Coal, Bricks, Rare Components, Glass, Fertiliser, Medicine, Alcohol, Sulphur, Gunpowder, Paper, Nails, Wire, Mechanical Parts, Smoked / Preserved Food, Tools, Bronze — Gold unlocks here", "Late: Iron, Steel, Electronics, Fuel, Concrete, Special Alloys, Gems, Jewellery, Gold Ingots → Pure Gold Ingots, Rare Scrap"],
+          links: [["Full chains in Resources of Eden", "Resources of Eden.html"]] }
+      ] },
+    /* ---------------------------------------------------------------- SOCIETY */
+    { id: "society", label: "Society", color: "#d6573b", kicker: "Policies, elections & unrest", title: "Rule from the Town Centre",
+      intro: "Your warlords stay at the Town Centre, Tropico-style. You enact policies, make promises and face elections — and the colony can fail.",
+      sections: [
+        { h: "Policy building", tag: "Name TBD", list: ["Spend a cost here to enact policies / edicts — better healthcare, harsh rationing, propaganda, curfews, etc.", "Usually a benefit at a cost; sometimes clearly worth it, sometimes not", "Not all policies are dark", "Small cap on active policies (≈3) — a policy or tree node can raise the cap", "Policies also move Wastes faction disposition"] },
+        { h: "Elections", tag: "Tropico-style", list: ["Elections come round on a timer", "You can make promises; the people vote for or against you", "Lying has consequences — broken promises raise unrest"] },
+        { h: "One grace period", tag: "Locked rule", list: ["Lose the first election → grace period: you talk your way into one more year", "Win the next → all good", "Lose again → overthrown → game over"] },
+        { h: "Unrest", list: ["Unrest isn't an instant loss", "Fix the problem — or a high percentage votes against you at the next election", "Happiness feeds unrest", "Walls and watchtowers raise a local safety meter that makes citizens happier"] },
+        { h: "Failure states", tag: "Game over", list: ["1 · Thirst — water collapse", "2 · Starvation", "3 · Irradiation / disease", "4 · Psychosis / overthrow — losing the grace-period election", "No regicide victory and no “kill all enemy warlords” loop"] },
+        { h: "Colony conditions", p: "The old combat statuses (burn, bleed, poison) are gone. Statuses are reused as colony conditions driven by world events and neglect:",
+          list: ["Thirst", "Starvation", "Disease", "Radiation sickness", "Psychosis", "Unrest"] }
+      ] },
+    /* ---------------------------------------------------------------- WORLD */
+    { id: "world", label: "World", color: "#93b85c", kicker: "Crises, maps, trade & combat", title: "The land is the enemy",
+      intro: "Weather and world events are the primary challenge. Players prepare stockpiles, diversify and adapt — these replace the old large-scale combat pressure.",
       art: { path: "Images/Visions/World.jpg", icon: "◭", label: "Map concept placeholder" },
       sections: [
-        { h: "Scale", list: ["Up to roughly 4× a classic Age of Empires Giant map for full 10-player games", "Should feel expansive — other groups are rare to meet early", "Smaller maps supported (preferred for fewer players)", "First prototype will be tiny and simple", "Large size is intentional: less early aggression, longer economic games (5–10 hours)"] },
-        { h: "Generation & biomes", list: ["Semi-random generation around consistent spawn points", "Essential starting resources near every spawn (AoE style)", "Distinct biomes / regions affect what can be grown or built — build to the land's strengths", "No deteriorating fertility", "Each civ has pros and cons in certain biomes (detailed per duo)"] },
-        { h: "Building & territory", list: ["Build nearly anywhere, with soft constraints (some buildings may need foundations)", "Outposts and resource camps are allowed", "Territory = line of sight + land claim around buildings (AoE style)", "Map-control percentage is a possible future victory condition"] },
-        { h: "Terrain", list: ["Swamp / marsh movement penalties for some civs", "Roads and tracks boost movement", "Impassable cliffs", "Fishable water"] },
-        { h: "Neutral tribes", list: ["Range from a campfire and a couple of people up to a small walled outpost", "They do not expand over time", "Trade with, ignore, enslave or destroy them — options and reactions depend on your warlords"] },
-        { h: "Fog & relics", list: ["Standard fog options: fog / discovery / line of sight / see-all", "Relics (religious and historical artifacts) are freshly placed each game — mechanics still open"] },
-        { h: "Home turfs", p: "Twelve themed maps — one home turf per Duo — each with a terrain temperament, resource profile, hazards, tribes and relics.", links: [["Open Maps of Eden", "Maps of Eden.html"]] }
+        { h: "Environmental pressure", list: ["Droughts — rivers dry; fertility drops unless dams, tanks and stored water saved the season", "Sandstorms", "Radiation storms / radiation bursts", "Other crises that cut off or heavily pressure specific resources"] },
+        { h: "When the drought breaks", tag: "Design note",
+          p: "The moment a drought breaks and water flows back down the river toward the town is a targeted emotional beat — prepare for it in pacing and presentation." },
+        { h: "Crisis warnings", tag: "Locked · every crisis is telegraphed, lead time varies", wide: true,
+          table: { cols: ["Event", "Frequency", "Warning"], rowColors: ["#c9a24a", "#c4874a", "#93d65c"], rows: [
+            ["Drought", "Common, seasonal", "Long notice — time to fill tanks and stockpile"],
+            ["Sandstorm", "Regular", "Medium notice"],
+            ["Radiation burst", "Rare", "Very little notice — you survive on what you already prepared"]] } },
+        { h: "Maps", list: ["Large maps — land should feel big; isometric", "Five hand-made maps, one themed to each playable team (lore and art direction, not “home turf only”)", "A sixth “map”: the World Forge"],
+          links: [["Survivors", "Maps of Eden.html#map/survivors"], ["Hunters", "Maps of Eden.html#map/hunters"], ["Militia", "Maps of Eden.html#map/militia"], ["Ashen", "Maps of Eden.html#map/ashen"], ["Droids", "Maps of Eden.html#map/droids"]] },
+        { h: "World Forge", tag: "Seed in → detailed map out",
+          list: ["The same seed always gives the same map, even after closing the codex", "Generates starting points for the five team maps (then hand-modified)", "Doubles as the in-game random map option"],
+          links: [["Open the World Forge", "Maps of Eden.html#forge"]] },
+        { h: "Land & exploration", list: ["Fog of war at start; revealed areas stay revealed for that game", "Biomes matter for building and growing — fertility map, rivers, ore deposits, ruins", "Build nearly anywhere with soft constraints (foundations, fertility, water, power radius)", "NPC micro-colonies scattered each game — mostly generic wastelanders, occasionally a Warlord of the Wastes faction"] },
+        { h: "Trade · NPC colonies", list: ["Reliable routes for consistency and as a fallback", "Gated by disposition — trade at ≥55%"],
+          links: [["Wastes disposition", "#teams"]] },
+        { h: "Trade · global market", list: ["Off-screen, single-player PvE economy", "Prices move only with scheduled / random world events — a drought pushes water and food up, a radiation storm pushes medicine up", "The player's own selling does not move prices; there is no competition for the market"] },
+        { h: "Combat", tag: "Secondary · shelved", list: ["Not a design focus — placeholder only", "Three simple troop lines — Melee, Ranged, Special — each upgradeable", "Enough later for bandits or taking an NPC village", "No army management, no counter triangle, no PvP balance", "Walls / watchtowers stay as safety buildings", "The Arms of Eden codex is archived as reference in design/Reference/"] }
       ] },
-    { id: "combat", label: "Combat", color: "#d6573b", kicker: "Combat & military", title: "AoE combat, higher unit value",
-      intro: "Age of Empires-style fighting, but every soldier costs more to equip and to keep fed.",
+    /* ---------------------------------------------------------------- DECISIONS */
+    { id: "decisions", label: "Decisions", color: "#8a8478", kicker: "Dropped, demoted & still open", title: "The decision log",
+      intro: "Kept visible so superseded RTS-era ideas don't creep back into design docs or prompts. Do not reintroduce RTS-era assumptions without an explicit decision log entry.",
       sections: [
-        { h: "Roles & upkeep", list: ["Civilian and military units are separate", "Military units need crafted or bought weapons, armour etc. to train", "Ongoing food + water upkeep for all units — no upfront food cost to produce", "Large idle armies are expensive"] },
-        { h: "Life & death", list: ["Units die at 0 HP — no wounded state for now", "Psychosis is a special alive-but-controlled state", "Healing: AoE Monk-style support units restore HP and can cleanse certain status effects"] },
-        { h: "Army & control", list: ["Army size AoE-like: low hundreds in a large late-game force", "Individual unit value higher than classic AoE", "Simple formations, patrol with waypoints, possible flee command", "Multi-select, control groups and hotkeys"] },
-        { h: "Siege", p: "Siege matters — and not every civ is equally good at it." },
-        { h: "Status effects", list: ["Bleeding — medium damage over time", "Burning — short, intense damage over time", "Poison — long damage over time", "Paralysed — electricity (possibly duo-exclusive)", "Psychosis — temporary conversion, AoE monk-style", "Gated per duo: not every group can inflict every status"], links: [["Status appendix in Arms of Eden", "Arms of Eden.html#all/status"]] },
-        { h: "Damage types", p: "Melee, guns, laser, plasma (Scientists stronger here), explosive, fire and more." }
-      ] },
-    { id: "economy", label: "Economy", color: "#5fb3c4", kicker: "Population & economy", title: "Endzone chains, AoE scale",
-      intro: "Classic RTS population with Endzone-style scrappy buildings and multi-step production chains.",
-      art: { path: "Images/Visions/Economy.jpg", icon: "⚙", label: "Settlement concept placeholder" },
-      sections: [
-        { h: "Population", list: ["Classic RTS scale — up to roughly 500", "Families-as-micromanagement is dropped", "Each new settler costs more and takes longer; optional Radio / TV Broadcast Centre for recruitment", "Military and civilian roles divided (classic AoE)"] },
-        { h: "Look & feel", p: "Endzone influence: scrappy post-apocalyptic buildings that upgrade visually and functionally, multi-step refinement and production chains." },
-        { h: "Resources by era", list: ["Early: Food, Water, Wood, Stone, Silver, Scrap, Cloth, Herbs, Charcoal, Leather, Clay, Salt, Berries, Milk, Eggs, Fish", "Mid: Tin, Copper, Coal, Bricks, Rare Components, Glass, Fertiliser, Medicine, Alcohol, Sulphur, Gunpowder, Paper, Nails, Wire, Mechanical Parts, Smoked / Preserved Food, Tools, Bronze — Gold unlocks here", "Late: Iron, Steel, Electronics, Fuel, Concrete, Special Alloys (some civ-specific), Gems, Jewellery, Gold Ingots → Pure Gold Ingots, Rare Scrap"],
-          links: [["Full trees in Resources of Eden", "Resources of Eden.html"]] },
-        { h: "Material tiers", p: "Stone → Bronze → Iron → Steel → Hardened Steel — for tools, melee weapons and armour." },
-        { h: "Production chains", list: ["Buildings with assigned workers — e.g. Smelter → ingots → Blacksmith / Armourer → weapons, tools, armour", "Building upgrades cost gold + resources + sometimes finished goods, then take time", "Tool quality gates gathering (iron axe = softwood, steel axe = hardwood)", "Mining tiers gated by technology: stone → tin → copper → iron → coal → gold", "Some trees need higher woodworking tech to harvest"] },
-        { h: "Scrap & special alloys", list: ["Scrap: generic wasteland material for construction and crafting, from ruins or dismantling", "Rare Scrap can be sorted from normal Scrap mid / late game", "Special Alloys are civ-limited (Scientists, Militia, etc.) — Hardened Steel, Titanium, Stainless Steel", "Other players may import alloys but not produce them — this encourages trade"] },
-        { h: "Farms & food", list: ["Farms and pastures are a building plus an attached crop or animal; placement and land quality matter", "Cotton → Cloth; Leather is a pasture by-product; Cloth and Leather are distinct and combinable", "Raw eating is possible; a Kitchen combines ingredients into higher-yield meals", "Civ-flavoured animals and recipes — the Pack can use human meat; the Hunters excel at export", "Late foods can give minor bonuses; Droids ignore food entirely", "Food quality tiers (2–3) under consideration"] },
-        { h: "Ages & research", list: ["Advance an age by collecting a checklist of resources", "Each Town Hall / age upgrade needs goods from the previous age plus newer, rarer ones", "Some requirements can be warlord-specific (e.g. Bloodveil sacrifices)", "University-style research buildings with assigned workers unlock most non-standard buildings, upgrades and blueprints"] },
-        { h: "Currency & trade", list: ["Dedicated currency for trade; Silver and Gold are the primary money and slowly rise in price", "Player ↔ player: trade carts (goods or gold)", "Player ↔ neutral tribe: usually goods for goods", "Optional global / off-map market: supply and demand from the match economy plus light world-narrative events", "Enemy / Neutral / Ally treaty system"] },
-        { h: "Other systems", list: ["Per-player global stockpile, even across a spread-out colony", "Happiness as a simple production-bonus scale; entertainment buildings later", "No seasons at launch (~15% chance later)", "True scarcity is late — self-sustaining farms, orchards and tree farms expected by then; mines may get late extensions"] }
-      ] },
-    { id: "retired", label: "Retired", color: "#8a8478", kicker: "Explicitly not the vision anymore", title: "Retired ideas",
-      intro: "Kept visible so superseded concepts don't creep back into design docs or prompts.",
-      sections: [
-        { h: "Dropped", list: ["Stardew Valley-style cozy farming / relationship sim", "Oasis-at-the-base-of-a-volcano as the fixed setting", "Hope / Dread meters", "Heavy narrative campaigns or frequent cutscenes", "Pure defeat-to-unlock (Smash Bros style) for warlords", "Complex Sims-style relationship simulation between warlords", "Small “3–7 families” population management", "Civilians that suit up for combat and then return to civilian jobs"] }
+        { h: "Dropped or demoted", wide: true,
+          table: { cols: ["Removed or dropped", "Now"], rows: [
+            ["RTS regicide as core loop", "Build and endure; failure states only"],
+            ["Mixed warlord pairs & Bond system", "Locked team pairs"],
+            ["Per-warlord personal skill trees", "One team tree + player tree"],
+            ["Shared School / Lab tech table", "Merged into the master tree"],
+            ["Removed factions", "Gone from game, lore and NPC spawns — see Teams · Removed & shelved"],
+            ["Scientists, Afflicted, Mutants, Pack as playable", "Warlords of the Wastes"],
+            ["Shelved team", "Cut; western theme → Hunters — see Teams · Removed & shelved"],
+            ["Droid Data Centre elimination rule", "Data Centre may return with a new function"],
+            ["Player-driven market prices", "Market reacts to world events only"],
+            ["Troop matrix, weapon / armour combat trees", "Arms archived; weapons / armour → craftable goods"],
+            ["12 home-turf maps", "5 team maps + World Forge"],
+            ["Heavy multiplayer PvP focus", "Single-player first; multiplayer later"]] },
+          links: [["Removed & shelved", "#teams"]] },
+        { h: "Open points", wide: true, list: ["1 · Militia warlord names and faces (brother & sister placeholder)", "2 · Unique building per team (placeholders in Warlords of Eden)", "3 · Which teams can craft / enhance special alloys", "4 · Policy building name, policy list and exact cap", "5 · Election cadence (every N years) and promise list", "6 · Exact era names and Town Hall checklists", "7 · Droid-specific rules beyond charging (water use, repair instead of health, social model)", "8 · Possible swap of Militia's lore partner faction if Mutants return"] },
+        { h: "Working process", tag: "Note folding",
+          p: "When Brett plays reference games (Endzone, Timberborn, Cities: Skylines, Tropico, etc.) or talks with Axel, he brings notes back as bullet points + short elaboration. We discuss and decide whether to weave, avoid or park each idea. Challenge ideas for the meta tree are captured the same way." }
       ] }
   ]
 };
@@ -214,7 +325,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const getPath = (o, p) => String(p).split(".").reduce((a, k) => (a == null ? a : a[k]), o);
 function setPath(obj, path, val) { const ks = String(path).split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) { o = o[ks[i]]; if (o == null) return; } o[ks[ks.length - 1]] = val; }
 const ed = (path, text, ml) => `<span data-edit="${path}"${ml ? " data-ml" : ""}>${esc(text)}</span>`;
-const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["arms", "Arms", "Arms of Eden.html"], ["resources", "Resources", "Resources of Eden.html"], ["maps", "Maps", "Maps of Eden.html"]];
+const BOOKS = [["visions", "Visions", "Visions of Eden.html"], ["warlords", "Warlords", "Warlords of Eden.html"], ["resources", "Resources", "Resources of Eden.html"], ["maps", "Maps", "Maps of Eden.html"]];
 
 const STORE_KEY = "visionsOfEden.v1";
 const state = { tab: "overview", editing: false };
@@ -285,23 +396,14 @@ function renderAll() {
   $("#codex-nav").innerHTML = BOOKS.map(([id, l, f]) => `<a class="${id === "visions" ? "cur" : ""}" href="${encodeURI(f)}">${l}</a>`).join("");
   $("#tabs").innerHTML = DATA.tabs.map((x, i) => `<button class="btn ${x.id === t.id ? "active" : ""}" style="--tc:${x.color}" onclick="go('${x.id}')" title="Key ${i + 1}">${esc(x.label)}</button>`).join("");
   const base = `tabs.${ti}`;
-  const cards = t.sections.map((s, si) => {
-    const sb = `${base}.sections.${si}`;
-    return `<div class="vcard">
-      <h3>${ed(sb + ".h", s.h)}</h3>
-      ${s.p != null ? `<p>${ed(sb + ".p", s.p, true)}</p>` : ""}
-      ${s.list ? `<ul>${s.list.map((li, k) => `<li>${ed(`${sb}.list.${k}`, li, true)}</li>`).join("")}</ul>
-        <div class="addrow edit-only"><button class="mini" onclick="addItem(${ti},${si})">+ Add point</button></div>` : ""}
-      ${s.links ? `<div class="xlinks center-row">${s.links.map(linkHTML).join("")}</div>` : ""}
-    </div>`;
-  }).join("");
+  const cards = t.sections.map((s, si) => card(s, `${base}.sections.${si}`, ti, si)).join("");
   $("#view").innerHTML = `
     <div class="tree-head"><div class="kicker">${ed(base + ".kicker", t.kicker)}</div><h2>${ed(base + ".title", t.title)}</h2></div>
     <p class="v-intro">${ed(base + ".intro", t.intro, true)}</p>
     ${t.art ? `<div class="v-hero">${art(t.art)}</div>` : ""}
     <div class="vgrid" style="margin-top:16px">${cards}</div>
     <div class="center-row edit-only" style="margin-top:16px"><button class="mini" onclick="addSection(${ti})">+ Add section</button></div>`;
-  $("#editbar").innerHTML = `<span>Edit mode — click any dashed text to rewrite it. Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
+  $("#editbar").innerHTML = `<span>Edit mode — click any dashed text to rewrite it (clear a point to delete it). Edits auto-save in this browser; <b>Save into HTML</b> writes them into the file.</span>
     <button class="mini save" onclick="saveHtml()">&#128190; Save into HTML</button><button class="mini" onclick="exportData()">Export JSON</button>
     <button class="mini" onclick="$('#import-file').click()">Import JSON</button><button class="mini" onclick="resetData()">Discard browser edits</button>
     <input type="file" id="import-file" accept=".json" hidden onchange="importData(this.files[0]);this.value=''">`;
@@ -313,7 +415,30 @@ function renderAll() {
 function art(a) {
   return `<div class="build-art" style="--acc:var(--tab)">${IMG.tag(a.path, true)}<div class="ph"><span class="ico">${esc(a.icon || "◫")}</span><span>${esc(a.label)} — ${esc(IMG.hint(a.path))}</span></div></div>`;
 }
+/* Card fields: h, tag, color (team accent), pics, p, list, table {cols, rows, rowColors}, links, wide */
+function card(s, sb, ti, si) {
+  const accent = s.color ? ` style="--tab:${esc(s.color)}"` : "";
+  const tag = s.tag != null ? `<div class="v-tag">${s.color ? `<i class="v-dot"></i>` : ""}${ed(sb + ".tag", s.tag)}${s.color ? `<code>${ed(sb + ".color", s.color)}</code>` : ""}</div>` : "";
+  const pics = s.pics && s.pics.length ? `<div class="v-pics">${s.pics.map(p => `<div class="v-pic">${IMG.tag(p, true, p.split("/").pop())}</div>`).join("")}</div>` : "";
+  return `<div class="vcard${s.wide ? " wide" : ""}${s.color ? " team" : ""}"${accent}>
+    <h3>${ed(sb + ".h", s.h)}</h3>${tag}${pics}
+    ${s.p != null ? `<p>${ed(sb + ".p", s.p, true)}</p>` : ""}
+    ${s.table ? tableHTML(s.table, sb + ".table", ti, si) : ""}
+    ${s.list ? `<ul>${s.list.map((li, k) => `<li>${ed(`${sb}.list.${k}`, li, true)}</li>`).join("")}</ul>
+      <div class="addrow edit-only"><button class="mini" onclick="addItem(${ti},${si})">+ Add point</button></div>` : ""}
+    ${s.links ? `<div class="xlinks center-row">${s.links.map(linkHTML).join("")}</div>` : ""}
+  </div>`;
+}
+function tableHTML(tb, path, ti, si) {
+  const rc = tb.rowColors || [];
+  return `<div class="vtable-wrap"><table class="vtable">
+    <thead><tr>${tb.cols.map((c, k) => `<th>${ed(`${path}.cols.${k}`, c)}</th>`).join("")}</tr></thead>
+    <tbody>${tb.rows.map((r, ri) => `<tr${rc[ri] ? ` style="--rc:${esc(rc[ri])}"` : ""}>${r.map((c, k) => `<td>${ed(`${path}.rows.${ri}.${k}`, c, true)}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div>
+  <div class="addrow edit-only"><button class="mini" onclick="addRow(${ti},${si})">+ Add row</button></div>`;
+}
 function addItem(ti, si) { DATA.tabs[ti].sections[si].list.push("New point"); persist("Added"); renderAll(); }
+function addRow(ti, si) { const tb = DATA.tabs[ti].sections[si].table; tb.rows.push(tb.cols.map(() => "—")); persist("Row added"); renderAll(); }
 function addSection(ti) { DATA.tabs[ti].sections.push({ h: "New section", p: "Write here.", list: [] }); persist("Added"); renderAll(); }
 
 /* ---------- edit mode, modal, toast ---------- */
@@ -332,8 +457,10 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 document.addEventListener("focusout", e => {
   const el = e.target.closest && e.target.closest("[data-edit]");
   if (!el || !state.editing) return;
-  const v = el.innerText.replace(/\u00a0/g, " ").trim();
+  const v = (getComputedStyle(el).textTransform !== "none" ? el.textContent : el.innerText).replace(/\u00a0/g, " ").trim();
   if (getPath(DATA, el.dataset.edit) === v) return;
+  const li = el.dataset.edit.match(/^(.*\.list)\.(\d+)$/);
+  if (li && !v) { getPath(DATA, li[1]).splice(+li[2], 1); persist("Point removed"); renderAll(); return; }
   setPath(DATA, el.dataset.edit, v); persist("Saved");
   if (/\.(label|color)$/.test(el.dataset.edit)) renderAll();
 });

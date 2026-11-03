@@ -1,21 +1,38 @@
 # Visions of Eden
 **High-level living overview of Embers of Eden**  
-**Last updated:** 1 November 2026 (morning)  
-**Purpose:** Single document a fresh chat (or new collaborator) can read to understand the current broad vision of the game.  
-Update this file whenever major direction locks or changes.
+**Last updated:** 3 November 2026 (night — second clarification pass with Brett)  
+**Purpose:** Single document a fresh chat (or Cursor / collaborator) can read to understand the current broad vision. Update whenever major direction locks or changes.
+
+**Status:** This is the **locked direction** for Embers of Eden. The codex (Pages of Eden HTML) and every other design file follows this document — not the other way around.
+
+**Phase:** We are still **conceptualising everything** before deciding what to build first. No vertical slice or Early Access scope is chosen yet.
+
+---
+
+## Working Process — Note Folding
+
+When Brett plays reference games (Endzone, Timberborn, Cities: Skylines, Tropico, etc.) or talks with Axel, he brings **notes** back as bullet points + short elaboration. We discuss and decide whether to weave, avoid, or park each idea. Challenge ideas for the meta tree are captured the same way as they come up during development.
 
 ---
 
 ## What the Game Is
 
-**Embers of Eden** is a post-apocalyptic **colony-builder RTS**.
+**Embers of Eden** is a post-apocalyptic **city-builder / colony survival game**.
 
-Players expand a survivor colony across large, themed maps, manage population and resources, and ultimately eliminate rival warlords. It draws heavily from *Age of Empires* (locked isometric camera, regicide-style victory, map control, tech progression, relic-style objectives) while adding deeper colony identity, family/specialisation systems, and persistent hero progression.
+Players grow a specialised survivor colony, master deep multi-step resource chains, and keep the settlement alive through environmental crises. Combat exists only as a light, secondary placeholder (shelved until later). The game is **not** an Age of Empires-style RTS.
 
-It is **not** a Stardew Valley-style farming sim, cozy survival craft, or narrative adventure. Those early concepts have been fully superseded.
+**Primary influences**
+- **Endzone** — settlers, professions, survival clarity, scrappy upgraded buildings, refinement chains
+- **Timberborn** — complexity, polish, drought/fertility pressure, idle/builder/hauler roles, two factions that play very differently (Folktails vs Iron Teeth)
+- **Cities: Skylines** — water and power distribution, coverage overlays
+- **Tropico** — leader at the centre (El Presidente-style), elections, unrest, policy building
+- **Final Fantasy XIII** — Crystarium-style point spending on skill trees
+- Age of Empires / Diablo — **graphical taste and isometric feel only**, not core loop
 
-**Core loop in one sentence:**  
-Grow your colony, specialise your people, expand across the map, and kill the other warlords.
+**Core loop**  
+Build the colony → assign roles and professions → specialise production → prepare stockpiles for the next crisis → expand, trade, and upgrade → survive indefinitely.
+
+There is no traditional "win". Like Timberborn, the goal is to build and endure (unless the colony fails — see **Failure States**).
 
 ---
 
@@ -23,214 +40,288 @@ Grow your colony, specialise your people, expand across the map, and kill the ot
 
 - Raw, methodical, and often brutal.
 - Grit baseline 6–7, with peaks to 10.
-- Tone is largely delivered through the duo you play: their unique buildings, troops, skills, edicts, and playstyle.
-- Dark options exist as mechanical tools (e.g. slavery of POWs, forced measures when starving) rather than constant moral dilemmas.
-- Minimal cutscenes. Lore is drip-fed through gameplay, warlord identities, and the world.
+- Tone is delivered through the **team you play**: their economy pros/cons, their slice of the master skill tree, their unique building, policies, and playstyle.
+- Dark options exist as mechanical tools (Ashen-only slavery and cannibalism branches, harsh policies when starving), not constant moral lectures.
+- Minimal cutscenes. Lore is drip-fed through gameplay, warlord identities, NPC encounters, and the world.
 
 ---
 
-## Victory & Game Modes
+## Environmental Pressure (Primary Challenge)
 
-**Primary / default mode:** Regicide  
-Kill the opponent’s warlord(s) to win.
+Weather and world events are the main source of tension:
 
-Other modes will branch from this (destroy key building, territory control thresholds, etc.).
+- **Droughts** — rivers dry; fertility drops unless dams, tanks, and stored water saved the season
+- **Sandstorms**
+- **Radiation storms / radiation bursts**
+- Other crises that cut off or heavily pressure specific resources
 
-**Three distinct modes:**
-- **Solo** — Control both warlords of your duo as independent units. Offline capable. Speed controls (Pause / x2 / x3 / unlockable x4).
-- **Multiplayer** — Individual colonies. Up to ~8–10 players. No drop-in. Disconnect → colony goes rogue (defensive NPC) after 30 minutes.
-- **Duos** — Two players share one colony. Each player is locked to one specific warlord for the entire match.
+**Warnings (locked):** every crisis is telegraphed by a warning, but the **lead time varies by event**:
 
----
+| Event | Frequency | Warning |
+|-------|-----------|---------|
+| Drought | Common, seasonal | Long notice — time to fill tanks and stockpile |
+| Sandstorm | Regular | Medium notice |
+| Radiation burst | Rare | Very little notice — you survive on what you already prepared |
 
-## Warlords, Duos & Mixing
+Players prepare stockpiles, diversify, and adapt. These replace the old large-scale combat pressure.
 
-Players do not pick a single race in the classic sense. They play as a **duo of warlords** (with one exception).
-
-- **Default starting duo:** Survivors — Viktor & Ayla (father & daughter). Vanilla wasteland survivors. Broad, new-player friendly, faster progression, minimal penalties. Viktor leans attack, Ayla leans defence.
-- Other duos are unlocked via **challenges** (play matches, specific win conditions, milestones such as “enlist 1000 slaves”, “win as Scientists to unlock Mutants”, etc.).
-- Once unlocked, individual warlords can be freely mixed (except Droids).
-- Target at launch: roughly 12 duos (see Characters file for current table).
-
-**Current duo identities (summary):**
-1. Survivors (Viktor & Ayla) — vanilla / trade lean
-2. The Hunters (Brick & Twig) — stone + wood specialists
-3. Scientists — plasma, electricity, healing/poison
-4. Mutants — melee tanks, high food, strong matched harmony
-5. Afflicted — poison, disease, bleed, psychosis
-6. Militia — slow, heavily armoured military
-7. Bloodveil — witchy swamp/forest cult, conversion, bleed, low HP
-8. Templars — post-apoc religious melee knights
-9. The Pack — caveman/rabid, strong early game, unique animal troops
-10. Ashen (Blowtorch & Vesper) — fire, psychology, slavery, trading
-11. Nomads — mobility, multiple Town Centres, vehicles, satellite colonies
-12. Droids — synthetic hive-mind (**single warlord only**, never mixed)
-13. Open slot
-
-**Progression & skill systems (clarified 30 Oct 2026):**
-- Each **individual warlord** has a full personal skill tree and gains XP every game they are played.
-- Each **natural duo** also has a full specialised skill tree. Both members contribute XP to it. Playing the natural duo therefore feeds the duo tree at roughly 2× rate.
-- When playing a **mixed pair**, each warlord still gains personal XP and contributes to their own natural duo’s tree. In addition, a simple **Warlord–Warlord Bond** experience bar between those two specific individuals increases. Levelling this Bond grants small passives (e.g. +1% damage when playing together). Not a full skill tree — just light incentive and occasional unique pair passives where it feels right.
-- Colony tech tree remains per-game.
-- All warlord and duo progression is persistent on the player profile.
-
-**Leaders in combat:** Champion-level units that also retain full citizen abilities (build, gather, craft, heal, etc.). They only die for the current game.
-
-**Droids exception:** The Droids are a single hive-mind warlord and do **not** mix with any other warlords. They only ever play solo.
+**Design note:** The moment a drought breaks and water flows back down the river toward the town is a targeted emotional beat — prepare for it in pacing and presentation.
 
 ---
 
-## Population & Economy (high level)
+## Playable Teams (Locked)
 
-- Population scale is classic RTS (Age of Empires range, roughly up to ~500). Families-as-micromanagement is dropped.
-- New settlers: increasing cost/delay per person + optional Radio / TV Broadcast Centre for recruitment.
-- Military and civilian roles are divided (classic AoE). Multi-select + control groups + hotkeys.
-- **Aesthetic & economy influence:** *Endzone* (scrappy post-apoc buildings that upgrade visually and functionally, multi-step refinement, production chains).
+**Five playable teams.** During development **all five are selectable** for playtesting. In the shipped game the **first match is always Viktor & Ayla**; the other four unlock through challenges.
 
-**Resources by era (current shortlist)**  
-- **Early:** Food, Water, Wood, Stone, **Silver**, Scrap, Cloth, Herbs, Charcoal, Leather, Clay, Salt, Berries, Milk, Eggs, Fish  
-- **Mid:** Tin, Copper, Coal, Bricks, Rare Components, Glass, Fertiliser, Medicine, Alcohol, Sulphur, Gunpowder, Paper, Nails, Wire, Mechanical Parts, Smoked/Preserved Food, Tools, (+ Bronze). **Gold** unlocks here.  
-- **Late:** Iron, Steel, Electronics, Fuel, Concrete, Special Alloys (some civ-specific), Gems, Jewellery, Gold Ingots → Pure Gold Ingots, Rare Scrap  
+| # | Team | Warlords | Economic identity |
+|---|------|----------|-------------------|
+| 1 | **Survivors** | Viktor & Ayla | **Neutral.** ~80% of every branch of the master tree. Good at everything, best at nothing. Default start and tutorial team. |
+| 2 | **The Hunters** | Brick & Twig | **Land and labour.** Western homesteaders (think NCR Rangers in Fallout: New Vegas). Best producers of food, animal products and raw resources. Make good guns, tools and crafted goods — but limited technology: no laser weapons, weak electronics and power. |
+| 3 | **Militia** | Militia Brother & Sister (names TBD) | **Industry.** The inverse of the Hunters. Heavy industrial production, power, and advanced weaponry up to **plasma**. Weak at farming, foraging and the land. |
+| 4 | **Ashen** | Blowtorch & Vesper | **Fire and the dark economy.** Pyro identity — mining, smelting and furnaces. **Exclusive** slavery and cannibalism branches. Weak at health and civic trust. |
+| 5 | **Droids** | Droid 0001 | **The wildcard.** No food at all — that whole branch is replaced. **Power is their food:** every droid returns home to charge each night, so the grid must be far larger than anyone else's. Many other unique rules. |
 
-**Material tiers (tools, melee weapons, armour)**  
-Stone → Bronze → Iron → Steel → Hardened Steel.
+### Rules (locked)
 
-**Scrap**  
-Generic wasteland material (construction + crafting). Harvested from ruins/old buildings or by dismantling. Rare Scrap can be sorted from normal Scrap mid/late-game.
+- Teams are **locked pairs** (Droids: one warlord). **No mixing** warlords across teams. The old **Bond system is removed**.
+- Warlords stay at the **Town Centre** (Tropico / El Presidente-style). Champion/combat role only if combat returns later.
+- Changing team changes **economy pros/cons**, the **slice of the master skill tree** you can take, and the **unique building**.
+- **One unique building per team** — placeholder for now.
+- **Data Centre** (old Droid RTS elimination rule) is **gone**. If a Data Centre exists later it will have a different, non-RTS function.
 
-**Farms & pastures**  
-Building + attached crop/animal. Placement and land quality affect efficiency. Cotton → Cloth. Leather is a pasture by-product (e.g. cows). Cloth and Leather are distinct and combinable.
+### The Wastes — Warlords of the Wastes (lore + NPC, not playable)
 
-**Special Alloys**  
-Civ-limited (Scientists, Militia, etc.). Examples: Hardened Steel, Titanium, Stainless Steel. Steel + extra inputs. Other players may import but not produce. Encourages trade.
+Personas and art are **kept** for world flavour and as occasional named NPC micro-colonies among generic wastelanders:
 
-**Currency**  
-Dedicated currency for trade (especially player-to-player). Silver & Gold are primary money sources; their prices slowly rise over the match. Still required for many upgrades and luxury items.
+- **Scientists** (Dr. Something & Mixy)
+- **Afflicted**
+- **Mutants** (Smash & Bash) — demoted when Militia took the playable slot
+- **The Pack** (cousins)
 
-**Food**  
-Raw eating is possible. Kitchen combines ingredients into higher-yield / better meals. Civ-flavoured animals and recipes (e.g. Pack can use human meat; Hunters excel at export). Late foods can give minor bonuses. Droids ignore food entirely. Large pool filtered per civ.
+**Codex presentation (locked):** a list of these factions with their **flags**. Clicking a flag opens a modal with the warlord pictures, a description of their personality and what they stand for in the wasteland, and a **disposition bar per playable team**:
 
-**Production chains**  
-Buildings with assigned workers (e.g. Smelter → ingots → Blacksmith/Armourer → weapons/tools/armour).  
-Building upgrades cost gold + other resources + sometimes finished goods, then take time.  
-Tool quality gates gathering (iron axe = softwood, steel axe = hardwood).
+- 0% = hostile, 100% = best allies.
+- **Trade opens at ~55%.**
+- Each Wastes faction has a different starting disposition toward each playable team (e.g. one is friendly to Viktor & Ayla but hostile to the Hunters).
+- Disposition moves with **policies** and with **team and player skill-tree unlocks**.
+- No stat multipliers or skill trees for Wastes factions.
 
-**Age / era progression**  
-Advance by collecting a checklist of resources (e.g. wood + stone + gold + other).  
-Each subsequent Town Hall / age upgrade requires resources unlocked by the previous age plus newer/rarer goods.  
-Some requirements can be warlord-specific (e.g. Bloodveil may need a certain number of sacrifices).  
+### Removed from the game entirely
 
-**Research**  
-Dedicated research buildings (University-style) with assigned workers and progress bars unlock most non-standard buildings, upgrades, and blueprints. Not everything requires research.
+- **Templars** — gone (not playable, not lore, not NPC).
+- **Blood Ravens / Bloodveil** — gone. A future "two sisters dark cult" might exist as a scene or minimal story beat only.
 
-**Trading**  
-- Direct trade carts with allies, neutrals, and befriended NPCs (Enemy / Neutral / Ally treaty system).  
-- Optional global/off-map market with match-wide supply & demand (prices fall when oversupplied). Enables economic warfare and coordination. Visible at trading posts. Not mandatory.
+### Shelved
 
-**Other**  
-- Per-player global stockpile (AoE style) even if colony is spread out.  
-- Happiness as a simple production-bonus scale; entertainment buildings later.  
-- No seasonal effects at launch (~15% chance later).  
-- Food quality tiers (2–3) under consideration (healthy farming food vs negative effects from low-quality/cannibalism).  
-- Map is huge → true scarcity is late; self-sustaining farms/orchards/tree farms expected by then. Mines may get late-game extensions.
-
-**Resources & tech gates:**
-- Classic gathering + multi-step production chains.
-- Mining tiers gated by technology: stone → tin → copper → iron → coal → gold, etc.
-- Some trees require higher woodworking tech to harvest.
-- Light terrain effects: swamp/marsh movement penalties (some civs), road/track movement boosts, impassable cliffs, fishable water.
+- **Nomads** — cut as a team. The western flavour now lives in the Hunters; a movable-base mechanic may resurface elsewhere.
 
 ---
 
-## Combat & Status
+## Skill & Progression (Three Layers)
 
-- Age of Empires-style combat with higher individual unit value.
-- Units can be wounded and may die later; healing matters.
-- Status effects under consideration:
-  - Bleeding (medium DoT)
-  - Burning (short, intense DoT)
-  - Poison (long DoT)
-  - Paralysed (electricity — possibly duo-exclusive)
-  - Psychosis (temporary convert, AoE monk-style)
-- Damage types include melee, guns, laser, plasma (Scientists stronger here), explosive, fire, etc.
+### 1. Master team skill tree (per match)
 
----
+- One **large master tree** covering the whole economy.
+- **Branches:** Food & Farming · Water & Irrigation · Timber & Stone · Mining & Metallurgy · Industry & Crafting · Power & Grid · Logistics & Construction · Health & Survival · Society & Rule · Trade & Relations.
+- **Exclusive branches:** **Ash Rites** (Ashen only — slavery, cannibalism, fear) and **Charge & Hive** (Droids only — replaces Food & Farming).
+- Every team reaches roughly **80% of the nodes**. Specialist teams are **spiky** — 100% in their best branches, as low as ~60% in their weakest. Survivors sit flat at ~80% everywhere.
+- The old shared School/Lab tech table is retired — its ideas live in the master tree now.
 
-## Map Features
+| Team | 100% branches | Weakest branches |
+|------|---------------|------------------|
+| Survivors | — (≈80% everywhere) | — |
+| Hunters | Food & Farming, Timber & Stone | Industry, Power (60%) |
+| Militia | Industry & Crafting, Power & Grid | Food & Farming (60%) |
+| Ashen | Mining & Metallurgy, Ash Rites | Health, Society, Trade (60%) |
+| Droids | Power & Grid, Logistics, Charge & Hive | No Food branch; Water, Health, Society, Trade (60%) |
 
-- **Scale:** Significantly larger than standard Age of Empires maps — up to roughly **4×** a classic Giant map for full 10-player games. Should feel expansive; other groups are rare to encounter early. Smaller maps supported (preferred for fewer players). First prototype will be tiny/simple.
-- Semi-random generation around consistent spawn points with essential starting resources nearby (AoE-style).
-- Distinct **biomes/regions** that affect what can be grown or built. Players should build to the land’s strengths. No deteriorating fertility. Individual civs will have pros/cons in certain biomes (details per warlord/duo).
-- Building is possible nearly anywhere with soft constraints (some buildings may require foundations).
-- Outposts and resource camps are allowed.
-- Territory: line-of-sight + land claim around buildings (AoE-style). Map-control percentage is a possible future victory condition.
-- Standard RTS fog-of-war options (fog / discovery / line of sight / see-all).
-- **Neutral tribes** exist at varying density: from a campfire + a couple of people up to a small outpost with a few buildings and walls. They do **not** expand over time. Players can trade with, ignore, enslave, or destroy them — options and reactions depend on the player’s warlords.
-- Large map size is intentional to reduce early aggression and support longer, more economic games (target 5–10 hours).
-- Relics (religious/historical artifacts) scattered and freshly placed each game. Mechanics still open.
+### 2. Player skill tree (meta — carries over between matches)
 
----
+- The **largest tree** in the game — bigger than any team tree.
+- Earns points by **playing** and completing **challenges** (challenge list grows during development).
+- Small, permanent bonuses: "+2% wood chopping", "when playing Ashen, +5% rubies when mining".
+- Has general branches plus a **mastery branch for each team**.
 
-## What Is Explicitly Not Part of the Vision Anymore
+### Point spending (all trees)
 
-- Stardew Valley-style cozy farming / relationship sim
-- Oasis-at-the-base-of-a-volcano as the fixed setting
-- Hope/Dread meters
-- Heavy narrative campaigns or frequent cutscenes
-- Pure defeat-to-unlock (Smash Bros style) for warlords
-- Complex Sims-style relationship simulation between warlords
-- Small “3–7 families” population management
-- Civilians that must suit up for combat and then return to civilian jobs
+Like **Final Fantasy XIII**: earn points, then dump them into a node whether or not that completes it. A big haul can fill several nodes at once.
+
+**Codex tooling:** the Pages of Eden boards keep the **green fork / blue edit / red remove** tile tools for designing nodes.
+
+### 3. Building upgrades (per match)
+
+- Buildings upgrade on-site (Endzone-style scrappy tiers).
+- An upgrade either **improves efficiency** or **unlocks a new set of recipes** (smelter → smelts more ores → alloys → furnace → steel).
+- Three influences stack: **meta player tree** (all games) + **team tree** (this match) + **building tiers** (this match).
 
 ---
 
-## Combat & Military (summary)
+## Utilities — Water & Power
 
-- Separate civilian and military units. Military require crafted/bought weapons, armour, etc. to train.
-- Ongoing food + water upkeep for all units (no upfront food cost to produce). Large idle armies are expensive.
-- Units die at 0 HP (no wounded state for now). Psychosis is a special alive-but-controlled state.
-- Healing: AoE Monk-style support units that restore HP and can cleanse certain status effects.
-- Army size: AoE-like, low hundreds in a large late-game force. Individual unit value higher than classic AoE.
-- Simple formations, patrol with waypoints, possible flee command.
-- Siege matters; not every civ is equally good at it.
-- Warlords = champion units that can also perform citizen tasks. Strong but killable by a focused group (more vulnerable than an AoE King).
+- **Water** is a resource consumed by the **population**, by **some buildings**, and used occasionally in **construction and upgrades** — the same as every other resource.
+- **Water distribution:** Cities: Skylines-style network (pumps, towers, pipes) with coverage.
+- **Power:** generators feed **power poles**; any building **inside a pole's radius** is powered. Radius only — no chaining rules beyond placing more poles.
+- Not all buildings need power. Some don't at tier I but **need power to keep upgrading**.
+- **Droids** need a vastly larger grid — charging is their food.
 
-## Victory & Meta
+---
 
-- Primary: Regicide.
-- Alternate modes of interest: % map control, Wonder/economic victory, Relic victory, Survival.
-- Target full-map length: 5–10 hours. Shorter/smaller modes will exist.
-- Post-match: detailed score screen that saves into a personal library of past games.
+## Population, Roles & Construction
 
-## Trade (final picture)
+**Not** "select every villager like an RTS unit." **Timberborn + Endzone** model:
 
-- Player ↔ Player: trade carts (goods or gold).
-- Player ↔ Neutral tribe: usually goods-for-goods.
-- Global / off-map market: higher prices, supply & demand driven by both in-match economy and light world-narrative events (lore flavour opportunity).
+| Role | Behaviour |
+|------|-----------|
+| **Settler / idle** | General labour — builds, carries, fills gaps |
+| **Builder** | Waits at the Builder's Depot; construction only |
+| **Hauler / transporter** | Logistics only |
+| **Professions** | Assigned via **one menu** with a headcount per profession |
 
-## Known Open Points
+**First-pass professions:** woodcutter, forester, quarry worker, miner, scavenger, water collector, pump operator, farmer, rancher, hunter, fisher, forager/herbalist, miller/baker, cook, butcher/smoker, tanner, weaver/tailor, charcoal burner, brickmaker, glassblower, smelter, smith/toolmaker, gunsmith, mechanic, electrician, medic/nurse, researcher, trader, watch/guard, preacher/propagandist.
 
-1. Exact challenge list for unlocking duos.
-2. Full resource list, production chains, and per-duo unique troops/buildings.
-3. Light happiness / population-growth modifier details (if kept).
-4. Remaining structured questionnaire sections (especially maps, resources, combat depth, victory variants).
-5. Final names and trait details for several warlords (see Characters file).
+**Construction priority (locked):** every construction site has a **priority setting**; available builders work the highest-priority sites first (like Timberborn / Endzone).
+
+Population can grow to **hundreds**. **Happiness** stays a simple production-bonus scale that also feeds unrest.
+
+---
+
+## Society — Policies, Elections, Unrest
+
+### Policy building (name TBD)
+
+- The player spends a cost here to enact **policies/edicts** — better healthcare, harsh rationing, propaganda, curfews, etc.
+- Usually a **benefit at a cost**; sometimes clearly worth it, sometimes not. Not all are dark.
+- **Small cap** on active policies (≈3). A policy (or tree node) can **raise the cap**.
+
+### Elections (Tropico-style)
+
+- Elections come round on a timer. You can make promises; the people vote for or against you.
+- **Lose the first election** → a **grace period**: you talk your way into one more year.
+- **Win the next** → all good. **Lose again** → overthrown → **game over**.
+- **Unrest** isn't an instant loss: fix the problem, or a high percentage votes against you at the next election.
+- Lying has consequences (broken promises raise unrest).
+
+---
+
+## Economy & Production (Heart of the Game)
+
+- Deep **multi-step resource chains** (the Resources book stays central).
+- Buildings with **assigned workers**.
+- **Farms / pastures:** **fertility map** + location; drought strips fertility unless **dams, water tanks, and irrigation** were prepared (Timberborn-like).
+- **Research buildings** unlock most non-standard content.
+- **Age / era progression:** resource **checklists** + **Town Hall** upgrades (some checklist items team-specific).
+- **Scrap**, **Rare Scrap**, **Special Alloys** — which teams can craft and enhance alloys is decided per team later.
+- **Team access:** some teams **cannot acquire or process** certain resources (e.g. Hunters never process laser components; Droids skip food).
+- **Weapons and armour are goods**, crafted from resources like anything else (knives → axes → swords → handguns → laser rifles) and sold or used as tools.
+- **Currency:** Silver / Gold.
+- **Food:** raw goods and **Kitchen** recipes; **Droids skip food**.
+- **Global per-player stockpile** (warehouse logic).
+
+**Material tiers:** Stone → Bronze → Iron → Steel → Hardened Steel.
+
+**Resources by era (current shortlist)**
+
+- **Early:** Food, Water, Wood, Stone, Silver, Scrap, Cloth, Herbs, Charcoal, Leather, Clay, Salt, Berries, Milk, Eggs, Fish  
+- **Mid:** Tin, Copper, Coal, Bricks, Rare Components, Glass, Fertiliser, Medicine, Alcohol, Sulphur, Gunpowder, Paper, Nails, Wire, Mechanical Parts, Smoked/Preserved Food, Tools, Bronze. **Gold** unlocks here.  
+- **Late:** Iron, Steel, Electronics, Fuel, Concrete, Special Alloys, Gems, Jewellery, Gold Ingots → Pure Gold Ingots, Rare Scrap  
+
+---
+
+## Trade
+
+- **NPC micro-colony trade** — reliable routes for consistency and as a fallback. Gated by disposition (≥55% to trade).
+- **Global market** — off-screen, **single-player PvE economy**. Prices move **only with scheduled/random world events** (a drought pushes water and food up, a radiation storm pushes medicine up). The player's own selling does **not** move prices; there is no competition for the market.
+
+---
+
+## Map & World
+
+- **Large** maps; land should feel **big**. Isometric.
+- **Fog of war** at start; revealed areas **stay revealed** for that game.
+- **Five hand-made maps — one themed to each playable team** (lore and art direction, not "home turf only").
+- **World Forge (sixth "map"):** seed in → detailed map out. Same seed always gives the same map, even after closing the codex. Used to generate starting points for the five team maps (then hand-modified) and as the in-game random map option.
+- **Biomes** matter for building and growing. Fertility map, rivers, ore deposits, ruins.
+- **NPC micro-colonies** scattered each game — mostly generic wastelanders; occasionally a Warlord of the Wastes faction. **Never** Templars or Blood Ravens.
+- Build nearly anywhere with **soft** constraints (foundations, fertility, water, power radius).
+
+---
+
+## Combat (Secondary — Shelved)
+
+- **Not** a design focus. Placeholder only: three simple troop lines — **Melee**, **Ranged**, **Special** — each upgradeable.
+- Enough later for bandits or taking an NPC village. No army management, no counter triangle, no PvP balance.
+- **Walls / watchtowers** stay as **safety** buildings: raise a local safety meter that makes citizens happier.
+- **Arms of Eden** codex is **archived as reference** (moved out of Pages of Eden).
+
+---
+
+## Status Effects → Colony Conditions
+
+- Old combat statuses (**burn, bleed, poison**) are gone.
+- Reused as **colony conditions** driven by world events and neglect: **thirst**, **starvation**, **disease**, **radiation sickness**, **psychosis**, **unrest**.
+
+---
+
+## Failure States (Game Over)
+
+1. **Thirst** (water collapse)  
+2. **Starvation**  
+3. **Irradiation / disease**  
+4. **Psychosis / overthrow** (lose the grace-period election)
+
+No regicide victory. No "kill all enemy warlords" loop.
+
+---
+
+## Multiplayer
+
+- **Afterthought / later.** Core design is a strong single-player city-builder.
+
+---
+
+## What Has Been Explicitly Dropped or Demoted
+
+| Removed or dropped | Notes |
+|--------------------|--------|
+| RTS regicide as core loop | |
+| Mixed warlord pairs & **Bond** system | |
+| Per-warlord personal skill trees | → one **team** tree + **player** tree |
+| Shared School/Lab tech table | → merged into master tree |
+| **Templars**, **Blood Ravens** | Gone from game, lore and NPC spawns |
+| **Scientists, Afflicted, Mutants, Pack** as playable | → Warlords of the Wastes |
+| **Nomads** | Cut; western theme → Hunters |
+| Droid Data Centre elimination rule | Data Centre may return with a new function |
+| Player-driven market prices | Market reacts to world events only |
+| Troop matrix, weapon/armour combat trees | Arms archived; weapons/armour → craftable goods |
+| 12 home-turf maps | → 5 team maps + World Forge |
+| Heavy multiplayer PvP focus | |
+
+---
+
+## Open Points
+
+1. Militia warlord names and faces (brother & sister placeholder).
+2. Unique building per team (placeholders in Warlords of Eden).
+3. Which teams can craft / enhance special alloys.
+4. Policy building name, policy list, and exact cap.
+5. Election cadence (every N years) and promise list.
+6. Exact era names and Town Hall checklists.
+7. Droid-specific rules beyond charging (water use, repair instead of health, social model).
+8. Possible swap of Militia's lore partner faction if Mutants return.
 
 ---
 
 ## Key Reference Files
 
-| File (repo paths) | Purpose |
+| File | Purpose |
 |------|---------|
-| `design/Pages of Eden/Data/Visions_of_Eden.md` | This document — broad current vision (book: Visions of Eden.html) |
-| `design/Pages of Eden/Data/Warlords_of_Eden.md` | Duos, Warlords, palette, flags & banners, signatures, tech, buildings |
-| `design/Pages of Eden/Data/Arms_of_Eden.md` | Troops, weapons, armour, status-effect matrix |
-| `design/Pages of Eden/Data/Resources_of_Eden.md` | Resource, produce and tool trees, import-only rules |
-| `design/Pages of Eden/Data/design-source.json` | Shared rules (union mix rule, access states, picture naming, sharing) |
-| `design/Scope Questionnaire.md` | Remaining open decisions, sectioned and prioritised |
-
-Older working files referenced in earlier drafts (Characters table, Joint Plan, Section Answers, Clarification Questions, decisions log) are not in the repo yet — add them under `design/` if they should be tracked.
+| `design/Pages of Eden/Data/Visions_of_Eden.md` | **This document** — source of truth |
+| `design/Pages of Eden/Visions of Eden.html` | Visual version of this document |
+| `design/Pages of Eden/Warlords of Eden.html` | Teams, Warlords of the Wastes, skill trees, buildings |
+| `design/Pages of Eden/Resources of Eden.html` | Resource, produce and tool chains (incl. weapons/armour as goods) |
+| `design/Pages of Eden/Maps of Eden.html` | Five team maps + World Forge |
+| `design/Reference/Arms of Eden (Archive).html` | Old RTS arms book — reference only |
 
 ---
 
-*This Vision document should be updated whenever a major concept locks or changes. Keep it clean and free of superseded ideas.*
+*Do not reintroduce RTS-era assumptions without an explicit decision log entry.*

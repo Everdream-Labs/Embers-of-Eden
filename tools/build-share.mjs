@@ -24,10 +24,9 @@ const out = path.join(root, "dist", name);
 const zip = path.join(root, "dist", `${name}.zip`);
 
 const BOOKS = {
-  "Visions of Eden.html": ["Visions", "Flags", "Logos"],
-  "Warlords of Eden.html": ["Warlords", "Buildings", "Troops", "Tech", "Flags", "Logos"],
-  "Arms of Eden.html": ["Troops", "Weapons", "Armour", "Buildings", "Warlords"],
-  "Resources of Eden.html": ["Resources", "Produce", "Tools", "Warlords"],
+  "Visions of Eden.html": ["Visions", "Warlords", "Flags", "Logos"],
+  "Warlords of Eden.html": ["Warlords", "Buildings", "Flags", "Logos"],
+  "Resources of Eden.html": ["Resources", "Produce", "Tools", "Weapons", "Armour", "Warlords"],
   "Maps of Eden.html": ["Maps"]
 };
 const MIME = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };
@@ -69,8 +68,15 @@ for (const [file, folders] of Object.entries(BOOKS)) {
 const notes = path.join(out, "Design Notes");
 fs.mkdirSync(notes, { recursive: true });
 for (const f of fs.readdirSync(path.join(src, "Data"))) fs.copyFileSync(path.join(src, "Data", f), path.join(notes, f));
-const questionnaire = path.join(root, "design", "Scope Questionnaire.md");
-if (fs.existsSync(questionnaire)) fs.copyFileSync(questionnaire, path.join(notes, "Scope Questionnaire.md"));
+for (const q of ["Scope Questionnaire.md", "Warlord Character Questionnaire.md"]) {
+  const p = path.join(root, "design", q);
+  if (fs.existsSync(p)) fs.copyFileSync(p, path.join(notes, q));
+}
+const archive = path.join(root, "design", "Reference", "Arms of Eden (Archive).html");
+if (fs.existsSync(archive)) {
+  fs.mkdirSync(path.join(out, "Reference"), { recursive: true });
+  fs.copyFileSync(archive, path.join(out, "Reference", path.basename(archive)));
+}
 
 fs.rmSync(zip, { force: true });
 if (process.platform === "win32") {

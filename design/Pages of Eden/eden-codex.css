@@ -275,6 +275,20 @@ body.editing .editbar{display:flex}
   box-shadow:0 6px 18px -10px #000}
 .node::before{content:"";position:absolute;left:10px;right:10px;top:0;height:2px;background:var(--acc);opacity:.85;border-radius:0 0 2px 2px}
 .node:hover{transform:translateY(-2px);border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),0 10px 26px -10px var(--acc)}
+.tile-acts{display:none;position:absolute;left:0;right:0;bottom:7px;z-index:5;justify-content:center;align-items:center;gap:9px;pointer-events:auto}
+body.editing .tile-acts{display:flex}
+body.editing .node{cursor:default;padding-bottom:34px}
+body.editing .tc-node .node{justify-content:flex-start;padding:8px 8px 30px}
+body.editing .tc-node .node .n-sub{margin-top:2px}
+.tile-act{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.4);padding:0;margin:0;display:grid;place-items:center;font:700 13px/1 "Segoe UI",sans-serif;color:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.tile-act.fork{background:#3cba54}
+.tile-act.edit{background:#3b82f6;font-size:11px}
+.tile-act.del{background:#e23d3d;font-size:15px}
+.tile-act:hover{transform:scale(1.12)}
+.tile-act:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.tech-grid{position:relative}
+.tech-grid svg.tech-links{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:0}
+.tech-grid svg.tech-links path{fill:none;stroke-width:2;opacity:.55}
 .node.placeholder{border-style:dashed}
 .node .n-name{font-family:var(--font-head);font-weight:500;text-transform:uppercase;letter-spacing:.07em;font-size:.86rem;line-height:1.2}
 .node .n-sub{font-size:.7rem;color:var(--ink-dim);margin-top:3px}
@@ -582,3 +596,6 @@ img[data-cycle]{cursor:pointer}
   .pairbar{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.grain,.void::before{animation:none}}
+
+/* picture slots stay invisible until the IMG module gives them a real source */
+img[data-stem]:not([src]){visibility:hidden}
